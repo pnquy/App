@@ -1,9 +1,12 @@
-package com.example.home;
+package com.example.studentportalapp;
+
+import com.example.studentportalapp.R;
+
 
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

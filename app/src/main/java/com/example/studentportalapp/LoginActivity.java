@@ -52,10 +52,11 @@ public class LoginActivity extends AppCompatActivity {
                         Toast.makeText(LoginActivity.this, "Mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                        Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                         startActivity(intent);
                         finish();
                     }
+
                 });
             });
         });
