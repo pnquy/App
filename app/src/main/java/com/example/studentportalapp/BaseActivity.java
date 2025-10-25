@@ -1,4 +1,4 @@
-package com.example.course;
+package com.example.studentportalapp;
 
 import android.content.Intent;
 import android.os.Bundle;
