@@ -1,4 +1,4 @@
-package com.example.course;
+package com.example.studentportalapp;
 
 import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;

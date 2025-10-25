@@ -25,6 +25,12 @@
         <activity android:name=".RegisterActivity" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".HomeActivity" />
+        <activity android:name=".AssignmentActivity" />
+        <activity android:name=".BaseActivity" />
+        <activity android:name=".CourseActivity" />
+        <activity android:name=".PeopleActivity" />
+        <activity android:name=".ProfileActivity" />
+
     </application>
 
 </manifest>
