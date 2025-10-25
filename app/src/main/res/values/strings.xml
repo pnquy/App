@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Doan_NT118_app</string>
+    <string name="todo">TODO</string>
+    <string name="programming_language">Programming Language</string>
+    <string name="pl101">PL101</string>
+    <string name="activity">Activity</string>
+    <string name="assignments">Assignments</string>
+    <string name="people">People</string>
+    <string name="james_gosling">James Gosling</string>
+    <string name="july_13_2021">July 13, 2021</string>
+    <string name="java_stack_program">Java Stack Program</string>
+    <string name="java_stack_docx_45_5_kb">Java_Stack.docx (45.5 KB)</string>
+    <string name="_28">👁️ 28</string>
+    <string name="course">Course</string>
+    <string name="comment">Comment</string>
+    <string name="assignments_amp_activities"><![CDATA[assignments & Activities]]></string>
+    <string name="assignments_activities"><![CDATA[Assignments & Activities]]></string>
+</resources>
