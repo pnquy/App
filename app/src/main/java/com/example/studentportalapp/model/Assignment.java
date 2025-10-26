@@ -1,4 +1,4 @@
-package com.example.course.model;
+package com.example.studentportalapp.model;
 
 public class Assignment {
     private String title, points, buttonText, author, date;

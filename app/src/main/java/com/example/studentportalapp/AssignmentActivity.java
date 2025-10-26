@@ -3,8 +3,8 @@ package com.example.studentportalapp;
 import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.course.adapter.AssignmentAdapter;
-import com.example.course.model.Assignment;
+import com.example.studentportalapp.adapter.AssignmentAdapter;
+import com.example.studentportalapp.model.Assignment;
 import java.util.ArrayList;
 import java.util.List;
 

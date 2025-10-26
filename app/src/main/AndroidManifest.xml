@@ -29,8 +29,8 @@
         <activity android:name=".BaseActivity" />
         <activity android:name=".CourseActivity" />
         <activity android:name=".PeopleActivity" />
-        <activity android:name=".ProfileActivity" />
-
+        <activity android:name=".ToDoActivity" />
+        <activity android:name=".OptionsActivity" />
     </application>
 
 </manifest>

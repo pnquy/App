@@ -1,4 +1,4 @@
-package com.example.course.model;
+package com.example.studentportalapp.model;
 
 public class ActivityItem {
     private final String author;

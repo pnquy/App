@@ -1,4 +1,4 @@
-package com.example.course.adapter;
+package com.example.studentportalapp.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
@@ -10,8 +10,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.course.R;
-import com.example.course.model.Assignment;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.Assignment;
 
 import java.util.List;
 

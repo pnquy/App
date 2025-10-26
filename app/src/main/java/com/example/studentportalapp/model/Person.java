@@ -1,4 +1,4 @@
-package com.example.course.model;
+package com.example.studentportalapp.model;
 
 public class Person {
     private String name;

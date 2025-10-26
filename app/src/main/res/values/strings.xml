@@ -28,7 +28,10 @@
     <string name="course_science">Science, Technology, and Society Course Image</string>
     <string name="course_architecture">Architecture and Organization Course Image</string>
     <string name="course_logic">Logic Design Course Image</string>
-
+    <string name="avatar_desc">User profile avatar</string>
+    <string name="notification_icon">Notification icon</string>
+    <string name="email_icon">Email icon</string>
+    <string name="next_page_icon">Next page icon</string>
     <string name="todo">TODO</string>
     <string name="programming_language">Programming Language</string>
     <string name="pl101">PL101</string>

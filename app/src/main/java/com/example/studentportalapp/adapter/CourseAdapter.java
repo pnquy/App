@@ -1,4 +1,4 @@
-package com.example.course.adapter;
+package com.example.studentportalapp.adapter;
 
 import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
@@ -9,8 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-import com.example.course.R;
-import com.example.course.model.ActivityItem;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.ActivityItem;
 
 import java.util.ArrayList;
 

@@ -3,8 +3,8 @@ package com.example.studentportalapp;
 import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.course.adapter.CourseAdapter;
-import com.example.course.model.ActivityItem;
+import com.example.studentportalapp.adapter.CourseAdapter;
+import com.example.studentportalapp.model.ActivityItem;
 import java.util.ArrayList;
 
 public class CourseActivity extends BaseActivity {
