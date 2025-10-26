@@ -1,16 +1,18 @@
 package com.example.studentportalapp;
 
-import com.example.studentportalapp.R;
-
-
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends BaseActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home);
+        // Không cần setContentView vì BaseActivity đã lo việc đó
+    }
+
+    @Override
+    protected int getLayoutResourceId() {
+        // Đây là layout riêng của Home
+        return R.layout.activity_home;
     }
 }

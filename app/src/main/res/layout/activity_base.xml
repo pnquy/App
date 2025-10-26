@@ -1,26 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <!-- Header chung -->
-    <include layout="@layout/layout_header" />
+    <include layout="@layout/header_layout" />
 
-    <!-- Background chung -->
-    <include
-        android:id="@+id/include_background"
-        layout="@layout/background" />
-
-    <!-- Body: sẽ thay thế tùy theo trang -->
+    <!-- Phần nội dung riêng của từng Activity -->
     <FrameLayout
-        android:id="@+id/container_body"
+        android:id="@+id/content_frame"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-
-    <!-- Footer chung -->
-    <include layout="@layout/layout_footer" />
-
+        android:layout_height="match_parent" />
 </LinearLayout>

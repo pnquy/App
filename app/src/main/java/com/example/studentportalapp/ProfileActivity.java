@@ -1,16 +1,20 @@
 package com.example.studentportalapp;
 
 import android.os.Bundle;
-import android.widget.TextView;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+public class ProfileActivity extends BaseActivity {
 
-public class ProfileActivity extends AppCompatActivity {
+    @Override
+    protected int getLayoutResourceId() {
+        // Layout riêng của trang Profile
+        return R.layout.activity_profile;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);
 
         // Ánh xạ View
         TextView tvStudentNo = findViewById(R.id.tvStudentNo);
@@ -24,7 +28,7 @@ public class ProfileActivity extends AppCompatActivity {
         TextView tvAddress = findViewById(R.id.tvAddress);
         ImageView imgAvatar = findViewById(R.id.imgAvatar);
 
-        // Gán dữ liệu tạm
+        // Gán dữ liệu tạm (có thể sau này lấy từ API / Database)
         tvStudentNo.setText("19-02031-t");
         tvCourse.setText("Bachelor of Science in Computer Science");
         tvYearSec.setText("2ND Year, J2019");
@@ -35,7 +39,7 @@ public class ProfileActivity extends AppCompatActivity {
         tvContact.setText("09619910340");
         tvAddress.setText("Block 5 Lot 12 southern valley katwiran extension ibayo tipas taguig city");
 
-        imgAvatar.setImageResource(R.mipmap.ic_launcher); // thay ảnh thật của bạn ở đây
+        // Ảnh đại diện (bạn có thể thay bằng ảnh khác)
+        imgAvatar.setImageResource(R.mipmap.ic_launcher);
     }
 }
-

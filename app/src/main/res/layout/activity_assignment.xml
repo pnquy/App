@@ -38,5 +38,5 @@
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
+    <include layout="@layout/layout_footer" />
 </LinearLayout>
