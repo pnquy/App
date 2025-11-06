@@ -6,10 +6,22 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {User.class}, version = 2, exportSchema = false)
+@Database(
+        entities = {
+                TaiKhoan.class,
+                GiaoVien.class,
+                HocVien.class
+        },
+        version = 3, // tăng version lên (vì thay đổi cấu trúc)
+        exportSchema = false
+)
 public abstract class AppDatabase extends RoomDatabase {
-    public abstract UserDao userDao();
 
+
+
+    public abstract TaiKhoanDao taiKhoanDao();
+    public abstract GiaoVienDao giaoVienDao();
+    public abstract HocVienDao hocVienDao();
     private static volatile AppDatabase INSTANCE;
 
     public static AppDatabase getDatabase(final Context context) {
@@ -17,12 +29,11 @@ public abstract class AppDatabase extends RoomDatabase {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(
-                            context.getApplicationContext(),
-                            AppDatabase.class,
-                            "app_database"
-                    )
+                                    context.getApplicationContext(),
+                                    AppDatabase.class,
+                                    "app_database"
+                            )
                             .fallbackToDestructiveMigration()
-                            .allowMainThreadQueries()
                             .build();
                 }
             }
