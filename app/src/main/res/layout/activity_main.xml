@@ -3,19 +3,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#FDE0E0">
+    android:background="#fde0e0">
 
-    <!-- Khu vực logo / background giống design -->
-    <TextView
-        android:id="@+id/tvAppTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="TCU's\nStudent Portal"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:layout_marginTop="80dp"
-        android:layout_centerHorizontal="true"/>
+    <!-- Ảnh logo căn giữa màn hình -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/img_logo"
+        android:layout_width="400dp"
+        android:layout_height="400dp"
+        android:layout_centerInParent="true"
+        android:contentDescription="@string/todo"
+        android:scaleType="fitCenter"
+        android:src="@drawable/logo_new" />
 
+    <!-- Nút nằm phía dưới, giữa màn hình -->
     <Button
         android:id="@+id/btnGetStarted"
         android:layout_width="wrap_content"

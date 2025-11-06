@@ -48,7 +48,7 @@
 
         <!-- Philosophy -->
         <TextView
-            android:text="Philosophy"
+            android:text="Values"
             android:textStyle="bold"
             android:textSize="16sp"
             android:layout_width="wrap_content"

@@ -7,7 +7,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studentportalapp.data.AppDatabase;
-import com.example.studentportalapp.data.User;
+import com.example.studentportalapp.data.TaiKhoan;
 import com.example.studentportalapp.databinding.ActivityLoginBinding;
 
 import java.util.concurrent.ExecutorService;
@@ -18,6 +18,11 @@ public class LoginActivity extends AppCompatActivity {
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    // ============ HARD CODE ADMIN ============
+    private final String ADMIN_EMAIL = "admin@gmail.com";
+    private final String ADMIN_PASS  = "admin123";
+    // =========================================
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -26,11 +31,7 @@ public class LoginActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Chuyển sang màn hình Đăng ký
-        binding.tvToRegister.setOnClickListener(v -> {
-            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-            startActivity(intent);
-        });
+
 
         // Xử lý khi nhấn nút Đăng nhập
         binding.btnLogin.setOnClickListener(v -> {
@@ -42,13 +43,23 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            // ==== CHECK ADMIN FIRST ====
+            if (email.equals(ADMIN_EMAIL) && password.equals(ADMIN_PASS)) {
+                Toast.makeText(LoginActivity.this, "Đăng nhập ADMIN thành công!", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(LoginActivity.this, AdminActivity.class);
+                startActivity(intent);
+                finish();
+                return;
+            }
+            // ===========================
+
             executor.execute(() -> {
-                User user = db.userDao().getByEmail(email);
+                TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
                 runOnUiThread(() -> {
                     if (user == null) {
                         Toast.makeText(LoginActivity.this, "Tài khoản không tồn tại.", Toast.LENGTH_SHORT).show();
-                    } else if (!user.getPassword().equals(password)) {
+                    } else if (!user.getMatKhau().equals(password)) {
                         Toast.makeText(LoginActivity.this, "Mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();

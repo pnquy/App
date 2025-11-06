@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/tvHoTenHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tên học viên"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/tvEmailHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Email"/>
+
+    <TextView
+        android:id="@+id/tvMaLopHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lớp"/>
+    <Button
+        android:id="@+id/btnEditHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Edit"/>
+
+    <Button
+        android:id="@+id/btnDeleteHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete"/>
+</LinearLayout>
