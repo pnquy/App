@@ -5,8 +5,6 @@
     android:orientation="vertical"
     android:background="#FFF5F5F5">
 
-    <!-- Header -->
-
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,7 +13,6 @@
         android:gravity="center_horizontal"
         android:padding="16dp">
 
-        <!-- Mission -->
         <TextView
             android:text="Mission"
             android:textStyle="bold"
@@ -31,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <!-- Vision -->
+
         <TextView
             android:text="Vision"
             android:textStyle="bold"
@@ -46,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <!-- Philosophy -->
+
         <TextView
             android:text="Values"
             android:textStyle="bold"
@@ -63,7 +60,7 @@
     </LinearLayout>
 
 
-    <!-- Buttons -->
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

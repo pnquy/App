@@ -26,7 +26,26 @@ public class StudentManageActivity extends AppCompatActivity {
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private EditText etMaHV, etTenHV, etEmailHV, etLopHV;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_student_manage);
 
+        recyclerView = findViewById(R.id.recyclerHocVien);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+
+        loadHocVien();
+
+        Button btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(v -> {
+
+            finish();
+
+
+        });
+    }
 
 
 

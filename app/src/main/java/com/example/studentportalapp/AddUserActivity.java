@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.GiaoVien;
+import com.example.studentportalapp.data.HocVien;
 import com.example.studentportalapp.data.TaiKhoan;
 import com.example.studentportalapp.databinding.ActivityAddUserBinding;
 
@@ -46,6 +47,7 @@ public class AddUserActivity extends AppCompatActivity {
             }
 
             executor.execute(() -> {
+                // 1) lưu TAIKHOAN
                 TaiKhoan tk = new TaiKhoan();
                 tk.MaTK = MaTK;
                 tk.HoTen = HoTen;
@@ -55,13 +57,20 @@ public class AddUserActivity extends AppCompatActivity {
 
                 db.taiKhoanDao().insert(tk);
 
-                // nếu là giáo viên -> tạo record trong table GIAOVIEN
+                // 2) nếu là giáo viên -> tạo record trong table GIAOVIEN
                 if (role.equals("GIAOVIEN")) {
                     GiaoVien gv = new GiaoVien();
-                    gv.MaGV = MaTK; // sử dụng MaTK chính là MaGV luôn cho đơn giản
-                    gv.MaTK = MaTK;
-                    gv.MaLH = ""; // để sau admin gán lớp
+                    gv.MaGV = MaTK;     // chính là MaTK luôn
+                    gv.MaLH = "";       // để sau admin gán lớp
                     db.giaoVienDao().insert(gv);
+                }
+
+                // 3) nếu là học viên -> tạo record trong table HOCVIEN
+                if (role.equals("HOCVIEN")) {
+                    HocVien hv = new HocVien();
+                    hv.setMaHV(MaTK);     // chính là MaTK luôn
+                    hv.setMaLop("");      // để sau admin gán lớp
+                    db.hocVienDao().insert(hv);
                 }
 
                 runOnUiThread(() -> {
