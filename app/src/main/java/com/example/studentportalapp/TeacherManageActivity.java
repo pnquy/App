@@ -2,6 +2,7 @@ package com.example.studentportalapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -32,13 +33,17 @@ public class TeacherManageActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // setup RecyclerView
         adapter = new TeacherAdapter(new ArrayList<>());
         binding.rvTeacherList.setLayoutManager(new LinearLayoutManager(this));
         binding.rvTeacherList.setAdapter(adapter);
 
         loadTeacherData();
+        Button btnBack = findViewById(R.id.btnBack);
+        btnBack.setOnClickListener(v -> {
 
+            finish();
+
+        });
 
     }
 

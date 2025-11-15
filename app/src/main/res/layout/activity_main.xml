@@ -5,7 +5,7 @@
     android:padding="24dp"
     android:background="#fde0e0">
 
-    <!-- Ảnh logo căn giữa màn hình -->
+
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/img_logo"
         android:layout_width="400dp"
@@ -15,7 +15,7 @@
         android:scaleType="fitCenter"
         android:src="@drawable/logo_new" />
 
-    <!-- Nút nằm phía dưới, giữa màn hình -->
+
     <Button
         android:id="@+id/btnGetStarted"
         android:layout_width="wrap_content"

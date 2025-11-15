@@ -21,6 +21,8 @@ public interface HocVienDao {
     @Delete
     void delete(HocVien hv);
 
-    @Query("SELECT * FROM HOCVIEN ORDER BY MaHV ASC")
+    @Query("SELECT hv.MaHV AS MaHV, tk.HoTen AS HoTen, tk.Email AS Email " +
+            "FROM HOCVIEN hv " +
+            "JOIN TAIKHOAN tk ON hv.MaHV = tk.MaTK")
     List<HocVien> getAll();
 }

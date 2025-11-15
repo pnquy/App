@@ -22,7 +22,7 @@ public interface GiaoVienDao {
     // lấy list để show lên RecyclerView
     @Query("SELECT gv.MaGV AS MaGV, tk.HoTen AS HoTen, tk.Email AS Email " +
             "FROM GIAOVIEN gv " +
-            "JOIN TAIKHOAN tk ON gv.MaTK = tk.MaTK")
+            "JOIN TAIKHOAN tk ON gv.MaGV = tk.MaTK")
     List<TeacherItem> getAllTeacherItems();
 
 }

@@ -8,11 +8,15 @@ import com.example.studentportalapp.model.Assignment;
 import java.util.ArrayList;
 import java.util.List;
 
+// --- Imports được thêm vào ---
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import android.view.View;
+import android.content.Intent; // Thêm Intent để mở Activity mới
+
 public class AssignmentActivity extends BaseActivity {
 
     @Override
     protected int getLayoutResourceId() {
-        // Chỉ định layout riêng của activity này
         return R.layout.activity_assignment;
     }
 
@@ -20,6 +24,32 @@ public class AssignmentActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         //setContentView(R.layout.activity_assignment);
+
+        // --- Ẩn/Hiện và Xử lý Click FAB ---
+        // 1. Tìm nút FAB
+        FloatingActionButton fabAddAssignment = findViewById(R.id.fab_add_assignment);
+
+        // 2. Lấy vai trò người dùng (Giả định)
+        String userRole = getUserRoleFromLogin();
+
+        // 3. Ẩn/Hiện nút FAB dựa trên vai trò
+        if (userRole.equals("teacher")) {
+            fabAddAssignment.setVisibility(View.VISIBLE); // Hiện nút cho giáo viên
+
+            // 4. Gán sự kiện click cho FAB
+            fabAddAssignment.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    // Mở màn hình Thêm Bài Tập (AddAssignmentActivity)
+                    Intent intent = new Intent(AssignmentActivity.this, AddAssignmentActivity.class);
+                    startActivity(intent);
+                }
+            });
+
+        } else {
+            fabAddAssignment.setVisibility(View.GONE); // Ẩn nút đi với học viên
+        }
+
 
         RecyclerView recyclerViewAssignments = findViewById(R.id.recyclerViewAssignments);
         recyclerViewAssignments.setLayoutManager(new LinearLayoutManager(this));
@@ -34,5 +64,16 @@ public class AssignmentActivity extends BaseActivity {
         AssignmentAdapter adapter = new AssignmentAdapter(this, assignmentList);
         recyclerViewAssignments.setAdapter(adapter);
 
+    }
+
+    // --- Hàm giả định được thêm vào ---
+    // Cần thay thế hàm này bằng logic thật của bạn để lấy vai trò người dùng
+    private String getUserRoleFromLogin() {
+        // Ví dụ: Lấy từ SharedPreferences
+        // SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        // return prefs.getString("USER_ROLE", "student"); // "student" là giá trị mặc định
+
+        // Tạm thời trả về "teacher" để bạn kiểm tra nút FAB
+        return "teacher";
     }
 }
