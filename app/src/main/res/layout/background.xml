@@ -7,7 +7,7 @@
     android:padding="16dp"
     >
 
-    <!-- Ảnh nền -->
+
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/img_background"
         android:layout_width="match_parent"
@@ -19,7 +19,7 @@
         app:strokeColor="@android:color/white"
         app:strokeWidth="0dp" />
 
-    <!-- Chữ đè lên ảnh -->
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

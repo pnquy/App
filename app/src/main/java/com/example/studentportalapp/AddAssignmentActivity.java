@@ -28,7 +28,7 @@ public class AddAssignmentActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Ánh xạ các view
+
         toolbar = findViewById(R.id.toolbar_assignment);
         etAssignmentTitle = findViewById(R.id.et_assignment_title);
         etAssignmentInstructions = findViewById(R.id.et_assignment_instructions);
@@ -39,26 +39,26 @@ public class AddAssignmentActivity extends BaseActivity {
 
         myCalendar = Calendar.getInstance();
 
-        // 2. Xử lý nút "Close" (X) trên Toolbar
+
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                finish(); // Đóng Activity
+                finish();
             }
         });
 
-        // 3. Xử lý logic cho ô "Hạn nộp"
+
         DatePickerDialog.OnDateSetListener dateSetListener = new DatePickerDialog.OnDateSetListener() {
             @Override
             public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                 myCalendar.set(Calendar.YEAR, year);
                 myCalendar.set(Calendar.MONTH, month);
                 myCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                updateLabel(); // Cập nhật text cho EditText
+                updateLabel();
             }
         };
 
-        // Khi người dùng nhấn vào ô EditText "Hạn nộp"
+
         etAssignmentDueDate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -69,7 +69,7 @@ public class AddAssignmentActivity extends BaseActivity {
             }
         });
 
-        // 4. Xử lý nút "Giao bài"
+
         btnAssign.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -86,16 +86,15 @@ public class AddAssignmentActivity extends BaseActivity {
                     return;
                 }
 
-                // --- Logic của bạn để giao bài ---
-                // ...
 
-                // Tạm thời
+
+
                 Toast.makeText(AddAssignmentActivity.this, "Đã giao bài: " + title, Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
 
-        // 5. Xử lý nút đính kèm
+
         btnAttachFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -104,7 +103,7 @@ public class AddAssignmentActivity extends BaseActivity {
         });
     }
 
-    // Hàm helper để cập nhật text cho ô Hạn nộp
+
     private void updateLabel() {
         String myFormat = "dd/MM/yyyy"; // Định dạng ngày
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());

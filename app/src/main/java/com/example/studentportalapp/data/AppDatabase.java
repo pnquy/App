@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase;
                 GiaoVien.class,
                 HocVien.class
         },
-        version = 3, // tăng version lên (vì thay đổi cấu trúc)
+        version = 3,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

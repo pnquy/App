@@ -29,7 +29,7 @@ public class AddUserActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // spinner role
+
         String[] roles = {"GIAOVIEN", "HOCVIEN"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, roles);
         binding.spRole.setAdapter(adapter);
@@ -47,7 +47,7 @@ public class AddUserActivity extends AppCompatActivity {
             }
 
             executor.execute(() -> {
-                // 1) lưu TAIKHOAN
+
                 TaiKhoan tk = new TaiKhoan();
                 tk.MaTK = MaTK;
                 tk.HoTen = HoTen;
@@ -57,19 +57,19 @@ public class AddUserActivity extends AppCompatActivity {
 
                 db.taiKhoanDao().insert(tk);
 
-                // 2) nếu là giáo viên -> tạo record trong table GIAOVIEN
+
                 if (role.equals("GIAOVIEN")) {
                     GiaoVien gv = new GiaoVien();
-                    gv.MaGV = MaTK;     // chính là MaTK luôn
-                    gv.MaLH = "";       // để sau admin gán lớp
+                    gv.MaGV = MaTK;
+                    gv.MaLH = "";
                     db.giaoVienDao().insert(gv);
                 }
 
-                // 3) nếu là học viên -> tạo record trong table HOCVIEN
+
                 if (role.equals("HOCVIEN")) {
                     HocVien hv = new HocVien();
-                    hv.setMaHV(MaTK);     // chính là MaTK luôn
-                    hv.setMaLop("");      // để sau admin gán lớp
+                    hv.setMaHV(MaTK);
+                    hv.setMaLop("");
                     db.hocVienDao().insert(hv);
                 }
 
