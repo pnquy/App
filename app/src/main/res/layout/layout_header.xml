@@ -3,10 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Header dùng chung -->
     <include layout="@layout/header_layout" />
 
-    <!-- Nội dung riêng của từng Activity -->
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"

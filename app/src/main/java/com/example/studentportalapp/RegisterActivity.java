@@ -24,13 +24,13 @@ public class RegisterActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Chuyển sang màn hình Login
+
         binding.tvToLogin.setOnClickListener(v -> {
             Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
             startActivity(intent);
         });
 
-        // Xử lý khi nhấn nút Đăng ký
+
         binding.btnRegister.setOnClickListener(v -> {
             String email = binding.etRegEmail.getText().toString().trim();
             String password = binding.etRegPassword.getText().toString().trim();

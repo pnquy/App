@@ -12,7 +12,7 @@ public class AssignmentActivity extends BaseActivity {
 
     @Override
     protected int getLayoutResourceId() {
-        // Chỉ định layout riêng của activity này
+
         return R.layout.activity_assignment;
     }
 

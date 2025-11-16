@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#FDE0E0">
+    android:background="#FDE6ED">
 
-    <!-- Khu vực logo / background giống design -->
+
     <TextView
         android:id="@+id/tvAppTitle"
         android:layout_width="wrap_content"

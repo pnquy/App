@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFF"
+    android:background="#FFE6ED"
     android:padding="8dp">
 
     <LinearLayout
@@ -11,7 +11,7 @@
         android:orientation="vertical">
 
 
-        <!-- Banners -->
+
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="100dp"
@@ -34,7 +34,7 @@
             android:textStyle="bold"
             android:layout_marginTop="12dp" />
 
-        <!-- Courses -->
+
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="100dp"

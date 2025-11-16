@@ -5,12 +5,12 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:background="#F8F8F8"
+    android:background="#FFE6ED"
     tools:context=".CourseActivity">
     <include
         android:id="@+id/include_background"
         layout="@layout/background" />
-    <!-- BODY -->
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -23,7 +23,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Activity title -->
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -32,7 +32,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
-            <!-- RecyclerView -->
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvActivityCourse"
                 android:layout_width="match_parent"

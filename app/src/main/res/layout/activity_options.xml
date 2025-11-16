@@ -3,9 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFF5F5F5">
-
-    <!-- Header -->
+    android:background="#FFE6ED">
 
 
     <LinearLayout
@@ -15,7 +13,6 @@
         android:gravity="center_horizontal"
         android:padding="16dp">
 
-        <!-- Mission -->
         <TextView
             android:text="Mission"
             android:textStyle="bold"
@@ -31,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <!-- Vision -->
+
         <TextView
             android:text="Vision"
             android:textStyle="bold"
@@ -46,7 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <!-- Philosophy -->
+
         <TextView
             android:text="Philosophy"
             android:textStyle="bold"
@@ -63,7 +60,7 @@
     </LinearLayout>
 
 
-    <!-- Buttons -->
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -82,7 +79,7 @@
             android:id="@+id/tv_feedback"
             android:text="Write a Feedback"
             android:textSize="14sp"
-            android:textColor="#E91E63"
+            android:textColor="#CF7486"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
     </LinearLayout>
@@ -105,7 +102,7 @@
             android:id="@+id/tv_info"
             android:text="About"
             android:textSize="14sp"
-            android:textColor="#E91E63"
+            android:textColor="#CF7486"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
     </LinearLayout>
@@ -128,7 +125,7 @@
             android:id="@+id/tv_mail"
             android:text="Contact or Email Us"
             android:textSize="14sp"
-            android:textColor="#E91E63"
+            android:textColor="#CF7486"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>
     </LinearLayout>

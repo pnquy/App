@@ -3,20 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#FFF5F5F5">
+    android:background="#FFE6ED">
 
-    <!-- Header -->
-
-
-    <!-- Task List -->
     <TextView
         android:id="@+id/tv_task_count"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="6 Tasks To Do"
-        android:padding="10dp"
+        android:padding="20dp"
         android:textStyle="bold"
-        android:textColor="#000" />
+        android:textColor="#CF7486" />
 
     <ListView
         android:id="@+id/list_tasks"

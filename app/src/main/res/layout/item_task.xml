@@ -44,7 +44,7 @@
         <TextView
             android:id="@+id/tv_task_due"
             android:text="Due Tomorrow | Aug 6"
-            android:textColor="#E91E63"
+            android:textColor="#CF7486"
             android:textSize="12sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"/>

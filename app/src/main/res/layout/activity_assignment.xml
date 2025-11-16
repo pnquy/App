@@ -4,12 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8F8F8"
+    android:background="#FFE6ED"
     tools:context=".AssignmentActivity">
     <include
         android:id="@+id/include_background"
         layout="@layout/background" />
-    <!-- 🧾 BODY (Danh sách bài tập) -->
+
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -30,7 +30,7 @@
                 android:textStyle="bold"
                 android:layout_marginBottom="8dp" />
 
-            <!-- RecyclerView hiển thị bài tập -->
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewAssignments"
                 android:layout_width="match_parent"

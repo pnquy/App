@@ -4,12 +4,12 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#FFE6ED"
     tools:context=".PeopleActivity">
     <include
         android:id="@+id/include_background"
         layout="@layout/background" />
-    <!-- Nội dung cuộn -->
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -21,7 +21,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Tiêu đề -->
             <TextView
                 android:id="@+id/txtPeopleInClass"
                 android:layout_width="wrap_content"
@@ -32,7 +31,6 @@
                 android:textColor="@android:color/black"
                 android:layout_marginBottom="8dp" />
 
-            <!-- Card danh sách -->
             <LinearLayout
                 android:id="@+id/containerPeople"
                 android:layout_width="match_parent"
@@ -42,7 +40,6 @@
                 android:background="@drawable/bg_card_people"
                 android:layout_marginBottom="16dp">
 
-                <!-- Professors -->
                 <TextView
                     android:id="@+id/txtProfessors"
                     android:layout_width="wrap_content"
@@ -61,7 +58,6 @@
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_person" />
 
-                <!-- Students -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -101,7 +97,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Footer chung cho tất cả các trang -->
+
     <include layout="@layout/layout_footer" />
 
 </LinearLayout>
