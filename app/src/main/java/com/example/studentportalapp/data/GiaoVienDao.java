@@ -19,7 +19,7 @@ public interface GiaoVienDao {
     @Query("DELETE FROM GIAOVIEN WHERE MaGV = :maGV")
     void deleteByMaGV(String maGV);
 
-    // lấy list để show lên RecyclerView
+
     @Query("SELECT gv.MaGV AS MaGV, tk.HoTen AS HoTen, tk.Email AS Email " +
             "FROM GIAOVIEN gv " +
             "JOIN TAIKHOAN tk ON gv.MaGV = tk.MaTK")

@@ -18,10 +18,10 @@ public class LoginActivity extends AppCompatActivity {
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    // ============ HARD CODE ADMIN ============
+
     private final String ADMIN_EMAIL = "admin@gmail.com";
     private final String ADMIN_PASS  = "admin123";
-    // =========================================
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,7 +33,7 @@ public class LoginActivity extends AppCompatActivity {
 
 
 
-        // Xử lý khi nhấn nút Đăng nhập
+
         binding.btnLogin.setOnClickListener(v -> {
             String email = binding.etEmail.getText().toString().trim();
             String password = binding.etPassword.getText().toString().trim();
@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // ==== CHECK ADMIN FIRST ====
+
             if (email.equals(ADMIN_EMAIL) && password.equals(ADMIN_PASS)) {
                 Toast.makeText(LoginActivity.this, "Đăng nhập ADMIN thành công!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, AdminActivity.class);
@@ -51,7 +51,7 @@ public class LoginActivity extends AppCompatActivity {
                 finish();
                 return;
             }
-            // ===========================
+
 
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getByEmail(email);

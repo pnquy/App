@@ -19,13 +19,13 @@ public class AdminActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // click quản lý giáo viên
+
         binding.btnManageTeacher.setOnClickListener(v -> {
             Intent intent = new Intent(AdminActivity.this, TeacherManageActivity.class);
             startActivity(intent);
         });
 
-        // click quản lý học viên
+
         binding.btnManageStudent.setOnClickListener(v -> {
             Intent intent = new Intent(AdminActivity.this, StudentManageActivity.class);
             startActivity(intent);

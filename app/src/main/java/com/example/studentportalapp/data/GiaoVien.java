@@ -9,8 +9,8 @@ public class GiaoVien {
 
     @PrimaryKey
     @NonNull
-    public String MaGV; // vd: sử dụng luôn MaTK cho đồng bộ
+    public String MaGV;
 
-    public String MaTK; // foreign key tới TAIKHOAN.MaTK
-    public String MaLH; // mã lớp dạy, tạm thời có thể để trống
+    public String MaTK;
+    public String MaLH;
 }

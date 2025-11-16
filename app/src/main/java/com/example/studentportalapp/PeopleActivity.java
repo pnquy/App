@@ -13,7 +13,7 @@ public class PeopleActivity extends BaseActivity {
 
     @Override
     protected int getLayoutResourceId() {
-        // Chỉ định layout riêng của activity này
+
         return R.layout.activity_people;
     }
 
@@ -22,14 +22,13 @@ public class PeopleActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         //setContentView(R.layout.activity_people);
 
-        // Professors
         RecyclerView recyclerViewProfessors = findViewById(R.id.recyclerViewProfessors);
         recyclerViewProfessors.setLayoutManager(new LinearLayoutManager(this));
         List<Person> professors = new ArrayList<>();
         professors.add(new Person("James Gosling", "Professor"));
         recyclerViewProfessors.setAdapter(new PeopleAdapter(professors));
 
-        // Students
+
         RecyclerView recyclerViewStudents = findViewById(R.id.recyclerViewStudents);
         recyclerViewStudents.setLayoutManager(new LinearLayoutManager(this));
         List<Person> students = new ArrayList<>();

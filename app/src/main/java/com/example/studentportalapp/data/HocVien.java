@@ -8,11 +8,11 @@ import androidx.room.PrimaryKey;
 public class HocVien {
     @PrimaryKey
     @NonNull
-    private String MaHV; // VD: HV01
+    private String MaHV;
 
     private String HoTen;
     private String Email;
-    private String MaLop; // lớp đang học
+    private String MaLop;
 
     public String getMaHV() { return MaHV; }
     public void setMaHV(String maHV) { MaHV = maHV; }
