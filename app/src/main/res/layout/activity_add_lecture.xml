@@ -58,13 +58,13 @@
         app:icon="@drawable/ic_attach_file"
         style="@style/Widget.MaterialComponents.Button.TextButton" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_post_lecture"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:text="Đăng bài"
         android:textColor="#ffffff"
-        android:background="#c96e80"/>
+        app:backgroundTint="#c96e80"/>
 
 </LinearLayout>

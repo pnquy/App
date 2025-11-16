@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#fde0e0">
 
     <EditText
         android:id="@+id/etMaTK"
@@ -39,6 +40,7 @@
         android:id="@+id/btnCreate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tạo tài khoản"/>
+        android:text="Tạo tài khoản"
+        style="@style/StudentPortalButton"/>
 
 </LinearLayout>
