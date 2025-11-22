@@ -7,7 +7,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.studentportalapp.data.AppDatabase;
-import com.example.studentportalapp.data.TaiKhoan;
+import com.example.studentportalapp.data.Entity.TaiKhoan;
 import com.example.studentportalapp.databinding.ActivityLoginBinding;
 
 import java.util.concurrent.ExecutorService;

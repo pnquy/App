@@ -1,11 +1,14 @@
-package com.example.studentportalapp.data;
+package com.example.studentportalapp.data.Dao;
 
+import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
+
+import com.example.studentportalapp.data.Entity.HocVien;
 
 import java.util.List;
 
@@ -21,8 +24,10 @@ public interface HocVienDao {
     @Delete
     void delete(HocVien hv);
 
-    @Query("SELECT hv.MaHV AS MaHV, tk.HoTen AS HoTen, tk.Email AS Email " +
-            "FROM HOCVIEN hv " +
-            "JOIN TAIKHOAN tk ON hv.MaHV = tk.MaTK")
-    List<HocVien> getAll();
+    @Query("SELECT * FROM HOCVIEN")
+    LiveData<List<HocVien>> getAll();
+
+    @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id")
+    HocVien getById(String id);
 }
+

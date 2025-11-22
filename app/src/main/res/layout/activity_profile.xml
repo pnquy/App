@@ -340,5 +340,5 @@
             </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
-    </LinearLayout> <!-- ✅ Kết thúc LinearLayout gói tất cả -->
+    </LinearLayout>
 </ScrollView>

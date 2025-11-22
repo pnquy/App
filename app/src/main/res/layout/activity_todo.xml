@@ -8,7 +8,6 @@
     <!-- Header -->
 
 
-    <!-- Task List -->
     <TextView
         android:id="@+id/tv_task_count"
         android:layout_width="match_parent"

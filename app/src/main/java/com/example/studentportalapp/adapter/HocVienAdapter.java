@@ -11,7 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.R;
-import com.example.studentportalapp.data.HocVien;
+import com.example.studentportalapp.data.Entity.HocVien;
 
 import java.util.List;
 
@@ -42,9 +42,9 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         HocVien hv = hocVienList.get(position);
-        holder.tvTenHV.setText(hv.getHoTen());
+        holder.tvTenHV.setText(hv.getTenHV());
         holder.tvEmailHV.setText("Email: " + hv.getEmail());
-        holder.tvLopHV.setText("Lớp: " + hv.getMaLop());
+        holder.tvLopHV.setText("Lớp: " + hv.getMaLH());
 
         holder.btnEdit.setOnClickListener(v -> listener.onEdit(hv));
         holder.btnDelete.setOnClickListener(v -> listener.onDelete(hv));
