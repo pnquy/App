@@ -9,7 +9,7 @@
     app:cardCornerRadius="12dp"
     android:gravity="center_vertical">
 
-
+    <!-- Avatar -->
     <ImageView
         android:id="@+id/imgAvatar"
         android:layout_width="40dp"
@@ -19,7 +19,7 @@
         android:background="@drawable/bg_circle"
         android:scaleType="centerCrop" />
 
-
+    <!-- Thông tin -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

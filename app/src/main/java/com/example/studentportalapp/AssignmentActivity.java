@@ -25,27 +25,29 @@ public class AssignmentActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         //setContentView(R.layout.activity_assignment);
 
-
+        // --- Ẩn/Hiện và Xử lý Click FAB ---
+        // 1. Tìm nút FAB
         FloatingActionButton fabAddAssignment = findViewById(R.id.fab_add_assignment);
 
+        // 2. Lấy vai trò người dùng (Giả định)
         String userRole = getUserRoleFromLogin();
 
-
+        // 3. Ẩn/Hiện nút FAB dựa trên vai trò
         if (userRole.equals("teacher")) {
             fabAddAssignment.setVisibility(View.VISIBLE); // Hiện nút cho giáo viên
 
-
+            // 4. Gán sự kiện click cho FAB
             fabAddAssignment.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
+                    // Mở màn hình Thêm Bài Tập (AddAssignmentActivity)
                     Intent intent = new Intent(AssignmentActivity.this, AddAssignmentActivity.class);
                     startActivity(intent);
                 }
             });
 
         } else {
-            fabAddAssignment.setVisibility(View.GONE);
+            fabAddAssignment.setVisibility(View.GONE); // Ẩn nút đi với học viên
         }
 
 
@@ -64,10 +66,14 @@ public class AssignmentActivity extends BaseActivity {
 
     }
 
-
-
+    // --- Hàm giả định được thêm vào ---
+    // Cần thay thế hàm này bằng logic thật của bạn để lấy vai trò người dùng
     private String getUserRoleFromLogin() {
+        // Ví dụ: Lấy từ SharedPreferences
+        // SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
+        // return prefs.getString("USER_ROLE", "student"); // "student" là giá trị mặc định
 
+        // Tạm thời trả về "teacher" để bạn kiểm tra nút FAB
         return "teacher";
     }
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <!-- Style để bo góc trên cho ảnh -->
     <style name="TopRoundedImage">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSizeTopLeft">12dp</item>

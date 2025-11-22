@@ -1,4 +1,4 @@
-package com.example.studentportalapp.data;
+package com.example.studentportalapp.data.Entity;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
@@ -15,19 +15,15 @@ public class TaiKhoan {
     public String Email;
     public String MatKhau;
     public String VaiTro;
-
     public String getMaTK() { return MaTK; }
-    public void setMaTK(String maTK) { MaTK = maTK; }
-
     public String getHoTen() { return HoTen; }
-    public void setHoTen(String hoTen) { HoTen = hoTen; }
-
     public String getEmail() { return Email; }
-    public void setEmail(String email) { Email = email; }
-
     public String getMatKhau() { return MatKhau; }
-    public void setMatKhau(String matKhau) { MatKhau = matKhau; }
-
     public String getVaiTro() { return VaiTro; }
+
+    public void setMaTK(String maTK) { MaTK = maTK; }
+    public void setHoTen(String hoTen) { HoTen = hoTen; }
+    public void setEmail(String email) { Email = email; }
+    public void setMatKhau(String matKhau) { MatKhau = matKhau; }
     public void setVaiTro(String vaiTro) { VaiTro = vaiTro; }
 }

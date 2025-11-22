@@ -5,6 +5,6 @@
         <size
             android:width="64dp"
             android:height="64dp" />
-        <solid android:color="#E0E0E0" />
+        <solid android:color="#E0E0E0" />  <!-- màu nền xám nhạt, bạn có thể đổi -->
     </shape>
 </selector>

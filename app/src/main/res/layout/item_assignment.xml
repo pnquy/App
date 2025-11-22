@@ -72,7 +72,6 @@
             android:layout_marginTop="4dp"
             android:textColor="@color/darker_gray" />
 
-
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

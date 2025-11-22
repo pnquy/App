@@ -5,19 +5,19 @@
     android:layout_height="match_parent"
     android:background="#F9F9F9">
 
-
+    <!-- Tất cả nội dung được gói trong 1 LinearLayout -->
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#F5F5F5">
 
-
+        <!-- Ảnh bìa + Header -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="200dp">
 
-
+            <!-- Ảnh bìa -->
             <ImageView
                 android:id="@+id/imgCover"
                 android:layout_width="match_parent"
@@ -25,7 +25,7 @@
                 android:scaleType="centerCrop"
                 android:src="@android:drawable/sym_def_app_icon" />
 
-
+            <!-- Header -->
             <LinearLayout
                 android:id="@+id/headerLayout"
                 android:layout_width="match_parent"
@@ -36,7 +36,7 @@
                 android:paddingHorizontal="16dp"
                 android:background="#80000000">
 
-
+                <!-- Avatar -->
                 <ImageView
                     android:id="@+id/imgAvatar"
                     android:layout_width="40dp"
@@ -47,7 +47,7 @@
                     android:background="@drawable/circle_bg"
                     android:contentDescription="@string/avatar_desc" />
 
-
+                <!-- Tiêu đề -->
                 <TextView
                     android:id="@+id/tvTitle"
                     android:layout_width="wrap_content"
@@ -58,7 +58,7 @@
                     android:textSize="16sp"
                     android:layout_marginStart="8dp" />
 
-
+                <!-- Nút bên phải -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
@@ -96,7 +96,7 @@
             </LinearLayout>
         </FrameLayout>
 
-
+        <!-- Thẻ trắng thông tin cơ bản -->
         <LinearLayout
             android:id="@+id/infoCard"
             android:layout_width="match_parent"
@@ -106,10 +106,10 @@
             android:background="#FFFFFF"
             android:elevation="4dp"
             android:padding="20dp">
-
+            <!-- Thông tin người dùng... -->
         </LinearLayout>
 
-
+        <!-- Thông tin chi tiết -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -126,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:padding="20dp">
 
-
+            <!-- Student No -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -146,7 +146,7 @@
                     android:layout_marginEnd="10dp"/>
             </LinearLayout>
 
-
+            <!-- Course -->
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
@@ -180,7 +180,7 @@
                 android:layout_marginTop="12dp"
                 android:layout_marginBottom="8dp" />
 
-
+            <!-- Year & Sec -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -199,7 +199,7 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
-
+            <!-- Email -->
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
@@ -228,7 +228,7 @@
                     android:scrollHorizontally="false" />
             </LinearLayout>
 
-
+            <!-- Birthdate -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -247,7 +247,7 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
-
+            <!-- Gender -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -272,7 +272,7 @@
                 android:background="#E0E0E0"
                 android:layout_marginVertical="10dp" />
 
-
+            <!-- Nationality -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -291,7 +291,7 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
-
+            <!-- Contact -->
             <LinearLayout
                 android:orientation="horizontal"
                 android:layout_width="match_parent"
@@ -310,7 +310,7 @@
                     android:layout_height="wrap_content" />
             </LinearLayout>
 
-
+            <!-- Address -->
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"

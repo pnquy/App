@@ -61,7 +61,7 @@
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_person" />
 
-                <!-- Students -->
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -100,7 +100,6 @@
 
         </LinearLayout>
     </ScrollView>
-
 
     <include layout="@layout/layout_footer" />
 

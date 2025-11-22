@@ -26,20 +26,20 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        // Gắn layout chung có header
         setContentView(R.layout.activity_base);
 
-
+        // Lấy FrameLayout (nơi sẽ chèn nội dung của từng activity)
         FrameLayout contentFrame = findViewById(R.id.content_frame);
 
-
+        // Inflate layout riêng của từng activity vào khung nội dung
         LayoutInflater.from(this).inflate(getLayoutResourceId(), contentFrame, true);
         setupHeaderMenu();
         setupFooterNavigation();
         setupHeader();
     }
     private void setupHeader() {
-
+        // 1️⃣ Menu avatar
         ImageView avatar = findViewById(R.id.avatar);
         if (avatar != null) {
             avatar.setOnClickListener(view -> {
@@ -50,20 +50,20 @@ public abstract class BaseActivity extends AppCompatActivity {
             });
         }
 
-
+        // 2️⃣ Icon Tick (Task List Popup)
         ImageView icCheck = findViewById(R.id.tickIcon);
         if (icCheck != null) {
             icCheck.setOnClickListener(v -> showTaskPopup(v));
         }
 
-
+        // 3️⃣ Icon Notification
         ImageView icBell = findViewById(R.id.notificationIcon);
         if (icBell != null) {
             icBell.setOnClickListener(v -> showPopupLayout(v, R.layout.popup_noti));
         }
     }
 
-
+    /** Popup danh sách Task **/
     private void showTaskPopup(View anchor) {
         View popupView = getLayoutInflater().inflate(R.layout.popup_task, null);
 
@@ -74,7 +74,7 @@ public abstract class BaseActivity extends AppCompatActivity {
                 true
         );
 
-
+        // Gán dữ liệu mẫu cho ListView trong popup_task.xml
         ListView popupList = popupView.findViewById(R.id.list_tasks_popup);
         List<Task> tasks = new ArrayList<>();
         tasks.add(new Task("Task 5 - Group Work", "Programming Language", "Due Tomorrow | Aug 6"));
@@ -92,7 +92,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         popupWindow.setFocusable(true);
     }
 
-
+    /** Popup thông báo hoặc layout tuỳ chọn **/
     private void showPopupLayout(View anchorView, int layoutId) {
         View popupView = LayoutInflater.from(this).inflate(layoutId, null);
 
@@ -111,7 +111,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
 
 
-
+    /** ---------------- HEADER ---------------- **/
     private void setupHeaderMenu() {
         ImageView avatar = findViewById(R.id.avatar); // ID trong header_layout.xml
         if (avatar != null) {
@@ -150,7 +150,7 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         } else if (id == R.id.menu_logout) {
             Toast.makeText(this, "Logging out...", Toast.LENGTH_SHORT).show();
-
+            // Ví dụ: chuyển về LoginActivity
             Intent intent = new Intent(this, LoginActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
@@ -161,7 +161,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         return false;
     }
 
-
+    /** ---------------- FOOTER ---------------- **/
     private void setupFooterNavigation() {
         LinearLayout navCourse = findViewById(R.id.nav_course);
         LinearLayout navAssignment = findViewById(R.id.nav_assignment);

@@ -8,7 +8,7 @@
     android:padding="12dp"
     android:elevation="8dp">
 
-
+    <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -38,7 +38,7 @@
         android:layout_height="1dp"
         android:background="#e0e0e0" />
 
-
+    <!-- Danh sách các task -->
     <ListView
         android:id="@+id/list_tasks_popup"
         android:layout_width="match_parent"

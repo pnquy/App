@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.adapter.HocVienAdapter;
 import com.example.studentportalapp.data.AppDatabase;
-import com.example.studentportalapp.data.HocVien;
+import com.example.studentportalapp.data.Entity.HocVien;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,15 +51,15 @@ public class StudentManageActivity extends AppCompatActivity {
 
     private void loadHocVien() {
         executor.execute(() -> {
-            hocVienList = db.hocVienDao().getAll();
+            hocVienList = db.hocVienDao().getAll().getValue();
             runOnUiThread(() -> {
                 adapter = new HocVienAdapter(this, hocVienList, new HocVienAdapter.OnItemClickListener() {
                     @Override
                     public void onEdit(HocVien hv) {
                         etMaHV.setText(hv.getMaHV());
-                        etTenHV.setText(hv.getHoTen());
+                        etTenHV.setText(hv.getTenHV());
                         etEmailHV.setText(hv.getEmail());
-                        etLopHV.setText(hv.getMaLop());
+                        etLopHV.setText(hv.getMaLH());
 
                         executor.execute(() -> {
                             db.hocVienDao().update(hv);

@@ -5,7 +5,7 @@
     android:padding="24dp"
     android:background="#FDE0E0">
 
-
+    <!-- Khu vực logo / background giống design -->
     <TextView
         android:id="@+id/tvAppTitle"
         android:layout_width="wrap_content"

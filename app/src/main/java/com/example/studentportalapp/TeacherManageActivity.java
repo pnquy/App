@@ -11,7 +11,7 @@ import com.example.studentportalapp.adapter.TeacherAdapter;
 import com.example.studentportalapp.data.TeacherItem;
 import com.example.studentportalapp.databinding.ActivityTeacherManageBinding;
 import com.example.studentportalapp.data.AppDatabase;
-import com.example.studentportalapp.data.GiaoVien;
+import com.example.studentportalapp.data.Entity.GiaoVien;
 
 import java.util.ArrayList;
 import java.util.List;
