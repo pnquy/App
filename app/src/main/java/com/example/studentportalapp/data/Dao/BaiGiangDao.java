@@ -29,5 +29,8 @@ public interface BaiGiangDao {
 
     @Query("SELECT * FROM BAIGIANG")
     LiveData<List<BaiGiang>> getAll();
+
+    @Query("SELECT * FROM BAIGIANG WHERE MaBG = :maBG")
+    LiveData<BaiGiang> getById(String maBG);
 }
 

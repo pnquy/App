@@ -28,6 +28,6 @@ public interface HocVienDao {
     LiveData<List<HocVien>> getAll();
 
     @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id")
-    HocVien getById(String id);
+    LiveData<HocVien> getById(String id);
 }
 

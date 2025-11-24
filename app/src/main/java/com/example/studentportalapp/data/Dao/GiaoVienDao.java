@@ -29,7 +29,7 @@ public interface GiaoVienDao {
     LiveData<List<GiaoVien>> getAll();
 
     @Query("SELECT * FROM GIAOVIEN WHERE MaGV = :id")
-    GiaoVien getById(String id);
+    LiveData<GiaoVien> getById(String id);
 
     @Query("SELECT MaGV, TenGV AS HoTen, Email FROM GIAOVIEN")
     List<TeacherItem> getAllTeacherItems();

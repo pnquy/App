@@ -28,6 +28,6 @@ public interface LopHocDao {
     LiveData<List<LopHoc>> getAll();
 
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :id")
-    LopHoc getById(String id);
+    LiveData<LopHoc> getById(String id);
 }
 
