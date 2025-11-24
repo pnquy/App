@@ -76,21 +76,25 @@ public class AddUserActivity extends AppCompatActivity {
                 if (role.equals("GIAOVIEN")) {
                     GiaoVien gv = new GiaoVien();
                     gv.setMaGV(MaTK);
-                    gv.setMaLH(""); // Admin gán lớp sau
-                    db.giaoVienDao().insert(gv);
-                }
-
-                // 3) nếu là học viên -> tạo record trong HOCVIEN
-                if (role.equals("GIAOVIEN")) {
-                    GiaoVien gv = new GiaoVien();
-                    gv.setMaGV(MaTK);
                     gv.setMaTK(MaTK);
                     gv.setTenGV(HoTen);
                     gv.setEmail(Email);
                     gv.setMaLH(null);   // không có lớp lúc tạo
                     db.giaoVienDao().insert(gv);
-
                 }
+
+                // 3) nếu là học viên -> tạo record trong HOCVIEN
+                if (role.equals("HOCVIEN")) {  
+                    HocVien hv = new HocVien();
+                    hv.setMaHV(MaTK);
+                    hv.setMaTK(MaTK);
+                    hv.setTenHV(HoTen);
+                    hv.setEmail(Email);
+                    hv.setMaLH(null);   // không có lớp lúc tạo
+                    db.hocVienDao().insert(hv);
+                }
+
+
 
                 runOnUiThread(() -> {
                     Toast.makeText(AddUserActivity.this, "Tạo tài khoản thành công!", Toast.LENGTH_SHORT).show();
