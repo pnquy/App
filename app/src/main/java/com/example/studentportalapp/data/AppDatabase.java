@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
                 BaiTap.class,
                 Diem.class
         },
-        version = 2,
+        version = 4,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

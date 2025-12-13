@@ -31,7 +31,6 @@ public class HocVien {
     private String TenHV;
     private String Email;
 
-    @NonNull
     private String MaLH;
 
     @NonNull

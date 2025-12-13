@@ -26,7 +26,8 @@ public interface HocVienDao {
 
     @Query("SELECT * FROM HOCVIEN")
     LiveData<List<HocVien>> getAll();
-
+    @Query("SELECT COUNT(*) FROM HOCVIEN WHERE MaLH = :maLH")
+    int countStudentsByClass(String maLH);
     @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id")
     LiveData<HocVien> getById(String id);
 }

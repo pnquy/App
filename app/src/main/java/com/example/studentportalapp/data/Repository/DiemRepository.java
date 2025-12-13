@@ -25,6 +25,6 @@ public class DiemRepository {
     }
 
     public List<Diem> getAll() {
-        return diemDao.getAll();
+        return diemDao.getAll().getValue();
     }
 }

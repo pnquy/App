@@ -30,5 +30,9 @@ public class AdminActivity extends AppCompatActivity {
             Intent intent = new Intent(AdminActivity.this, StudentManageActivity.class);
             startActivity(intent);
         });
+
+        binding.btnManageClass.setOnClickListener(v -> {
+            startActivity(new Intent(AdminActivity.this, ClassManageActivity.class));
+        });
     }
 }

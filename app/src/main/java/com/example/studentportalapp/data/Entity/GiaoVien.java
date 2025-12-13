@@ -14,12 +14,6 @@ import androidx.room.PrimaryKey;
                         childColumns = "MaTK",
                         onDelete = ForeignKey.CASCADE
                 ),
-                @ForeignKey(
-                        entity = LopHoc.class,
-                        parentColumns = "MaLH",
-                        childColumns = "MaLH",
-                        onDelete = ForeignKey.CASCADE
-                )
         }
 )
 public class GiaoVien {

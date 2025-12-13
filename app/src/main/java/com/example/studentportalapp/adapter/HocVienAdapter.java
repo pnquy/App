@@ -52,6 +52,9 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 
     @Override
     public int getItemCount() {
+        if (hocVienList == null) {
+            return 0;
+        }
         return hocVienList.size();
     }
 

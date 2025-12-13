@@ -21,6 +21,12 @@
         android:text="Quản lý Học viên"
         style="@style/StudentPortalButton"/>
     <Button
+        android:id="@+id/btnManageClass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Quản lý Lớp học"
+        style="@style/StudentPortalButton"/>
+    <Button
         android:id="@+id/btnCreateAccount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
