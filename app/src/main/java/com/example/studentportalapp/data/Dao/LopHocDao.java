@@ -27,7 +27,12 @@ public interface LopHocDao {
     @Query("SELECT * FROM LOPHOC")
     LiveData<List<LopHoc>> getAll();
 
-    @Query("SELECT * FROM LOPHOC WHERE MaLH = :id")
-    LiveData<LopHoc> getById(String id);
+    @Query("SELECT COUNT(*) FROM LOPHOC WHERE MaGV = :maGV")
+    int countClassesByTeacher(String maGV);
+
+    @Query("SELECT TenLH FROM LOPHOC WHERE MaGV = :maGV")
+    List<String> getClassNamesByTeacher(String maGV);
+    @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
+    LopHoc getById(String maLH);
 }
 

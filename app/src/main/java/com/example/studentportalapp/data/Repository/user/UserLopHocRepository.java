@@ -18,7 +18,7 @@ public class UserLopHocRepository {
         lopHocDao = AppDatabase.getDatabase(app).lopHocDao();
     }
 
-    public LiveData<LopHoc> getLopHocById(String id) {
+    public LopHoc getLopHocById(String id) {
         return lopHocDao.getById(id);
     }
 
