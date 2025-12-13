@@ -8,12 +8,7 @@ import androidx.room.PrimaryKey;
 @Entity(
         tableName = "HOCVIEN",
         foreignKeys = {
-                @ForeignKey(
-                        entity = LopHoc.class,
-                        parentColumns = "MaLH",
-                        childColumns = "MaLH",
-                        onDelete = ForeignKey.CASCADE
-                ),
+
                 @ForeignKey(
                         entity = TaiKhoan.class,
                         parentColumns = "MaTK",
@@ -31,7 +26,6 @@ public class HocVien {
     private String TenHV;
     private String Email;
 
-    private String MaLH;
 
     @NonNull
     private String MaTK;
@@ -44,8 +38,7 @@ public class HocVien {
 
     public String getEmail() { return Email; }
 
-    @NonNull
-    public String getMaLH() { return MaLH; }
+
 
     @NonNull
     public String getMaTK() { return MaTK; }
@@ -56,7 +49,6 @@ public class HocVien {
 
     public void setEmail(String email) { this.Email = email; }
 
-    public void setMaLH(@NonNull String maLH) { this.MaLH = maLH; }
 
     public void setMaTK(@NonNull String maTK) { this.MaTK = maTK; }
 }

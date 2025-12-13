@@ -9,50 +9,57 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cập Nhật Học Viên"
+        android:text="Cập Nhật Thông Tin"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="#c96e80"
         android:gravity="center"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="20dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="16dp"
+        android:hint="Họ và tên"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEditTenHV"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Họ và tên" />
+            android:layout_height="wrap_content" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="16dp"
+        android:hint="Email"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEditEmailHV"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Email"
             android:inputType="textEmailAddress"/>
     </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lớp hiện tại (Không thể sửa tại đây):"
+        android:textColor="#777"
+        android:textSize="12sp"
+        android:layout_marginBottom="4dp"/>
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
+        style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etEditLopHV"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mã Lớp (MaLH)" />
+            android:enabled="false"
+            android:textColor="#555"
+            android:background="#E0E0E0"/>
     </com.google.android.material.textfield.TextInputLayout>
 
 </LinearLayout>

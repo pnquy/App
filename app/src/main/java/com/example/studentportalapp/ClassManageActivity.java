@@ -16,7 +16,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.ClassAdapter;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.GiaoVien;
+import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.ThamGia;
+
 import com.example.studentportalapp.data.TeacherItem;
 import com.example.studentportalapp.model.ClassDisplayItem;
 import com.google.android.material.textfield.TextInputEditText;
@@ -80,7 +83,7 @@ public class ClassManageActivity extends AppCompatActivity {
                         }
                     }
                     // 2. Đếm sĩ số
-                    int count = db.hocVienDao().countStudentsByClass(lh.MaLH);
+                    int count = db.thamGiaDao().countStudentsByClass(lh.MaLH);
 
                     displayList.add(new ClassDisplayItem(lh, tenGV, count));
                 }
@@ -200,12 +203,82 @@ public class ClassManageActivity extends AppCompatActivity {
     }
 
     // Dialog thêm nhanh học viên vào lớp (Logic nút +)
+    // Hàm mới: Chọn nhiều học viên từ danh sách
+// 1. Hàm hiển thị Dialog chọn học viên (Logic Đa lớp)
     private void showAddStudentToClassDialog(LopHoc lh) {
-        // Logic này bạn có thể tái sử dụng dialog tạo học viên,
-        // nhưng set cứng MaLH = lh.MaLH và ẩn ô nhập MaLH đi.
-        Toast.makeText(this, "Tính năng thêm nhanh HV vào lớp " + lh.MaLH, Toast.LENGTH_SHORT).show();
+        executor.execute(() -> {
+            // Lấy tất cả học viên
+            List<HocVien> allStudents = db.hocVienDao().getAllSync();
+
+            // Lấy danh sách ID học viên ĐANG ở trong lớp này (từ bảng THAMGIA)
+            List<String> enrolledStudentIds = db.thamGiaDao().getStudentIdsByClass(lh.MaLH);
+
+            String[] studentNames = new String[allStudents.size()];
+            boolean[] checkedItems = new boolean[allStudents.size()];
+
+            // List lưu ID những người được chọn
+            List<String> selectedIds = new ArrayList<>();
+
+            for (int i = 0; i < allStudents.size(); i++) {
+                HocVien hv = allStudents.get(i);
+                studentNames[i] = hv.getMaHV() + " - " + hv.getTenHV();
+
+                // Kiểm tra xem HV này có trong list enrolled không
+                if (enrolledStudentIds.contains(hv.getMaHV())) {
+                    checkedItems[i] = true; // Đánh dấu đã chọn
+                    selectedIds.add(hv.getMaHV());
+                } else {
+                    checkedItems[i] = false;
+                }
+            }
+
+            runOnUiThread(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Chọn học viên vào lớp " + lh.TenLH);
+
+                builder.setMultiChoiceItems(studentNames, checkedItems, (dialog, which, isChecked) -> {
+                    String hvID = allStudents.get(which).getMaHV();
+                    if (isChecked) {
+                        selectedIds.add(hvID);
+                    } else {
+                        selectedIds.remove(hvID);
+                    }
+                });
+
+                builder.setPositiveButton("Lưu", (dialog, which) -> {
+                    // Gọi hàm lưu (truyền danh sách ID hiện tại và danh sách ID mới chọn)
+                    saveStudentClassChanges(lh, enrolledStudentIds, selectedIds);
+                });
+
+                builder.setNegativeButton("Hủy", null);
+                builder.show();
+            });
+        });
     }
 
+    // 2. Hàm lưu thay đổi vào bảng THAMGIA
+    private void saveStudentClassChanges(LopHoc currentClass, List<String> oldIds, List<String> newIds) {
+        executor.execute(() -> {
+            // A. Tìm những người MỚI được tích -> Thêm vào bảng THAMGIA
+            for (String newId : newIds) {
+                if (!oldIds.contains(newId)) {
+                    db.thamGiaDao().insert(new com.example.studentportalapp.data.Entity.ThamGia(newId, currentClass.MaLH));
+                }
+            }
+
+            // B. Tìm những người BỊ BỎ tích -> Xóa khỏi bảng THAMGIA
+            for (String oldId : oldIds) {
+                if (!newIds.contains(oldId)) {
+                    db.thamGiaDao().removeStudentFromClass(oldId, currentClass.MaLH);
+                }
+            }
+
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Đã cập nhật danh sách lớp!", Toast.LENGTH_SHORT).show();
+                loadClasses(); // Load lại để cập nhật sĩ số
+            });
+        });
+    }
     private void showDeleteConfirm(LopHoc lh) {
         new AlertDialog.Builder(this)
                 .setTitle("Cảnh báo")

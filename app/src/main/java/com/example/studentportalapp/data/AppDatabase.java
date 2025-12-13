@@ -13,12 +13,14 @@ import com.example.studentportalapp.data.Dao.DiemDao;
 import com.example.studentportalapp.data.Dao.HocVienDao;
 import com.example.studentportalapp.data.Dao.LopHocDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
+import com.example.studentportalapp.data.Dao.ThamGiaDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.GiaoVien;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
 
 import java.util.concurrent.ExecutorService;
@@ -32,9 +34,10 @@ import java.util.concurrent.Executors;
                 LopHoc.class,
                 BaiGiang.class,
                 BaiTap.class,
+                ThamGia.class,
                 Diem.class
         },
-        version = 4,
+        version = 5,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -59,7 +62,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract BaiGiangDao baiGiangDao();
     public abstract BaiTapDao baiTapDao();
     public abstract DiemDao diemDao();
-
+    public abstract ThamGiaDao thamGiaDao();
 
     // ===========================
     //      GET DATABASE INSTANCE

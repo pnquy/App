@@ -47,65 +47,107 @@ public class StudentManageActivity extends AppCompatActivity {
         loadHocVien();
     }
 
+    // Thay thế toàn bộ hàm loadHocVien() cũ bằng đoạn này:
     private void loadHocVien() {
-        // Sử dụng observe để lắng nghe thay đổi từ Database
-        db.hocVienDao().getAll().observe(this, list -> {
-            // Cập nhật danh sách mới
-            hocVienList = list;
+        // Quan sát danh sách học viên
+        db.hocVienDao().getAll().observe(this, listHV -> {
 
-            // Nếu danh sách null thì gán rỗng để tránh lỗi
-            if (hocVienList == null) hocVienList = new ArrayList<>();
+            // Chạy background để lấy thông tin lớp cho từng học viên
+            executor.execute(() -> {
+                List<com.example.studentportalapp.model.StudentItem> displayList = new ArrayList<>();
 
-            // Khởi tạo Adapter
-            adapter = new HocVienAdapter(this, hocVienList, new HocVienAdapter.OnItemClickListener() {
-                @Override
-                public void onEdit(HocVien hv) {
-                    showEditDialog(hv);
+                if (listHV != null) {
+                    for (HocVien hv : listHV) {
+                        // 1. Tìm các lớp học viên này tham gia
+                        List<String> classIds = db.thamGiaDao().getClassIdsByStudent(hv.getMaHV());
+
+                        // 2. Nối thành chuỗi (VD: "CNTT1, CNTT2")
+                        String classNames = "";
+                        if (classIds != null && !classIds.isEmpty()) {
+                            StringBuilder sb = new StringBuilder();
+                            for (int i = 0; i < classIds.size(); i++) {
+                                sb.append(classIds.get(i));
+                                if (i < classIds.size() - 1) sb.append(", ");
+                            }
+                            classNames = sb.toString();
+                        }
+
+                        // 3. Tạo item hiển thị
+                        displayList.add(new com.example.studentportalapp.model.StudentItem(hv, classNames));
+                    }
                 }
 
-                @Override
-                public void onDelete(HocVien hv) {
-                    showDeleteConfirmDialog(hv);
-                }
+                // 4. Cập nhật UI
+                runOnUiThread(() -> {
+                    adapter = new HocVienAdapter(this, displayList, new HocVienAdapter.OnItemClickListener() {
+                        @Override
+                        public void onEdit(HocVien hv) {
+                            showEditDialog(hv);
+                        }
+
+                        @Override
+                        public void onDelete(HocVien hv) {
+                            showDeleteConfirmDialog(hv);
+                        }
+                    });
+                    recyclerView.setAdapter(adapter);
+                });
             });
-            recyclerView.setAdapter(adapter);
         });
     }
 
-    // ================== CÁC HÀM DIALOG (Dùng XML riêng) ==================
+    // ================== CÁC HÀM DIALOG ĐÃ SỬA ==================
 
     private void showEditDialog(HocVien hv) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // 1. Nạp layout từ file dialog_edit_student.xml
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_edit_student, null);
 
-        // 2. Ánh xạ các View trong Dialog
-        // Lưu ý: Dùng TextInputEditText vì trong XML bạn dùng TextInputLayout
         TextInputEditText etTen = view.findViewById(R.id.etEditTenHV);
         TextInputEditText etEmail = view.findViewById(R.id.etEditEmailHV);
         TextInputEditText etLop = view.findViewById(R.id.etEditLopHV);
 
-        // 3. Đổ dữ liệu cũ vào các ô
+        // Đổ dữ liệu Tên & Email (Có sẵn trong object)
         if (hv.getTenHV() != null) etTen.setText(hv.getTenHV());
         if (hv.getEmail() != null) etEmail.setText(hv.getEmail());
-        if (hv.getMaLH() != null) etLop.setText(hv.getMaLH());
+
+        // --- PHẦN SỬA ĐỔI QUAN TRỌNG ---
+        // Vì MaLH không còn trong HocVien, ta phải query từ bảng THAMGIA
+        etLop.setText("Đang tải danh sách lớp...");
+        etLop.setEnabled(false); // Khóa không cho sửa
+        etLop.setFocusable(false);
+
+        executor.execute(() -> {
+            // Lấy danh sách các mã lớp mà học viên này tham gia
+            List<String> classes = db.thamGiaDao().getClassIdsByStudent(hv.getMaHV());
+
+            // Chuyển danh sách thành chuỗi (Ví dụ: "LH01, LH02")
+            String displayStr;
+            if (classes == null || classes.isEmpty()) {
+                displayStr = "Chưa tham gia lớp nào";
+            } else {
+                // Nối các mã lớp lại với nhau bằng dấu phẩy
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < classes.size(); i++) {
+                    sb.append(classes.get(i));
+                    if (i < classes.size() - 1) sb.append(", ");
+                }
+                displayStr = sb.toString();
+            }
+
+            // Cập nhật lên giao diện (phải dùng runOnUiThread)
+            runOnUiThread(() -> etLop.setText(displayStr));
+        });
+        // --------------------------------
 
         builder.setView(view);
 
-        // 4. Xử lý nút Lưu
-        builder.setPositiveButton("Lưu thay đổi", (dialog, which) -> {
-            // Lấy dữ liệu mới
+        builder.setPositiveButton("Lưu thông tin", (dialog, which) -> {
             String newTen = etTen.getText() != null ? etTen.getText().toString().trim() : "";
             String newEmail = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
-            String newLop = etLop.getText() != null ? etLop.getText().toString().trim() : "";
 
-            // Cập nhật object
             hv.setTenHV(newTen);
             hv.setEmail(newEmail);
-            hv.setMaLH(newLop);
 
-            // Lưu vào Database (chạy nền)
             executor.execute(() -> {
                 db.hocVienDao().update(hv);
                 runOnUiThread(() ->
@@ -115,24 +157,21 @@ public class StudentManageActivity extends AppCompatActivity {
         });
 
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
-
         AlertDialog dialog = builder.create();
         dialog.show();
     }
 
     private void showDeleteConfirmDialog(HocVien hv) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-        // 1. Nạp layout từ file dialog_confirm_delete.xml
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirm_delete, null);
 
-        // 2. Ánh xạ TextView để set thông báo
         TextView tvMessage = view.findViewById(R.id.tvConfirmMessage);
-        tvMessage.setText("Bạn có chắc muốn xóa học viên " + hv.getTenHV() + " khỏi lớp " + hv.getMaLH() + "?");
+
+        // Sửa câu thông báo: Bỏ phần "khỏi lớp..." vì học viên không còn gắn cứng với 1 lớp
+        tvMessage.setText("Bạn có chắc muốn xóa học viên " + hv.getTenHV() + " khỏi hệ thống? (Học viên sẽ bị xóa khỏi tất cả các lớp)");
 
         builder.setView(view);
 
-        // 3. Xử lý nút Xóa
         builder.setPositiveButton("Xóa ngay", (dialog, which) -> {
             executor.execute(() -> {
                 db.hocVienDao().delete(hv);
@@ -143,7 +182,6 @@ public class StudentManageActivity extends AppCompatActivity {
         });
 
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
-
         AlertDialog dialog = builder.create();
         dialog.show();
     }

@@ -11,24 +11,24 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.R;
-import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.model.StudentItem; // Nhớ import file vừa tạo
 
 import java.util.List;
 
 public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHolder> {
 
-    private final List<HocVien> hocVienList;
-    private final Context context;
-    private final OnItemClickListener listener;
+    private Context context;
+    private List<StudentItem> list; // Đổi từ HocVien sang StudentItem
+    private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onEdit(HocVien hv);
-        void onDelete(HocVien hv);
+        void onEdit(com.example.studentportalapp.data.Entity.HocVien hv);
+        void onDelete(com.example.studentportalapp.data.Entity.HocVien hv);
     }
 
-    public HocVienAdapter(Context context, List<HocVien> list, OnItemClickListener listener) {
+    public HocVienAdapter(Context context, List<StudentItem> list, OnItemClickListener listener) {
         this.context = context;
-        this.hocVienList = list;
+        this.list = list;
         this.listener = listener;
     }
 
@@ -41,32 +41,39 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        HocVien hv = hocVienList.get(position);
-        holder.tvTenHV.setText(hv.getTenHV());
-        holder.tvEmailHV.setText("Email: " + hv.getEmail());
-        holder.tvLopHV.setText("Lớp: " + hv.getMaLH());
+        StudentItem item = list.get(position);
 
-        holder.btnEdit.setOnClickListener(v -> listener.onEdit(hv));
-        holder.btnDelete.setOnClickListener(v -> listener.onDelete(hv));
+        // Hiển thị thông tin
+        holder.tvTen.setText(item.hocVien.getTenHV());
+        holder.tvEmail.setText(item.hocVien.getEmail());
+
+        // Hiển thị danh sách lớp (Lấy từ biến classNames đã chuẩn bị sẵn)
+        if (item.classNames == null || item.classNames.isEmpty()) {
+            holder.tvLop.setText("Lớp: Chưa xếp lớp");
+        } else {
+            holder.tvLop.setText("Lớp: " + item.classNames);
+        }
+
+        // Sự kiện click
+        holder.btnEdit.setOnClickListener(v -> listener.onEdit(item.hocVien));
+        holder.btnDelete.setOnClickListener(v -> listener.onDelete(item.hocVien));
     }
 
     @Override
     public int getItemCount() {
-        if (hocVienList == null) {
-            return 0;
-        }
-        return hocVienList.size();
+        return list == null ? 0 : list.size();
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTenHV, tvEmailHV, tvLopHV;
+        TextView tvTen, tvEmail, tvLop;
         Button btnEdit, btnDelete;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvTenHV = itemView.findViewById(R.id.tvHoTenHV);
-            tvEmailHV = itemView.findViewById(R.id.tvEmailHV);
-            tvLopHV = itemView.findViewById(R.id.tvMaLopHV);
+            // Ánh xạ đúng ID trong item_hocvien.xml mới
+            tvTen = itemView.findViewById(R.id.tvHoTenHV);
+            tvEmail = itemView.findViewById(R.id.tvEmailHV);
+            tvLop = itemView.findViewById(R.id.tvMaLopHV);
             btnEdit = itemView.findViewById(R.id.btnEditHV);
             btnDelete = itemView.findViewById(R.id.btnDeleteHV);
         }
