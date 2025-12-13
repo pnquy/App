@@ -1,44 +1,136 @@
 package com.example.studentportalapp;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class ProfileActivity extends BaseActivity {
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 
-    @Override
-    protected int getLayoutResourceId() {
-        return R.layout.activity_profile;
-    }
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.TaiKhoan;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ProfileActivity extends AppCompatActivity {
+
+    private TextView tvLabelID, tvUserID, tvName, tvEmail, tvHeaderName;
+    private Button btnChangePass;
+    private ImageView btnBack;
+
+    private AppDatabase db;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_profile);
 
+        db = AppDatabase.getDatabase(getApplicationContext());
 
-        TextView tvStudentNo = findViewById(R.id.tvStudentNo);
-        TextView tvCourse = findViewById(R.id.tvCourse);
-        TextView tvYearSec = findViewById(R.id.tvYearSec);
-        TextView tvBirth = findViewById(R.id.tvBirth);
-        TextView tvGender = findViewById(R.id.tvGender);
-        TextView tvNationality = findViewById(R.id.tvNationality);
-        TextView tvEmail = findViewById(R.id.tvEmail);
-        TextView tvContact = findViewById(R.id.tvContact);
-        TextView tvAddress = findViewById(R.id.tvAddress);
-        ImageView imgAvatar = findViewById(R.id.imgAvatar);
+        // 1. Ánh xạ View
+        tvLabelID = findViewById(R.id.tvLabelID);
+        tvUserID = findViewById(R.id.tvUserID);
+        tvName = findViewById(R.id.tvName);
+        tvHeaderName = findViewById(R.id.tvHeaderName);
+        tvEmail = findViewById(R.id.tvEmail);
+        btnChangePass = findViewById(R.id.btnChangePass);
+        btnBack = findViewById(R.id.btnBack);
 
+        btnBack.setOnClickListener(v -> finish());
 
-        tvStudentNo.setText("19-02031-t");
-        tvCourse.setText("Bachelor of Science in Computer Science");
-        tvYearSec.setText("2ND Year, J2019");
-        tvBirth.setText("04-21-2001");
-        tvGender.setText("Male");
-        tvNationality.setText("Filipino");
-        tvEmail.setText("balilijayvie201@gmail.com");
-        tvContact.setText("09619910340");
-        tvAddress.setText("Block 5 Lot 12 southern valley katwiran extension ibayo tipas taguig city");
+        // 2. Lấy thông tin phiên đăng nhập
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        currentUserId = prefs.getString("USER_ID", "");
+        String role = prefs.getString("USER_ROLE", "");
 
+        // 3. Logic hiển thị Label theo Role
+        if (role.equalsIgnoreCase("GIAOVIEN")) {
+            tvLabelID.setText("Mã Giảng Viên:");
+        } else if (role.equalsIgnoreCase("HOCVIEN")) {
+            tvLabelID.setText("Mã Học Viên:");
+        } else {
+            tvLabelID.setText("Mã Tài Khoản:"); // Trường hợp Admin
+        }
 
-        imgAvatar.setImageResource(R.mipmap.ic_launcher);
+        // 4. Load dữ liệu
+        loadUserProfile(currentUserId);
+
+        // 5. Nút đổi mật khẩu
+        btnChangePass.setOnClickListener(v -> showChangePasswordDialog());
+    }
+
+    private void loadUserProfile(String userId) {
+        executor.execute(() -> {
+            TaiKhoan user = db.taiKhoanDao().getById(userId);
+
+            runOnUiThread(() -> {
+                if (user != null) {
+                    tvUserID.setText(user.MaTK);
+                    tvName.setText(user.HoTen);
+                    tvHeaderName.setText(user.HoTen);
+                    tvEmail.setText(user.Email);
+                } else {
+                    Toast.makeText(this, "Lỗi tải thông tin!", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+    }
+
+    private void showChangePasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Đổi Mật Khẩu");
+
+        View view = LayoutInflater.from(this).inflate(R.layout.change_password, null);
+
+        EditText etOldPass = view.findViewById(R.id.etOldPass);
+        EditText etNewPass = view.findViewById(R.id.etNewPass);
+        EditText etConfirmPass = view.findViewById(R.id.etConfirmPass);
+
+        builder.setView(view);
+        builder.setPositiveButton("Lưu", null); // Xử lý sau để tránh đóng dialog
+        builder.setNegativeButton("Hủy", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String oldPass = etOldPass.getText().toString();
+            String newPass = etNewPass.getText().toString();
+            String confirmPass = etConfirmPass.getText().toString();
+
+            if (oldPass.isEmpty() || newPass.isEmpty()) {
+                Toast.makeText(this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!newPass.equals(confirmPass)) {
+                Toast.makeText(this, "Mật khẩu xác nhận không khớp", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            executor.execute(() -> {
+                TaiKhoan user = db.taiKhoanDao().getById(currentUserId);
+                if (user != null && user.MatKhau.equals(oldPass)) {
+                    // Update Database
+                    user.MatKhau = newPass;
+                    db.taiKhoanDao().update(user);
+
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Đổi mật khẩu thành công!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    });
+                } else {
+                    runOnUiThread(() -> Toast.makeText(this, "Mật khẩu cũ không đúng!", Toast.LENGTH_SHORT).show());
+                }
+            });
+        });
     }
 }
