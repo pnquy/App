@@ -29,6 +29,7 @@
         <activity android:name=".AddAssignmentActivity" />
         <activity android:name=".AddLectureActivity" />
         <activity android:name=".LoginActivity" />
+        <activity android:name=".ForgotPasswordActivity" />
         <activity android:name=".HomeActivity" />
         <activity android:name=".AssignmentActivity" />
         <activity android:name=".BaseActivity" />
