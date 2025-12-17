@@ -37,7 +37,7 @@ import java.util.concurrent.Executors;
                 ThamGia.class,
                 Diem.class
         },
-        version = 5,
+        version = 6,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

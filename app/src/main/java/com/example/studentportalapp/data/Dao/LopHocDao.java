@@ -32,7 +32,11 @@ public interface LopHocDao {
 
     @Query("SELECT TenLH FROM LOPHOC WHERE MaGV = :maGV")
     List<String> getClassNamesByTeacher(String maGV);
+
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
     LopHoc getById(String maLH);
-}
 
+    // --- QUAN TRỌNG: Phải có dòng @Query này ---
+    @Query("SELECT * FROM LOPHOC WHERE MaGV = :maGV")
+    List<LopHoc> getClassesByTeacher(String maGV);
+}

@@ -31,7 +31,6 @@ public class ClassManageActivity extends AppCompatActivity {
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private List<TeacherItem> allTeachers = new ArrayList<>(); // Danh sách tất cả GV để chọn
-    private String[] teacherNames; // Mảng tên GV để hiển thị lên Dialog
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,61 +123,72 @@ public class ClassManageActivity extends AppCompatActivity {
 
     // Dialog Thêm/Sửa Lớp
     // Dialog Thêm/Sửa Lớp (Đã cập nhật Check trùng + Khóa mã khi sửa)
+    private String[] teacherNames;
+    private List<GiaoVien> teacherList;
+
     private void showAddEditDialog(LopHoc existingClass) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(existingClass == null ? "Thêm Lớp Mới" : "Sửa Lớp Học");
 
+        // Layout dialog cần thêm 1 TextView hoặc EditText để chọn GV
+        // Bạn cần sửa file xml dialog_add_class.xml thêm 1 EditText id là etMaGV
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_class, null);
+
         TextInputEditText etMa = view.findViewById(R.id.etMaLH);
         TextInputEditText etTen = view.findViewById(R.id.etTenLH);
-        TextInputEditText etTenGV = view.findViewById(R.id.etMaGV);
-        etTenGV.setFocusable(false);
-        etTenGV.setClickable(true);
+        TextInputEditText etGV = view.findViewById(R.id.etMaGV); // Ô chọn giáo viên
 
+        // Cấu hình ô chọn GV: Không cho nhập tay, chỉ được chọn
+        etGV.setFocusable(false);
+        etGV.setClickable(true);
+
+        // Biến lưu mã GV được chọn
         final String[] selectedMaGV = {existingClass != null ? existingClass.MaGV : null};
 
-        // Logic tải danh sách GV (Giữ nguyên)
+        // Load danh sách giáo viên để chuẩn bị cho việc chọn
         executor.execute(() -> {
-            List<GiaoVien> teachers = db.giaoVienDao().getAllSync();
-            teacherNames = new String[teachers.size()];
-            for (int i = 0; i < teachers.size(); i++) {
-                teacherNames[i] = teachers.get(i).getMaGV() + " - " + teachers.get(i).getTenGV();
+            teacherList = db.giaoVienDao().getAllSync();
+            teacherNames = new String[teacherList.size()];
+            for (int i = 0; i < teacherList.size(); i++) {
+                teacherNames[i] = teacherList.get(i).getMaGV() + " - " + teacherList.get(i).getTenGV();
             }
 
-            runOnUiThread(() -> {
-                if (existingClass != null) {
-                    for (GiaoVien g : teachers) {
-                        if (g.getMaGV().equals(existingClass.MaGV)) {
-                            etTenGV.setText(g.getMaGV() + " - " + g.getTenGV());
-                            break;
-                        }
+            // Hiển thị tên GV hiện tại (nếu đang sửa)
+            if (existingClass != null && existingClass.MaGV != null) {
+                for (GiaoVien gv : teacherList) {
+                    if (gv.getMaGV().equals(existingClass.MaGV)) {
+                        runOnUiThread(() -> etGV.setText(gv.getMaGV() + " - " + gv.getTenGV()));
+                        break;
                     }
                 }
-                etTenGV.setOnClickListener(v -> {
-                    new AlertDialog.Builder(ClassManageActivity.this)
-                            .setTitle("Chọn Giáo Viên")
-                            .setItems(teacherNames, (dialog, which) -> {
-                                GiaoVien selected = teachers.get(which);
-                                etTenGV.setText(selected.getMaGV() + " - " + selected.getTenGV());
-                                selectedMaGV[0] = selected.getMaGV();
-                            })
-                            .show();
-                });
-            });
+            }
         });
 
-        // --- XỬ LÝ CHẾ ĐỘ SỬA ---
+        // Sự kiện bấm vào ô chọn GV -> Hiện list chọn
+        etGV.setOnClickListener(v -> {
+            if (teacherNames == null || teacherNames.length == 0) {
+                Toast.makeText(this, "Chưa có giáo viên nào!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Chọn Giáo Viên Phụ Trách")
+                    .setItems(teacherNames, (dialog, which) -> {
+                        GiaoVien selected = teacherList.get(which);
+                        etGV.setText(selected.getMaGV() + " - " + selected.getTenGV());
+                        selectedMaGV[0] = selected.getMaGV(); // Lưu mã GV đã chọn
+                    })
+                    .show();
+        });
+
+        // ... Code fill dữ liệu cũ vào etMa, etTen ...
         if (existingClass != null) {
             etMa.setText(existingClass.MaLH);
-            etMa.setEnabled(false);    // Vô hiệu hóa nhập liệu
-            etMa.setFocusable(false);  // Không cho focus
-            etMa.setAlpha(0.5f);       // Làm mờ đi để người dùng biết là không sửa được
+            etMa.setEnabled(false);
             etTen.setText(existingClass.TenLH);
         }
 
         builder.setView(view);
 
-        // --- XỬ LÝ NÚT LƯU ---
         builder.setPositiveButton("Lưu", (dialog, which) -> {
             String ma = etMa.getText().toString().trim();
             String ten = etTen.getText().toString().trim();
@@ -188,39 +198,18 @@ public class ClassManageActivity extends AppCompatActivity {
                 return;
             }
 
-            // Chạy Logic kiểm tra và Lưu trong Background Thread
+            LopHoc lh = new LopHoc();
+            lh.MaLH = ma;
+            lh.TenLH = ten;
+            lh.MaGV = selectedMaGV[0]; // <-- LƯU MÃ GV VÀO ĐÂY
+
             executor.execute(() -> {
+                if (existingClass == null) db.lopHocDao().insert(lh);
+                else db.lopHocDao().update(lh);
 
-                // 1. KIỂM TRA TRÙNG MÃ (Chỉ chạy khi đang THÊM MỚI)
-                if (existingClass == null) {
-                    LopHoc checkDuplicate = db.lopHocDao().getById(ma);
-                    if (checkDuplicate != null) {
-                        // Nếu tìm thấy mã lớp đã tồn tại -> Báo lỗi và Dừng lại
-                        runOnUiThread(() ->
-                                Toast.makeText(ClassManageActivity.this, "Lỗi: Mã lớp " + ma + " đã tồn tại!", Toast.LENGTH_LONG).show()
-                        );
-                        return; // Thoát khỏi hàm, không lưu
-                    }
-                }
-
-                // 2. Nếu không trùng (hoặc đang Sửa), tiến hành tạo object
-                LopHoc lh = new LopHoc();
-                lh.MaLH = ma;
-                lh.TenLH = ten;
-                lh.MaGV = selectedMaGV[0];
-
-                // 3. Thực hiện Insert hoặc Update
-                if (existingClass == null) {
-                    db.lopHocDao().insert(lh);
-                } else {
-                    db.lopHocDao().update(lh);
-                }
-
-                // 4. Cập nhật UI
                 runOnUiThread(() -> {
                     loadClasses();
-                    String msg = (existingClass == null) ? "Thêm lớp thành công!" : "Cập nhật thành công!";
-                    Toast.makeText(ClassManageActivity.this, msg, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(ClassManageActivity.this, "Lưu thành công!", Toast.LENGTH_SHORT).show();
                 });
             });
         });

@@ -26,7 +26,6 @@ public class GiaoVien {
     private String Email;
 
 
-    private String MaLH;
 
     @NonNull
     private String MaTK;
@@ -58,14 +57,8 @@ public class GiaoVien {
         this.Email = email;
     }
 
-    @NonNull
-    public String getMaLH() {
-        return MaLH;
-    }
 
-    public void setMaLH(@NonNull String maLH) {
-        this.MaLH = maLH;
-    }
+
 
     @NonNull
     public String getMaTK() {

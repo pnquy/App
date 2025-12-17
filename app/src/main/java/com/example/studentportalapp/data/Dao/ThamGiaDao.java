@@ -6,6 +6,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
+import com.example.studentportalapp.data.Entity.LopHoc;
 import com.example.studentportalapp.data.Entity.ThamGia;
 
 import java.util.List;
@@ -31,4 +32,6 @@ public interface ThamGiaDao {
     // Xóa học viên khỏi lớp cụ thể
     @Query("DELETE FROM THAMGIA WHERE MaHV = :maHV AND MaLH = :maLH")
     void removeStudentFromClass(String maHV, String maLH);
+    @Query("SELECT LOPHOC.* FROM LOPHOC INNER JOIN THAMGIA ON LOPHOC.MaLH = THAMGIA.MaLH WHERE THAMGIA.MaHV = :maHV")
+    List<LopHoc> getClassesByStudent(String maHV);
 }

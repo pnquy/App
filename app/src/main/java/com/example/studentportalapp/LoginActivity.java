@@ -30,15 +30,13 @@ public class LoginActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // --- CODE MỚI THÊM VÀO ---
         // Xử lý nút Quên Mật Khẩu
         binding.tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
-        // -------------------------
 
-        // Xử lý khi nhấn nút Đăng nhập (Code cũ của bạn giữ nguyên)
+        // Xử lý nút Đăng nhập
         binding.btnLogin.setOnClickListener(v -> {
             String email = binding.etEmail.getText().toString().trim();
             String password = binding.etPassword.getText().toString().trim();
@@ -48,8 +46,11 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            // 1. Kiểm tra Admin
             if (email.equals(ADMIN_EMAIL) && password.equals(ADMIN_PASS)) {
-                saveUserSession("ADMIN", "ADMIN");
+                // Admin thì tự đặt tên hiển thị là "Administrator"
+                saveUserSession("ADMIN", "ADMIN", "Administrator");
+
                 Toast.makeText(LoginActivity.this, "Đăng nhập ADMIN thành công!", Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(LoginActivity.this, AdminActivity.class);
                 startActivity(intent);
@@ -57,16 +58,19 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
+            // 2. Kiểm tra User thường (Database)
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
                 runOnUiThread(() -> {
                     if (user == null) {
                         Toast.makeText(LoginActivity.this, "Tài khoản không tồn tại.", Toast.LENGTH_SHORT).show();
-                    } else if (!user.MatKhau.equals(password)) { // Lưu ý check field public/getter
+                    } else if (!user.MatKhau.equals(password)) {
                         Toast.makeText(LoginActivity.this, "Mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
                     } else {
-                        saveUserSession(user.MaTK, user.VaiTro);
+                        // Lưu đủ 3 thông tin: ID, Vai Trò, Họ Tên
+                        saveUserSession(user.MaTK, user.VaiTro, user.HoTen);
+
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
                         startActivity(intent);
@@ -77,11 +81,16 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void saveUserSession(String userId, String role) {
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("USER_ID", userId);
-        editor.putString("USER_ROLE", role);
+    // --- HÀM LƯU SESSION ĐÃ SỬA ---
+    // Nhận vào 3 tham số để lưu đủ dữ liệu cho HomeActivity dùng
+    private void saveUserSession(String userId, String role, String fullName) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putString("KEY_USER_ID", userId);
+        editor.putString("KEY_ROLE", role);
+        editor.putString("KEY_NAME", fullName);  // Lưu thêm Họ tên ở đây
+
         editor.apply();
     }
 }
