@@ -6,23 +6,26 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.studentportalapp.R;
-import com.example.studentportalapp.model.Assignment;
-
+import com.example.studentportalapp.data.Entity.BaiTap;
 import java.util.List;
 
 public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.AssignmentViewHolder> {
 
     private final Context context;
-    private final List<Assignment> assignments;
+    private final List<BaiTap> assignments;
+    private final OnItemClickListener listener;
 
-    public AssignmentAdapter(Context context, List<Assignment> assignments) {
+    public interface OnItemClickListener {
+        void onItemClick(BaiTap baiTap);
+    }
+
+    public AssignmentAdapter(Context context, List<BaiTap> assignments, OnItemClickListener listener) {
         this.context = context;
         this.assignments = assignments;
+        this.listener = listener;
     }
 
     @NonNull
@@ -34,12 +37,21 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
 
     @Override
     public void onBindViewHolder(@NonNull AssignmentViewHolder holder, int position) {
-        Assignment item = assignments.get(position);
-        holder.tvTitle.setText(item.getTitle());
-        holder.tvPoints.setText(item.getPoints());
-        holder.tvAuthor.setText(item.getAuthor());
-        holder.tvDate.setText(item.getDate());
-        holder.btnAction.setText(item.getButtonText());
+        BaiTap item = assignments.get(position);
+        holder.tvTitle.setText(item.TenBT);
+        holder.tvPoints.setText("Hạn nộp: " + item.Deadline);
+
+        if (item.FileName != null && !item.FileName.isEmpty()) {
+            holder.tvAuthor.setText("File: " + item.FileName);
+        } else {
+            holder.tvAuthor.setText("Không có file");
+        }
+
+        holder.tvDate.setText("");
+        holder.btnAction.setText("Chi tiết");
+
+        holder.btnAction.setOnClickListener(v -> listener.onItemClick(item));
+        holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
     }
 
     @Override
@@ -61,4 +73,3 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
         }
     }
 }
-

@@ -1,23 +1,54 @@
 package com.example.studentportalapp;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
+import android.provider.OpenableColumns;
 import android.widget.Button;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.google.android.material.appbar.MaterialToolbar;
-import java.util.Calendar;
+
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Locale;
+import java.util.concurrent.Executors;
 
 public class AddAssignmentActivity extends BaseActivity {
 
     private MaterialToolbar toolbar;
-    private EditText etAssignmentTitle, etAssignmentInstructions, etAssignmentPoints, etAssignmentDueDate;
-    private Button btnAttachFile, btnAssign;
+    private EditText etTitle, etInstructions, etPoints, etDueDate;
+    private Button btnAttach, btnAssign;
     private Calendar myCalendar;
+    private Uri selectedFileUri;
+    private String selectedFileName;
+    private String currentMaLH;
+
+    private final ActivityResultLauncher<String> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    try {
+                        getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                    selectedFileName = getFileName(uri);
+                    btnAttach.setText("Đã chọn: " + selectedFileName);
+                }
+            }
+    );
 
     @Override
     protected int getLayoutResourceId() {
@@ -28,86 +59,99 @@ public class AddAssignmentActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Ánh xạ các view
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+
         toolbar = findViewById(R.id.toolbar_assignment);
-        etAssignmentTitle = findViewById(R.id.et_assignment_title);
-        etAssignmentInstructions = findViewById(R.id.et_assignment_instructions);
-        etAssignmentPoints = findViewById(R.id.et_assignment_points);
-        etAssignmentDueDate = findViewById(R.id.et_assignment_due_date);
-        btnAttachFile = findViewById(R.id.btn_attach_file_assignment);
+        etTitle = findViewById(R.id.et_assignment_title);
+        etInstructions = findViewById(R.id.et_assignment_instructions);
+        etPoints = findViewById(R.id.et_assignment_points);
+        etDueDate = findViewById(R.id.et_assignment_due_date);
+        btnAttach = findViewById(R.id.btn_attach_file_assignment);
         btnAssign = findViewById(R.id.btn_assign_assignment);
 
         myCalendar = Calendar.getInstance();
 
-        // 2. Xử lý nút "Close" (X) trên Toolbar
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // Đóng Activity
-            }
-        });
+        toolbar.setNavigationOnClickListener(v -> finish());
 
-        // 3. Xử lý logic cho ô "Hạn nộp"
-        DatePickerDialog.OnDateSetListener dateSetListener = new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                myCalendar.set(Calendar.YEAR, year);
-                myCalendar.set(Calendar.MONTH, month);
-                myCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                updateLabel(); // Cập nhật text cho EditText
-            }
+        DatePickerDialog.OnDateSetListener date = (view, year, month, day) -> {
+            myCalendar.set(Calendar.YEAR, year);
+            myCalendar.set(Calendar.MONTH, month);
+            myCalendar.set(Calendar.DAY_OF_MONTH, day);
+            updateLabel();
         };
 
-        // Khi người dùng nhấn vào ô EditText "Hạn nộp"
-        etAssignmentDueDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new DatePickerDialog(AddAssignmentActivity.this, dateSetListener,
-                        myCalendar.get(Calendar.YEAR),
-                        myCalendar.get(Calendar.MONTH),
-                        myCalendar.get(Calendar.DAY_OF_MONTH)).show();
-            }
-        });
+        etDueDate.setOnClickListener(v -> new DatePickerDialog(AddAssignmentActivity.this, date,
+                myCalendar.get(Calendar.YEAR),
+                myCalendar.get(Calendar.MONTH),
+                myCalendar.get(Calendar.DAY_OF_MONTH)).show());
 
-        // 4. Xử lý nút "Giao bài"
-        btnAssign.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String title = etAssignmentTitle.getText().toString().trim();
-                String points = etAssignmentPoints.getText().toString().trim();
-                String dueDate = etAssignmentDueDate.getText().toString().trim();
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch("*/*"));
 
-                if (title.isEmpty()) {
-                    etAssignmentTitle.setError("Tiêu đề không được trống");
-                    return;
-                }
-                if (dueDate.isEmpty()) {
-                    etAssignmentDueDate.setError("Vui lòng chọn hạn nộp");
-                    return;
-                }
+        btnAssign.setOnClickListener(v -> handleAssign());
+    }
 
-                // --- Logic của bạn để giao bài ---
-                // ...
+    private void updateLabel() {
+        String myFormat = "dd/MM/yyyy";
+        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        etDueDate.setText(sdf.format(myCalendar.getTime()));
+    }
 
-                // Tạm thời
-                Toast.makeText(AddAssignmentActivity.this, "Đã giao bài: " + title, Toast.LENGTH_SHORT).show();
+    private void handleAssign() {
+        String title = etTitle.getText().toString().trim();
+        String instructions = etInstructions.getText().toString().trim();
+        String points = etPoints.getText().toString().trim();
+        String dueDate = etDueDate.getText().toString().trim();
+
+        if (title.isEmpty()) {
+            etTitle.setError("Vui lòng nhập tiêu đề");
+            return;
+        }
+        if (dueDate.isEmpty()) {
+            etDueDate.setError("Vui lòng chọn hạn nộp");
+            return;
+        }
+
+        BaiTap bt = new BaiTap();
+        bt.MaBT = "BT" + System.currentTimeMillis();
+        bt.TenBT = title;
+        bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
+        bt.Deadline = dueDate;
+        bt.MaLH = currentMaLH;
+
+        if (selectedFileUri != null) {
+            bt.FilePath = selectedFileUri.toString();
+            bt.FileName = selectedFileName;
+        }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase.getDatabase(getApplicationContext()).baiTapDao().insert(bt);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show();
                 finish();
-            }
-        });
-
-        // 5. Xử lý nút đính kèm
-        btnAttachFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(AddAssignmentActivity.this, "Mở trình chọn tệp...", Toast.LENGTH_SHORT).show();
-            }
+            });
         });
     }
 
-    // Hàm helper để cập nhật text cho ô Hạn nộp
-    private void updateLabel() {
-        String myFormat = "dd/MM/yyyy"; // Định dạng ngày
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        etAssignmentDueDate.setText(sdf.format(myCalendar.getTime()));
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) result = cursor.getString(index);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
     }
 }

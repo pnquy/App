@@ -21,7 +21,8 @@ import androidx.room.PrimaryKey;
         }
 )
 public class BaiGiang {
-
+    public String FileName; // Tên file hiển thị (vd: slide_chuong1.pdf)
+    public String FilePath;
     @PrimaryKey
     @NonNull
     public String MaBG;

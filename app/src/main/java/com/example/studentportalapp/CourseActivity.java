@@ -1,18 +1,29 @@
 package com.example.studentportalapp;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.CourseAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.model.ActivityItem;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 
-// --- Imports được thêm vào ---
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import android.view.View;
-import android.content.Intent; // Thêm Intent để mở Activity mới
-
 public class CourseActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private TextView tvTitle, tvSubtitle;
+    private AppDatabase db;
+    private String currentMaLH;
+    private ArrayList<BaiGiang> originalList;
 
     @Override
     protected int getLayoutResourceId() {
@@ -22,55 +33,78 @@ public class CourseActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        db = AppDatabase.getDatabase(getApplicationContext());
 
-        // --- Ẩn/Hiện và Xử lý Click FAB ---
-        // 1. Tìm nút FAB
-        FloatingActionButton fabAdd = findViewById(R.id.fab_add);
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
+        String role = prefs.getString("KEY_ROLE", "");
 
-        // 2. Lấy vai trò người dùng (Giả định)
-        // Cần thay thế hàm này bằng logic thật để lấy vai trò từ SharedPreferences hoặc Intent
-        String userRole = getUserRoleFromLogin();
+        tvTitle = findViewById(R.id.tv_title);
+        tvSubtitle = findViewById(R.id.tv_subtitle);
+        recyclerView = findViewById(R.id.rvActivityCourse);
+        FloatingActionButton fab = findViewById(R.id.fab_add);
 
-        // 3. Ẩn/Hiện nút FAB dựa trên vai trò
-        if (userRole.equals("teacher")) {
-            fabAdd.setVisibility(View.VISIBLE); // Hiện nút cho giáo viên
+        tvTitle.setText(tenLH);
+        tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-            // 4. Gán sự kiện click cho FAB
-            fabAdd.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // Mở màn hình Thêm Bài Giảng (AddLectureActivity)
-                    Intent intent = new Intent(CourseActivity.this, AddLectureActivity.class);
-                    startActivity(intent);
-                }
-            });
-
-        } else {
-            fabAdd.setVisibility(View.GONE); // Ẩn nút đi với học viên
-        }
-
-
-        RecyclerView recyclerView = findViewById(R.id.rvActivityCourse);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        ArrayList<ActivityItem> activityList = new ArrayList<>();
-        activityList.add(new ActivityItem("James Gosling", "July 13, 2021", "Java Stack Program", "JavaStack.docx", "26"));
-        activityList.add(new ActivityItem("James Gosling", "July 12, 2021", "Data Structures - Lesson 6", "Lesson6.docx", "28"));
-        activityList.add(new ActivityItem("Bjarne Stroustrup", "July 10, 2021", "C++ Template Programming", "C++Templates.pdf", "19"));
-        activityList.add(new ActivityItem("Bjarne Stroustrup", "July 9, 2021", "C++ Basics", "C++.pdf", "25"));
+        if ("GIAOVIEN".equals(role)) {
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> startActivity(new Intent(this, AddLectureActivity.class)));
+        } else {
+            fab.setVisibility(View.GONE);
+        }
 
-        CourseAdapter adapter = new CourseAdapter(activityList);
-        recyclerView.setAdapter(adapter);
+        loadData();
     }
 
-    // --- Hàm giả định được thêm vào ---
-    // Cần thay thế hàm này bằng logic thật của bạn để lấy vai trò người dùng
-    private String getUserRoleFromLogin() {
-        // Ví dụ: Lấy từ SharedPreferences
-        // SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        // return prefs.getString("USER_ROLE", "student"); // "student" là giá trị mặc định
+    private void loadData() {
+        db.baiGiangDao().getByLop(currentMaLH).observe(this, listBG -> {
+            originalList = new ArrayList<>(listBG);
+            ArrayList<ActivityItem> items = new ArrayList<>();
 
-        // Tạm thời trả về "teacher" để bạn kiểm tra nút FAB
-        return "teacher";
+            for (BaiGiang bg : listBG) {
+                String fName = (bg.FileName != null) ? bg.FileName : "";
+                items.add(new ActivityItem(
+                        "GV: " + bg.MaGV,
+                        "Mới đăng",
+                        bg.TenBG,
+                        fName,
+                        "0"
+                ));
+            }
+
+            CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
+            recyclerView.setAdapter(adapter);
+        });
+    }
+
+    private void showLectureDialog(BaiGiang bg) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(bg.TenBG);
+
+        String msg = "Nội dung: " + (bg.NoiDung == null ? "" : bg.NoiDung);
+        if (bg.FileName != null && !bg.FileName.isEmpty()) {
+            msg += "\n\nTệp đính kèm: " + bg.FileName;
+        }
+        builder.setMessage(msg);
+
+        if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
+            builder.setPositiveButton("Mở File", (dialog, which) -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.parse(bg.FilePath), "*/*");
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, "Mở bằng"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Không thể mở file", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        builder.setNegativeButton("Đóng", null);
+        builder.show();
     }
 }

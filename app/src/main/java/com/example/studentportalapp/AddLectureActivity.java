@@ -1,20 +1,57 @@
 package com.example.studentportalapp;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.widget.Toolbar;
-import com.google.android.material.appbar.MaterialToolbar;
+
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiGiang;
+
+import java.util.concurrent.Executors;
 
 public class AddLectureActivity extends BaseActivity {
 
-    private Toolbar toolbar;
-    private EditText etLectureTitle;
-    private EditText etLectureDescription;
-    private Button btnAttachFile;
-    private Button btnPostLecture;
+    private EditText etTitle, etDesc;
+    private Button btnAttach;
+    private TextView tvFileName;
+    private View btnPost;
+
+    private String currentMaLH;
+    private String currentMaGV;
+    private Uri selectedFileUri = null;
+    private String selectedFileName = null;
+
+    private final ActivityResultLauncher<String> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    try {
+                        getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+
+                    selectedFileName = getFileName(uri);
+                    if (tvFileName != null) {
+                        tvFileName.setText("Đã chọn: " + selectedFileName);
+                    }
+                }
+            }
+    );
 
     @Override
     protected int getLayoutResourceId() {
@@ -25,50 +62,73 @@ public class AddLectureActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Ánh xạ (Tìm) các view
-        toolbar = findViewById(R.id.toolbar);
-        etLectureTitle = findViewById(R.id.et_lecture_title);
-        etLectureDescription = findViewById(R.id.et_lecture_description);
-        btnAttachFile = findViewById(R.id.btn_attach_file);
-        btnPostLecture = findViewById(R.id.btn_post_lecture);
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        currentMaGV = prefs.getString("KEY_USER_ID", "");
 
-        // 2. Xử lý nút "Close" (X) trên Toolbar
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // Đóng Activity này và quay lại
-            }
+        etTitle = findViewById(R.id.et_lecture_title);
+        etDesc = findViewById(R.id.et_lecture_description);
+        btnAttach = findViewById(R.id.btn_attach_file);
+        btnPost = findViewById(R.id.btn_post_lecture);
+        tvFileName = findViewById(R.id.tv_file_name);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null) toolbar.setNavigationOnClickListener(v -> finish());
+
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch("*/*"));
+
+        btnPost.setOnClickListener(v -> handlePost());
+    }
+
+    private void handlePost() {
+        String title = etTitle.getText().toString().trim();
+        String desc = etDesc.getText().toString().trim();
+
+        if (title.isEmpty()) {
+            etTitle.setError("Nhập tiêu đề!");
+            return;
+        }
+
+        BaiGiang bg = new BaiGiang();
+        bg.MaBG = "BG" + System.currentTimeMillis();
+        bg.TenBG = title;
+        bg.NoiDung = desc;
+        bg.MaLH = currentMaLH;
+        bg.MaGV = currentMaGV;
+
+        if (selectedFileUri != null) {
+            bg.FilePath = selectedFileUri.toString();
+            bg.FileName = selectedFileName;
+        }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().insert(bg);
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            });
         });
+    }
 
-        // 3. Xử lý nút "Đăng bài"
-        btnPostLecture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String title = etLectureTitle.getText().toString().trim();
-                String description = etLectureDescription.getText().toString().trim();
-
-                if (title.isEmpty()) {
-                    etLectureTitle.setError("Tiêu đề không được để trống");
-                    return;
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) result = cursor.getString(index);
                 }
-
-                // --- Logic của bạn để đăng bài lên server/database ---
-                // ...
-
-                // Tạm thời hiển thị thông báo
-                Toast.makeText(AddLectureActivity.this, "Đã đăng bài: " + title, Toast.LENGTH_SHORT).show();
-                finish(); // Đăng xong thì đóng Activity
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
-
-        // 4. Xử lý nút "Đính kèm tệp" (Sẽ cần logic phức tạp hơn sau)
-        btnAttachFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Tạm thời
-                Toast.makeText(AddLectureActivity.this, "Mở trình chọn tệp...", Toast.LENGTH_SHORT).show();
-                // Bạn sẽ cần dùng Intent để mở trình quản lý tệp
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
             }
-        });
+        }
+        return result;
     }
 }

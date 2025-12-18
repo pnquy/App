@@ -15,7 +15,8 @@ import androidx.room.PrimaryKey;
         }
 )
 public class BaiTap {
-
+    public String FileName;
+    public String FilePath;
     @PrimaryKey
     @NonNull
     public String MaBT;

@@ -25,12 +25,8 @@ public class HomeActivity extends BaseActivity {
 
     private TextView tvWelcome;
     private RecyclerView recyclerView;
-
-    // Database
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    // Biến lưu thông tin phiên đăng nhập
     private String currentUserId;
     private String currentUserRole;
     private String currentUserName;
@@ -44,35 +40,27 @@ public class HomeActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Khởi tạo Database
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // 2. Lấy thông tin User từ SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
         currentUserId = prefs.getString("KEY_USER_ID", "");
         currentUserRole = prefs.getString("KEY_ROLE", "");
         currentUserName = prefs.getString("KEY_NAME", "User");
 
-        // 3. Ánh xạ View (Khớp với layout activity_home.xml MỚI)
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
-
-        // --- SỬA LỖI Ở ĐÂY: Dùng đúng ID của layout mới ---
         View btnLogout = findViewById(R.id.quickActionLogout);
         View btnNoti = findViewById(R.id.btnNoti);
 
-        // 4. Set dữ liệu hiển thị
         if (tvWelcome != null) {
             tvWelcome.setText(currentUserName);
         }
 
-        // 5. Cấu hình RecyclerView (1 cột dọc cho đẹp)
         if (recyclerView != null) {
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             loadUserCourses();
         }
 
-        // 6. Xử lý sự kiện Click (Kiểm tra null để tránh Crash)
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
@@ -97,16 +85,21 @@ public class HomeActivity extends BaseActivity {
             List<LopHoc> finalList = listLop;
 
             runOnUiThread(() -> {
-                // Kiểm tra null lần nữa cho chắc chắn
                 if (recyclerView == null) return;
 
                 if (finalList == null || finalList.isEmpty()) {
-                    // Có thể hiện 1 textview thông báo trống nếu muốn
                     Toast.makeText(HomeActivity.this, "Chưa có lớp học nào.", Toast.LENGTH_SHORT).show();
                 }
 
                 UserCourseAdapter adapter = new UserCourseAdapter(HomeActivity.this, finalList, lopHoc -> {
-                    Toast.makeText(HomeActivity.this, "Đã chọn: " + lopHoc.TenLH, Toast.LENGTH_SHORT).show();
+                    SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("CURRENT_CLASS_ID", lopHoc.MaLH);
+                    editor.putString("CURRENT_CLASS_NAME", lopHoc.TenLH);
+                    editor.apply();
+
+                    Intent intent = new Intent(HomeActivity.this, CourseActivity.class);
+                    startActivity(intent);
                 });
                 recyclerView.setAdapter(adapter);
             });
