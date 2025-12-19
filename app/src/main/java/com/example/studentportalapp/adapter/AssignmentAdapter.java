@@ -41,15 +41,23 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
         holder.tvTitle.setText(item.TenBT);
         holder.tvPoints.setText("Hạn nộp: " + item.Deadline);
 
+        // Hiển thị tên file vào tvFileName và xử lý ẩn/hiện layout chứa nó
         if (item.FileName != null && !item.FileName.isEmpty()) {
-            holder.tvAuthor.setText("File: " + item.FileName);
+            holder.tvFileName.setText(item.FileName);
+            if (holder.layoutFileLink != null) {
+                holder.layoutFileLink.setVisibility(View.VISIBLE);
+            }
         } else {
-            holder.tvAuthor.setText("Không có file");
+            if (holder.layoutFileLink != null) {
+                holder.layoutFileLink.setVisibility(View.GONE);
+            }
         }
 
-        holder.tvDate.setText("");
-        holder.btnAction.setText("Chi tiết");
+        // Tạm thời để tvAuthor và tvDate trống hoặc giá trị mặc định nếu bạn không dùng nữa
+        if (holder.tvAuthor != null) holder.tvAuthor.setText("Giảng viên");
+        if (holder.tvDate != null) holder.tvDate.setText("Mới đăng");
 
+        holder.btnAction.setText("Chi tiết");
         holder.btnAction.setOnClickListener(v -> listener.onItemClick(item));
         holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
     }
@@ -60,7 +68,8 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
     }
 
     public static class AssignmentViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvPoints, tvAuthor, tvDate;
+        TextView tvTitle, tvPoints, tvAuthor, tvDate, tvFileName;
+        View layoutFileLink;
         Button btnAction;
 
         public AssignmentViewHolder(@NonNull View itemView) {
@@ -69,6 +78,12 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
             tvPoints = itemView.findViewById(R.id.tvPoints);
             tvAuthor = itemView.findViewById(R.id.tvAuthor);
             tvDate = itemView.findViewById(R.id.tvDate);
+            tvFileName = itemView.findViewById(R.id.tvFileName);
+
+            if (tvFileName != null && tvFileName.getParent() instanceof View) {
+                layoutFileLink = (View) tvFileName.getParent();
+            }
+            
             btnAction = itemView.findViewById(R.id.btnAction);
         }
     }
