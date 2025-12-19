@@ -34,8 +34,8 @@ public class AddAssignmentActivity extends BaseActivity {
     private String selectedFileName;
     private String currentMaLH;
 
-    private final ActivityResultLauncher<String> filePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
+    private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
             uri -> {
                 if (uri != null) {
                     selectedFileUri = uri;
@@ -86,7 +86,7 @@ public class AddAssignmentActivity extends BaseActivity {
                 myCalendar.get(Calendar.MONTH),
                 myCalendar.get(Calendar.DAY_OF_MONTH)).show());
 
-        btnAttach.setOnClickListener(v -> filePickerLauncher.launch("*/*"));
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnAssign.setOnClickListener(v -> handleAssign());
     }

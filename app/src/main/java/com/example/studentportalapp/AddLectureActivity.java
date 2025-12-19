@@ -34,8 +34,8 @@ public class AddLectureActivity extends BaseActivity {
     private Uri selectedFileUri = null;
     private String selectedFileName = null;
 
-    private final ActivityResultLauncher<String> filePickerLauncher = registerForActivityResult(
-            new ActivityResultContracts.GetContent(),
+    private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
             uri -> {
                 if (uri != null) {
                     selectedFileUri = uri;
@@ -44,7 +44,6 @@ public class AddLectureActivity extends BaseActivity {
                     } catch (SecurityException e) {
                         e.printStackTrace();
                     }
-
                     selectedFileName = getFileName(uri);
                     if (tvFileName != null) {
                         tvFileName.setText("Đã chọn: " + selectedFileName);
@@ -75,7 +74,7 @@ public class AddLectureActivity extends BaseActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         if (toolbar != null) toolbar.setNavigationOnClickListener(v -> finish());
 
-        btnAttach.setOnClickListener(v -> filePickerLauncher.launch("*/*"));
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnPost.setOnClickListener(v -> handlePost());
     }

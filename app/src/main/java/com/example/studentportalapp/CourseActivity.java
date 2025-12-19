@@ -94,12 +94,19 @@ public class CourseActivity extends BaseActivity {
         if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
             builder.setPositiveButton("Mở File", (dialog, which) -> {
                 try {
+                    Uri uri = Uri.parse(bg.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(Uri.parse(bg.FilePath), "*/*");
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(Intent.createChooser(intent, "Mở bằng"));
+
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType == null) mimeType = "*/*";
+                    
+                    intent.setDataAndType(uri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                    
+                    startActivity(Intent.createChooser(intent, "Mở bài giảng bằng"));
                 } catch (Exception e) {
-                    Toast.makeText(this, "Không thể mở file", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Lỗi: File không tồn tại hoặc không có quyền truy cập", Toast.LENGTH_LONG).show();
                 }
             });
         }

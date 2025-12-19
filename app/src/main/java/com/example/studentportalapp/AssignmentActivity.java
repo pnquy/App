@@ -70,12 +70,19 @@ public class AssignmentActivity extends BaseActivity {
         if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
+                    Uri uri = Uri.parse(bt.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setDataAndType(Uri.parse(bt.FilePath), "*/*");
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    startActivity(Intent.createChooser(intent, "Mở file"));
+
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType == null) mimeType = "*/*";
+                    
+                    intent.setDataAndType(uri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                    
+                    startActivity(Intent.createChooser(intent, "Mở file bài tập bằng"));
                 } catch (Exception e) {
-                    Toast.makeText(this, "Không thể mở file", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Lỗi: Không có quyền truy cập file hoặc file đã bị xóa", Toast.LENGTH_LONG).show();
                 }
             });
         }
