@@ -1,6 +1,9 @@
 package com.example.studentportalapp.adapter;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,7 +44,17 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
         holder.tvTitle.setText(item.TenBT);
         holder.tvPoints.setText("Hạn nộp: " + item.Deadline);
 
-        // Hiển thị tên file vào tvFileName và xử lý ẩn/hiện layout chứa nó
+        SharedPreferences prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        if ("HOCVIEN".equals(role)) {
+            holder.btnAction.setText("Submit");
+            holder.btnAction.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        } else {
+            holder.btnAction.setText("View");
+            holder.btnAction.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
+        }
+
         if (item.FileName != null && !item.FileName.isEmpty()) {
             holder.tvFileName.setText(item.FileName);
             if (holder.layoutFileLink != null) {
@@ -53,13 +66,8 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
             }
         }
 
-        // Tạm thời để tvAuthor và tvDate trống hoặc giá trị mặc định nếu bạn không dùng nữa
-        if (holder.tvAuthor != null) holder.tvAuthor.setText("Giảng viên");
-        if (holder.tvDate != null) holder.tvDate.setText("Mới đăng");
-
-        holder.btnAction.setText("Chi tiết");
         holder.btnAction.setOnClickListener(v -> listener.onItemClick(item));
-        holder.itemView.setOnClickListener(v -> listener.onItemClick(item));
+        holder.itemView.setOnClickListener(null);
     }
 
     @Override
@@ -68,7 +76,7 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
     }
 
     public static class AssignmentViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvPoints, tvAuthor, tvDate, tvFileName;
+        TextView tvTitle, tvPoints, tvFileName;
         View layoutFileLink;
         Button btnAction;
 
@@ -76,8 +84,6 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvPoints = itemView.findViewById(R.id.tvPoints);
-            tvAuthor = itemView.findViewById(R.id.tvAuthor);
-            tvDate = itemView.findViewById(R.id.tvDate);
             tvFileName = itemView.findViewById(R.id.tvFileName);
 
             if (tvFileName != null && tvFileName.getParent() instanceof View) {

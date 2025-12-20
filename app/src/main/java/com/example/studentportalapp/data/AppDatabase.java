@@ -12,6 +12,7 @@ import com.example.studentportalapp.data.Dao.BaiTapDao;
 import com.example.studentportalapp.data.Dao.DiemDao;
 import com.example.studentportalapp.data.Dao.HocVienDao;
 import com.example.studentportalapp.data.Dao.LopHocDao;
+import com.example.studentportalapp.data.Dao.NopBaiDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
 import com.example.studentportalapp.data.Dao.ThamGiaDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
@@ -20,6 +21,7 @@ import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.GiaoVien;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
 
@@ -35,26 +37,17 @@ import java.util.concurrent.Executors;
                 BaiGiang.class,
                 BaiTap.class,
                 ThamGia.class,
-                Diem.class
+                Diem.class,
+                NopBai.class
         },
-        version = 7,
+        version = 8,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
 
-    // ===========================
-    //       SINGLETON INSTANCE
-    // ===========================
     private static volatile AppDatabase INSTANCE;
+    public static final ExecutorService databaseWriteExecutor = Executors.newFixedThreadPool(4);
 
-    // Thread pool (background insert/update/delete)
-    public static final ExecutorService databaseWriteExecutor =
-            Executors.newFixedThreadPool(4);
-
-
-    // ===========================
-    //            DAO
-    // ===========================
     public abstract TaiKhoanDao taiKhoanDao();
     public abstract GiaoVienDao giaoVienDao();
     public abstract HocVienDao hocVienDao();
@@ -63,22 +56,17 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract BaiTapDao baiTapDao();
     public abstract DiemDao diemDao();
     public abstract ThamGiaDao thamGiaDao();
+    public abstract NopBaiDao nopBaiDao();
 
-    // ===========================
-    //      GET DATABASE INSTANCE
-    // ===========================
     public static AppDatabase getDatabase(final Context context) {
-
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
-
                     INSTANCE = Room.databaseBuilder(
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "school_db"
                             )
-                            // Tự xóa DB khi thay đổi version (tránh crash)
                             .fallbackToDestructiveMigration()
                             .build();
                 }

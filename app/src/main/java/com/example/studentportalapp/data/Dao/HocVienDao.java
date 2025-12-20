@@ -26,11 +26,13 @@ public interface HocVienDao {
 
     @Query("SELECT * FROM HOCVIEN")
     LiveData<List<HocVien>> getAll();
-    // Trong HocVienDao.java
+
     @Query("SELECT * FROM HOCVIEN")
     List<HocVien> getAllSync();
 
     @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id")
     LiveData<HocVien> getById(String id);
-}
 
+    @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id LIMIT 1")
+    HocVien getByIdSync(String id);
+}

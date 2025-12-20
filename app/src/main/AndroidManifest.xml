@@ -43,6 +43,8 @@
         <activity android:name=".OptionsActivity" />
         <activity android:name=".ProfileActivity" />
         <activity android:name=".ClassManageActivity" />
+        <activity android:name=".SubmitAssignmentActivity" />
+        <activity android:name=".ViewSubmissionsActivity" />
     </application>
 
 </manifest>

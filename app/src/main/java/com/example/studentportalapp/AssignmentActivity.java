@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,6 +21,7 @@ public class AssignmentActivity extends BaseActivity {
     private RecyclerView recyclerView;
     private AppDatabase db;
     private String currentMaLH;
+    private TextView tvTitle, tvSubtitle;
 
     @Override
     protected int getLayoutResourceId() {
@@ -33,7 +35,13 @@ public class AssignmentActivity extends BaseActivity {
         db = AppDatabase.getDatabase(getApplicationContext());
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
         String role = prefs.getString("KEY_ROLE", "");
+
+        tvTitle = findViewById(R.id.tv_title);
+        tvSubtitle = findViewById(R.id.tv_subtitle);
+        if (tvTitle != null) tvTitle.setText(tenLH);
+        if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
         recyclerView = findViewById(R.id.recyclerViewAssignments);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -58,6 +66,9 @@ public class AssignmentActivity extends BaseActivity {
     }
 
     private void showAssignmentDialog(BaiTap bt) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bt.TenBT);
 
@@ -67,27 +78,40 @@ public class AssignmentActivity extends BaseActivity {
         }
         builder.setMessage(msg);
 
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Xem bài nộp", (dialog, which) -> {
+                Intent intent = new Intent(this, ViewSubmissionsActivity.class);
+                intent.putExtra("MA_BT", bt.MaBT);
+                intent.putExtra("TEN_BT", bt.TenBT);
+                startActivity(intent);
+            });
+        } else if ("HOCVIEN".equals(role)) {
+            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                intent.putExtra("MA_BT", bt.MaBT);
+                intent.putExtra("TEN_BT", bt.TenBT);
+                startActivity(intent);
+            });
+        }
+
         if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
                     Uri uri = Uri.parse(bt.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
-
                     String mimeType = getContentResolver().getType(uri);
                     if (mimeType == null) mimeType = "*/*";
-                    
                     intent.setDataAndType(uri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                    
                     startActivity(Intent.createChooser(intent, "Mở file bài tập bằng"));
                 } catch (Exception e) {
-                    Toast.makeText(this, "Lỗi: Không có quyền truy cập file hoặc file đã bị xóa", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Lỗi: Không có quyền truy cập file", Toast.LENGTH_LONG).show();
                 }
             });
         }
 
-        builder.setPositiveButton("OK", null);
+        builder.setNegativeButton("Hủy", null);
         builder.show();
     }
 }
