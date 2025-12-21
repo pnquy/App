@@ -39,5 +39,6 @@ public class Diem {
     public String MaGV;
 
     public double SoDiem;
-}
 
+    public String NhanXet; // Thêm thuộc tính này
+}

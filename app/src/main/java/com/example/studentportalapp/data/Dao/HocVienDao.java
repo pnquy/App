@@ -35,4 +35,7 @@ public interface HocVienDao {
 
     @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id LIMIT 1")
     HocVien getByIdSync(String id);
+
+    @Query("SELECT * FROM HOCVIEN WHERE MaTK = :maTK LIMIT 1")
+    HocVien getByMaTKSync(String maTK);
 }

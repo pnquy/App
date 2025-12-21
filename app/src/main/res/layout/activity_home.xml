@@ -84,6 +84,7 @@
                 android:padding="16dp"
                 android:weightSum="4">
 
+                <!-- Nút TKB -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -104,12 +105,17 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút ĐIỂM SỐ (ĐÃ THÊM ID) -->
                 <LinearLayout
+                    android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
                     <ImageView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
@@ -125,6 +131,7 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút Bài tập -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -146,6 +153,7 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút Thoát -->
                 <LinearLayout
                     android:id="@+id/quickActionLogout"
                     android:layout_width="0dp"

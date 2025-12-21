@@ -22,7 +22,6 @@
             android:theme="@style/Theme.StudentPortalApp" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -45,6 +44,7 @@
         <activity android:name=".ClassManageActivity" />
         <activity android:name=".SubmitAssignmentActivity" />
         <activity android:name=".ViewSubmissionsActivity" />
+        <activity android:name=".GradeActivity" />
     </application>
 
 </manifest>

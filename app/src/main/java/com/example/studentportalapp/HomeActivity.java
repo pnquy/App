@@ -50,6 +50,7 @@ public class HomeActivity extends BaseActivity {
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
+        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -63,6 +64,14 @@ public class HomeActivity extends BaseActivity {
 
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
+        }
+
+        // Xử lý sự kiện click mở màn hình Xem Điểm
+        if (btnGrades != null) {
+            btnGrades.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, GradeActivity.class);
+                startActivity(intent);
+            });
         }
 
         if (btnNoti != null) {

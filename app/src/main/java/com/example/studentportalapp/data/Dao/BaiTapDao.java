@@ -8,7 +8,6 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
-import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 
 import java.util.List;
@@ -31,6 +30,10 @@ public interface BaiTapDao {
     @Query("SELECT * FROM BAITAP")
     LiveData<List<BaiTap>> getAll();
 
-    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT") // sửa từ 'id' → 'MaBG'
+    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT")
     LiveData<BaiTap> getById(String maBT);
+
+    // Thêm phương thức này để lấy dữ liệu đồng bộ
+    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT LIMIT 1")
+    BaiTap getByIdSync(String maBT);
 }
