@@ -6,6 +6,10 @@ FILE: app\src\main\AndroidManifest.xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" >
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -22,7 +26,6 @@ FILE: app\src\main\AndroidManifest.xml
             android:theme="@style/Theme.StudentPortalApp" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -43,6 +46,12 @@ FILE: app\src\main\AndroidManifest.xml
         <activity android:name=".OptionsActivity" />
         <activity android:name=".ProfileActivity" />
         <activity android:name=".ClassManageActivity" />
+        <activity android:name=".SubmitAssignmentActivity" />
+        <activity android:name=".ViewSubmissionsActivity" />
+        <activity android:name=".GradeActivity" />
+        <activity android:name=".ClassStatsActivity" />
+        <activity android:name=".AssignmentStatsActivity" />
+        <activity android:name=".NotificationActivity" />
     </application>
 
 </manifest>
@@ -53,23 +62,61 @@ FILE: app\src\main\java\com\example\studentportalapp\AddAssignmentActivity.java
 package com.example.studentportalapp;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
+import android.provider.OpenableColumns;
 import android.widget.Button;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
-import java.util.Calendar;
+
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.Executors;
 
 public class AddAssignmentActivity extends BaseActivity {
 
     private MaterialToolbar toolbar;
-    private EditText etAssignmentTitle, etAssignmentInstructions, etAssignmentPoints, etAssignmentDueDate;
-    private Button btnAttachFile, btnAssign;
+    private EditText etTitle, etInstructions, etPoints, etDueDate;
+    private Button btnAttach, btnAssign;
     private Calendar myCalendar;
+    private Uri selectedFileUri;
+    private String selectedFileName;
+    private String currentMaLH;
+
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
+
+    private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    try {
+                        getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                    selectedFileName = getFileName(uri);
+                    btnAttach.setText("Đã chọn: " + selectedFileName);
+                }
+            }
+    );
 
     @Override
     protected int getLayoutResourceId() {
@@ -80,110 +127,210 @@ public class AddAssignmentActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Ánh xạ các view
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+
         toolbar = findViewById(R.id.toolbar_assignment);
-        etAssignmentTitle = findViewById(R.id.et_assignment_title);
-        etAssignmentInstructions = findViewById(R.id.et_assignment_instructions);
-        etAssignmentPoints = findViewById(R.id.et_assignment_points);
-        etAssignmentDueDate = findViewById(R.id.et_assignment_due_date);
-        btnAttachFile = findViewById(R.id.btn_attach_file_assignment);
+        etTitle = findViewById(R.id.et_assignment_title);
+        etInstructions = findViewById(R.id.et_assignment_instructions);
+        etPoints = findViewById(R.id.et_assignment_points);
+        etDueDate = findViewById(R.id.et_assignment_due_date);
+        btnAttach = findViewById(R.id.btn_attach_file_assignment);
         btnAssign = findViewById(R.id.btn_assign_assignment);
 
         myCalendar = Calendar.getInstance();
 
-        // 2. Xử lý nút "Close" (X) trên Toolbar
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // Đóng Activity
-            }
-        });
+        toolbar.setNavigationOnClickListener(v -> finish());
 
-        // 3. Xử lý logic cho ô "Hạn nộp"
-        DatePickerDialog.OnDateSetListener dateSetListener = new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                myCalendar.set(Calendar.YEAR, year);
-                myCalendar.set(Calendar.MONTH, month);
-                myCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                updateLabel(); // Cập nhật text cho EditText
-            }
+        DatePickerDialog.OnDateSetListener date = (view, year, month, day) -> {
+            myCalendar.set(Calendar.YEAR, year);
+            myCalendar.set(Calendar.MONTH, month);
+            myCalendar.set(Calendar.DAY_OF_MONTH, day);
+            updateLabel();
         };
 
-        // Khi người dùng nhấn vào ô EditText "Hạn nộp"
-        etAssignmentDueDate.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                new DatePickerDialog(AddAssignmentActivity.this, dateSetListener,
-                        myCalendar.get(Calendar.YEAR),
-                        myCalendar.get(Calendar.MONTH),
-                        myCalendar.get(Calendar.DAY_OF_MONTH)).show();
+        etDueDate.setOnClickListener(v -> new DatePickerDialog(AddAssignmentActivity.this, date,
+                myCalendar.get(Calendar.YEAR),
+                myCalendar.get(Calendar.MONTH),
+                myCalendar.get(Calendar.DAY_OF_MONTH)).show());
+
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+
+        btnAssign.setOnClickListener(v -> handleAssign());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String desc = intent.getStringExtra("EDIT_DESC");
+            String date = intent.getStringExtra("EDIT_DATE");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etInstructions.setText(desc);
+            etDueDate.setText(date);
+
+            if (existingFileName != null) {
+                btnAttach.setText("File cũ: " + existingFileName);
             }
-        });
 
-        // 4. Xử lý nút "Giao bài"
-        btnAssign.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String title = etAssignmentTitle.getText().toString().trim();
-                String points = etAssignmentPoints.getText().toString().trim();
-                String dueDate = etAssignmentDueDate.getText().toString().trim();
+            toolbar.setTitle("Cập Nhật Bài Tập");
+            btnAssign.setText("Lưu Thay Đổi");
+        }
+    }
 
-                if (title.isEmpty()) {
-                    etAssignmentTitle.setError("Tiêu đề không được trống");
-                    return;
-                }
-                if (dueDate.isEmpty()) {
-                    etAssignmentDueDate.setError("Vui lòng chọn hạn nộp");
-                    return;
-                }
+    private void updateLabel() {
+        String myFormat = "dd/MM/yyyy";
+        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
+        etDueDate.setText(sdf.format(myCalendar.getTime()));
+    }
 
-                // --- Logic của bạn để giao bài ---
-                // ...
+    private void handleAssign() {
+        String title = etTitle.getText().toString().trim();
+        String instructions = etInstructions.getText().toString().trim();
+        String points = etPoints.getText().toString().trim();
+        String dueDate = etDueDate.getText().toString().trim();
 
-                // Tạm thời
-                Toast.makeText(AddAssignmentActivity.this, "Đã giao bài: " + title, Toast.LENGTH_SHORT).show();
-                finish();
+        if (title.isEmpty()) {
+            etTitle.setError("Vui lòng nhập tiêu đề");
+            return;
+        }
+        if (dueDate.isEmpty()) {
+            etDueDate.setError("Vui lòng chọn hạn nộp");
+            return;
+        }
+
+        final BaiTap bt = new BaiTap();
+        bt.MaBT = isEditMode ? existingId : "BT" + System.currentTimeMillis();
+        bt.TenBT = title;
+        bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
+        bt.Deadline = dueDate;
+        bt.MaLH = currentMaLH;
+
+        if (selectedFileUri != null) {
+            bt.FilePath = selectedFileUri.toString();
+            bt.FileName = selectedFileName;
+        } else {
+            bt.FilePath = existingFilePath;
+            bt.FileName = existingFileName;
+        }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
+            if (isEditMode) {
+                db.baiTapDao().update(bt);
+                runOnUiThread(() -> Toast.makeText(this, "Đã cập nhật bài tập!", Toast.LENGTH_SHORT).show());
+            } else {
+                db.baiTapDao().insert(bt);
+                
+                // Gửi thông báo cho HỌC VIÊN
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài tập mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "HOCVIEN";
+                db.thongBaoDao().insert(tb);
+
+                runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
             }
-        });
-
-        // 5. Xử lý nút đính kèm
-        btnAttachFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(AddAssignmentActivity.this, "Mở trình chọn tệp...", Toast.LENGTH_SHORT).show();
-            }
+            runOnUiThread(this::finish);
         });
     }
 
-    // Hàm helper để cập nhật text cho ô Hạn nộp
-    private void updateLabel() {
-        String myFormat = "dd/MM/yyyy"; // Định dạng ngày
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
-        etAssignmentDueDate.setText(sdf.format(myCalendar.getTime()));
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) result = cursor.getString(index);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\AddLectureActivity.java
 ==================================================
 package com.example.studentportalapp;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.widget.Toolbar;
-import com.google.android.material.appbar.MaterialToolbar;
+
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiGiang;
+import com.example.studentportalapp.data.Entity.ThongBao;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.Executors;
 
 public class AddLectureActivity extends BaseActivity {
 
-    private Toolbar toolbar;
-    private EditText etLectureTitle;
-    private EditText etLectureDescription;
-    private Button btnAttachFile;
-    private Button btnPostLecture;
+    private EditText etTitle, etDesc;
+    private Button btnAttach;
+    private TextView tvFileName;
+    private View btnPost;
+
+    private String currentMaLH;
+    private String currentMaGV;
+    private Uri selectedFileUri = null;
+    private String selectedFileName = null;
+
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
+
+    private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    try {
+                        getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                    selectedFileName = getFileName(uri);
+                    if (tvFileName != null) {
+                        tvFileName.setText("Đã chọn: " + selectedFileName);
+                    }
+                }
+            }
+    );
 
     @Override
     protected int getLayoutResourceId() {
@@ -194,53 +341,115 @@ public class AddLectureActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Ánh xạ (Tìm) các view
-        toolbar = findViewById(R.id.toolbar);
-        etLectureTitle = findViewById(R.id.et_lecture_title);
-        etLectureDescription = findViewById(R.id.et_lecture_description);
-        btnAttachFile = findViewById(R.id.btn_attach_file);
-        btnPostLecture = findViewById(R.id.btn_post_lecture);
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        currentMaGV = prefs.getString("KEY_USER_ID", "");
 
-        // 2. Xử lý nút "Close" (X) trên Toolbar
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish(); // Đóng Activity này và quay lại
+        etTitle = findViewById(R.id.et_lecture_title);
+        etDesc = findViewById(R.id.et_lecture_description);
+        btnAttach = findViewById(R.id.btn_attach_file);
+        btnPost = findViewById(R.id.btn_post_lecture);
+        tvFileName = findViewById(R.id.tv_file_name);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar != null) toolbar.setNavigationOnClickListener(v -> finish());
+
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+
+        btnPost.setOnClickListener(v -> handlePost());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String content = intent.getStringExtra("EDIT_CONTENT");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etDesc.setText(content);
+            if (existingFileName != null) {
+                tvFileName.setText("File cũ: " + existingFileName);
             }
-        });
 
-        // 3. Xử lý nút "Đăng bài"
-        btnPostLecture.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String title = etLectureTitle.getText().toString().trim();
-                String description = etLectureDescription.getText().toString().trim();
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            if (toolbar != null) toolbar.setTitle("Sửa Bài Giảng");
+        }
+    }
 
-                if (title.isEmpty()) {
-                    etLectureTitle.setError("Tiêu đề không được để trống");
-                    return;
-                }
+    private void handlePost() {
+        String title = etTitle.getText().toString().trim();
+        String desc = etDesc.getText().toString().trim();
 
-                // --- Logic của bạn để đăng bài lên server/database ---
-                // ...
+        if (title.isEmpty()) {
+            etTitle.setError("Nhập tiêu đề!");
+            return;
+        }
 
-                // Tạm thời hiển thị thông báo
-                Toast.makeText(AddLectureActivity.this, "Đã đăng bài: " + title, Toast.LENGTH_SHORT).show();
-                finish(); // Đăng xong thì đóng Activity
+        BaiGiang bg = new BaiGiang();
+        bg.MaBG = isEditMode ? existingId : "BG" + System.currentTimeMillis();
+        bg.TenBG = title;
+        bg.NoiDung = desc;
+        bg.MaLH = currentMaLH;
+        bg.MaGV = currentMaGV;
+
+        if (selectedFileUri != null) {
+            bg.FilePath = selectedFileUri.toString();
+            bg.FileName = selectedFileName;
+        } else {
+            bg.FilePath = existingFilePath;
+            bg.FileName = existingFileName;
+        }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
+            if (isEditMode) {
+                database.baiGiangDao().update(bg);
+                runOnUiThread(() -> Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show());
+            } else {
+                database.baiGiangDao().insert(bg);
+                
+                // Tạo thông báo cho học viên
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài giảng mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "ALL";
+                database.thongBaoDao().insert(tb);
+
+                runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
             }
-        });
-
-        // 4. Xử lý nút "Đính kèm tệp" (Sẽ cần logic phức tạp hơn sau)
-        btnAttachFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Tạm thời
-                Toast.makeText(AddLectureActivity.this, "Mở trình chọn tệp...", Toast.LENGTH_SHORT).show();
-                // Bạn sẽ cần dùng Intent để mở trình quản lý tệp
-            }
+            runOnUiThread(this::finish);
         });
     }
+
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) result = cursor.getString(index);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\AddUserActivity.java
@@ -556,20 +765,29 @@ FILE: app\src\main\java\com\example\studentportalapp\AssignmentActivity.java
 ==================================================
 package com.example.studentportalapp;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.AssignmentAdapter;
-import com.example.studentportalapp.model.Assignment;
-import java.util.ArrayList;
-import java.util.List;
-
-// --- Imports được thêm vào ---
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import android.view.View;
-import android.content.Intent; // Thêm Intent để mở Activity mới
+import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class AssignmentActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String currentMaLH;
+    private TextView tvTitle, tvSubtitle;
 
     @Override
     protected int getLayoutResourceId() {
@@ -579,58 +797,221 @@ public class AssignmentActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_assignment);
 
-        // --- Ẩn/Hiện và Xử lý Click FAB ---
-        // 1. Tìm nút FAB
-        FloatingActionButton fabAddAssignment = findViewById(R.id.fab_add_assignment);
+        db = AppDatabase.getDatabase(getApplicationContext());
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
+        String role = prefs.getString("KEY_ROLE", "");
 
-        // 2. Lấy vai trò người dùng (Giả định)
-        String userRole = getUserRoleFromLogin();
+        tvTitle = findViewById(R.id.tv_title);
+        tvSubtitle = findViewById(R.id.tv_subtitle);
+        if (tvTitle != null) tvTitle.setText(tenLH);
+        if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-        // 3. Ẩn/Hiện nút FAB dựa trên vai trò
-        if (userRole.equals("teacher")) {
-            fabAddAssignment.setVisibility(View.VISIBLE); // Hiện nút cho giáo viên
-
-            // 4. Gán sự kiện click cho FAB
-            fabAddAssignment.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // Mở màn hình Thêm Bài Tập (AddAssignmentActivity)
-                    Intent intent = new Intent(AssignmentActivity.this, AddAssignmentActivity.class);
-                    startActivity(intent);
-                }
+        // Ánh xạ nút thông báo nếu có trong layout (thường nằm trong include background)
+        View btnNoti = findViewById(R.id.btnNoti);
+        if (btnNoti != null) {
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
             });
-
-        } else {
-            fabAddAssignment.setVisibility(View.GONE); // Ẩn nút đi với học viên
         }
 
+        recyclerView = findViewById(R.id.recyclerViewAssignments);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
 
-        RecyclerView recyclerViewAssignments = findViewById(R.id.recyclerViewAssignments);
-        recyclerViewAssignments.setLayoutManager(new LinearLayoutManager(this));
+        if ("GIAOVIEN".equals(role)) {
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> startActivity(new Intent(this, AddAssignmentActivity.class)));
+        } else {
+            fab.setVisibility(View.GONE);
+        }
 
-        List<Assignment> assignmentList = new ArrayList<>();
-        assignmentList.add(new Assignment("Task 8 - Group Work", "100 points", "View", "James Gosling", "July 13, 2021"));
-        assignmentList.add(new Assignment("Task 7 - Group Work", "100 points", "Unsubmit", "James Gosling", "July 13, 2021"));
-        assignmentList.add(new Assignment("Task 6 - Midterm", "80 points", "View", "James Gosling", "July 10, 2021"));
-        assignmentList.add(new Assignment("Task 5 - Review", "60 points", "View", "James Gosling", "July 7, 2021"));
-        assignmentList.add(new Assignment("Task 4 - Java IO", "90 points", "Unsubmit", "James Gosling", "July 5, 2021"));
-
-        AssignmentAdapter adapter = new AssignmentAdapter(this, assignmentList);
-        recyclerViewAssignments.setAdapter(adapter);
-
+        loadData();
     }
 
-    // --- Hàm giả định được thêm vào ---
-    // Cần thay thế hàm này bằng logic thật của bạn để lấy vai trò người dùng
-    private String getUserRoleFromLogin() {
-        // Ví dụ: Lấy từ SharedPreferences
-        // SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        // return prefs.getString("USER_ROLE", "student"); // "student" là giá trị mặc định
+    private void loadData() {
+        db.baiTapDao().getByLop(currentMaLH).observe(this, listBT -> {
+            if (listBT == null) listBT = new ArrayList<>();
+            AssignmentAdapter adapter = new AssignmentAdapter(this, listBT, this::showAssignmentDialog);
+            recyclerView.setAdapter(adapter);
+        });
+    }
 
-        // Tạm thời trả về "teacher" để bạn kiểm tra nút FAB
-        return "teacher";
+    private void showAssignmentDialog(BaiTap bt) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(bt.TenBT);
+
+        String msg = "Mô tả: " + bt.MoTa + "\n\nHạn nộp: " + bt.Deadline;
+        if (bt.FileName != null) {
+            msg += "\n\nFile đề bài: " + bt.FileName;
+        }
+        builder.setMessage(msg);
+
+        if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
+            builder.setNeutralButton("Mở File", (dialog, which) -> {
+                try {
+                    Uri uri = Uri.parse(bt.FilePath);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType == null) mimeType = "*/*";
+                    intent.setDataAndType(uri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                    startActivity(Intent.createChooser(intent, "Mở file bài tập bằng"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Lỗi: Không có quyền truy cập file", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản Lý", (dialog, which) -> showTeacherOptions(bt));
+        } else if ("HOCVIEN".equals(role)) {
+            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                intent.putExtra("MA_BT", bt.MaBT);
+                intent.putExtra("TEN_BT", bt.TenBT);
+                startActivity(intent);
+            });
+        }
+
+        builder.setNegativeButton("Đóng", null);
+        builder.show();
+    }
+
+    private void showTeacherOptions(BaiTap bt) {
+        String[] options = {"Xem bài nộp", "Chỉnh sửa", "Xóa bài tập"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, ViewSubmissionsActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            Intent editIntent = new Intent(this, AddAssignmentActivity.class);
+                            editIntent.putExtra("EDIT_ID", bt.MaBT);
+                            editIntent.putExtra("EDIT_TITLE", bt.TenBT);
+                            editIntent.putExtra("EDIT_DESC", bt.MoTa);
+                            editIntent.putExtra("EDIT_DATE", bt.Deadline);
+                            editIntent.putExtra("EDIT_FILE_PATH", bt.FilePath);
+                            editIntent.putExtra("EDIT_FILE_NAME", bt.FileName);
+                            startActivity(editIntent);
+                            break;
+                        case 2:
+                            confirmDelete(bt);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiTap bt) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài tập \"" + bt.TenBT + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiTapDao().delete(bt);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài tập!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+}
+
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\AssignmentStatsActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.os.Bundle;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.adapter.StatsStudentAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.model.StatsStudentItem;
+import com.google.android.material.appbar.MaterialToolbar;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+
+public class AssignmentStatsActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String maBT, tenBT, maLH;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_assignment_stats);
+
+        maBT = getIntent().getStringExtra("MA_BT");
+        tenBT = getIntent().getStringExtra("TEN_BT");
+        maLH = getIntent().getStringExtra("MA_LH");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbarAssignmentStats);
+        toolbar.setTitle(tenBT);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        TextView tvTitle = findViewById(R.id.tvAssignmentTitle);
+        tvTitle.setText("Bảng điểm: " + tenBT);
+
+        recyclerView = findViewById(R.id.rvStatsStudents);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        loadData();
+    }
+
+    private void loadData() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(maLH);
+            List<HocVien> allStudents = new ArrayList<>();
+            for(String id : studentIds) {
+                HocVien hv = db.hocVienDao().getByIdSync(id);
+                if(hv != null) allStudents.add(hv);
+            }
+
+            List<Diem> scores = db.diemDao().getByBaiTapSync(maBT);
+
+            List<StatsStudentItem> displayList = new ArrayList<>();
+            for (HocVien hv : allStudents) {
+                double score = 0;
+                boolean hasScore = false;
+
+                for (Diem d : scores) {
+                    if (d.MaHV.equals(hv.getMaHV())) {
+                        score = d.SoDiem;
+                        hasScore = true;
+                        break;
+                    }
+                }
+                displayList.add(new StatsStudentItem(hv, score, hasScore));
+            }
+
+            runOnUiThread(() -> {
+                StatsStudentAdapter adapter = new StatsStudentAdapter(displayList);
+                recyclerView.setAdapter(adapter);
+            });
+        });
     }
 }
 
@@ -828,7 +1209,7 @@ FILE: app\src\main\java\com\example\studentportalapp\ClassManageActivity.java
 ==================================================
 package com.example.studentportalapp;
 
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -858,7 +1239,7 @@ public class ClassManageActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private List<TeacherItem> allTeachers = new ArrayList<>(); // Danh sách tất cả GV để chọn
+    private List<TeacherItem> allTeachers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -872,7 +1253,6 @@ public class ClassManageActivity extends AppCompatActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnAddClass).setOnClickListener(v -> showAddEditDialog(null));
 
-        // Tải danh sách giáo viên trước để dùng cho việc chọn GVCN
         loadTeachers();
     }
 
@@ -882,31 +1262,23 @@ public class ClassManageActivity extends AppCompatActivity {
         loadClasses();
     }
 
-    // Tải danh sách giáo viên vào bộ nhớ để dùng cho Dialog chọn GV
     private void loadTeachers() {
         executor.execute(() -> {
-            // Lưu ý: Đảm bảo GiaoVienDao có hàm getAllSync() trả về List<GiaoVien>
             try {
                 List<GiaoVien> teachers = db.giaoVienDao().getAllSync();
-                // Nếu dùng TeacherItem thì convert, ở đây giả định dùng GiaoVien trực tiếp cho đơn giản
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    // Tải danh sách lớp kèm thông tin phụ (Tên GV, Sĩ số)
     private void loadClasses() {
-        // Observer chạy trên Main Thread, nên an toàn
         db.lopHocDao().getAll().observe(this, lopHocList -> {
             executor.execute(() -> {
                 List<ClassDisplayItem> displayList = new ArrayList<>();
-
-                // Lấy danh sách GV để map tên
                 List<GiaoVien> currentTeachers = db.giaoVienDao().getAllSync();
 
                 for (LopHoc lh : lopHocList) {
-                    // 1. Lấy tên GVCN
                     String tenGV = "Chưa phân công";
                     for (GiaoVien gv : currentTeachers) {
                         if (gv.getMaGV().equals(lh.MaGV)) {
@@ -914,13 +1286,10 @@ public class ClassManageActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    // 2. Đếm sĩ số từ bảng trung gian THAMGIA
                     int count = db.thamGiaDao().countStudentsByClass(lh.MaLH);
-
                     displayList.add(new ClassDisplayItem(lh, tenGV, count));
                 }
 
-                // Cập nhật UI (Bắt buộc runOnUiThread)
                 runOnUiThread(() -> {
                     ClassAdapter adapter = new ClassAdapter(displayList, new ClassAdapter.OnItemClickListener() {
                         @Override
@@ -930,7 +1299,10 @@ public class ClassManageActivity extends AppCompatActivity {
 
                         @Override
                         public void onStats(ClassDisplayItem item) {
-                            Toast.makeText(ClassManageActivity.this, "Chức năng thống kê đang phát triển", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(ClassManageActivity.this, ClassStatsActivity.class);
+                            intent.putExtra("MA_LH", item.lopHoc.MaLH);
+                            intent.putExtra("TEN_LH", item.lopHoc.TenLH);
+                            startActivity(intent);
                         }
 
                         @Override
@@ -949,8 +1321,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Dialog Thêm/Sửa Lớp
-    // Dialog Thêm/Sửa Lớp (Đã cập nhật Check trùng + Khóa mã khi sửa)
     private String[] teacherNames;
     private List<GiaoVien> teacherList;
 
@@ -958,22 +1328,17 @@ public class ClassManageActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(existingClass == null ? "Thêm Lớp Mới" : "Sửa Lớp Học");
 
-        // Layout dialog cần thêm 1 TextView hoặc EditText để chọn GV
-        // Bạn cần sửa file xml dialog_add_class.xml thêm 1 EditText id là etMaGV
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_class, null);
 
         TextInputEditText etMa = view.findViewById(R.id.etMaLH);
         TextInputEditText etTen = view.findViewById(R.id.etTenLH);
-        TextInputEditText etGV = view.findViewById(R.id.etMaGV); // Ô chọn giáo viên
+        TextInputEditText etGV = view.findViewById(R.id.etMaGV);
 
-        // Cấu hình ô chọn GV: Không cho nhập tay, chỉ được chọn
         etGV.setFocusable(false);
         etGV.setClickable(true);
 
-        // Biến lưu mã GV được chọn
         final String[] selectedMaGV = {existingClass != null ? existingClass.MaGV : null};
 
-        // Load danh sách giáo viên để chuẩn bị cho việc chọn
         executor.execute(() -> {
             teacherList = db.giaoVienDao().getAllSync();
             teacherNames = new String[teacherList.size()];
@@ -981,7 +1346,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 teacherNames[i] = teacherList.get(i).getMaGV() + " - " + teacherList.get(i).getTenGV();
             }
 
-            // Hiển thị tên GV hiện tại (nếu đang sửa)
             if (existingClass != null && existingClass.MaGV != null) {
                 for (GiaoVien gv : teacherList) {
                     if (gv.getMaGV().equals(existingClass.MaGV)) {
@@ -992,7 +1356,6 @@ public class ClassManageActivity extends AppCompatActivity {
             }
         });
 
-        // Sự kiện bấm vào ô chọn GV -> Hiện list chọn
         etGV.setOnClickListener(v -> {
             if (teacherNames == null || teacherNames.length == 0) {
                 Toast.makeText(this, "Chưa có giáo viên nào!", Toast.LENGTH_SHORT).show();
@@ -1003,12 +1366,11 @@ public class ClassManageActivity extends AppCompatActivity {
                     .setItems(teacherNames, (dialog, which) -> {
                         GiaoVien selected = teacherList.get(which);
                         etGV.setText(selected.getMaGV() + " - " + selected.getTenGV());
-                        selectedMaGV[0] = selected.getMaGV(); // Lưu mã GV đã chọn
+                        selectedMaGV[0] = selected.getMaGV();
                     })
                     .show();
         });
 
-        // ... Code fill dữ liệu cũ vào etMa, etTen ...
         if (existingClass != null) {
             etMa.setText(existingClass.MaLH);
             etMa.setEnabled(false);
@@ -1029,7 +1391,7 @@ public class ClassManageActivity extends AppCompatActivity {
             LopHoc lh = new LopHoc();
             lh.MaLH = ma;
             lh.TenLH = ten;
-            lh.MaGV = selectedMaGV[0]; // <-- LƯU MÃ GV VÀO ĐÂY
+            lh.MaGV = selectedMaGV[0];
 
             executor.execute(() -> {
                 if (existingClass == null) db.lopHocDao().insert(lh);
@@ -1046,13 +1408,9 @@ public class ClassManageActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // Dialog chọn nhiều học viên vào lớp (Logic Many-to-Many)
     private void showAddStudentToClassDialog(LopHoc lh) {
         executor.execute(() -> {
-            // Lấy tất cả học viên
             List<HocVien> allStudents = db.hocVienDao().getAllSync();
-
-            // Lấy danh sách ID học viên ĐANG ở trong lớp này (từ bảng THAMGIA)
             List<String> enrolledStudentIds = db.thamGiaDao().getStudentIdsByClass(lh.MaLH);
 
             String[] studentNames = new String[allStudents.size()];
@@ -1095,17 +1453,14 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Lưu thay đổi vào bảng THAMGIA
     private void saveStudentClassChanges(LopHoc currentClass, List<String> oldIds, List<String> newIds) {
         executor.execute(() -> {
-            // A. Thêm mới
             for (String newId : newIds) {
                 if (!oldIds.contains(newId)) {
                     db.thamGiaDao().insert(new com.example.studentportalapp.data.Entity.ThamGia(newId, currentClass.MaLH));
                 }
             }
 
-            // B. Xóa bỏ
             for (String oldId : oldIds) {
                 if (!newIds.contains(oldId)) {
                     db.thamGiaDao().removeStudentFromClass(oldId, currentClass.MaLH);
@@ -1119,7 +1474,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Xóa lớp học
     private void showDeleteConfirm(LopHoc lh) {
         new AlertDialog.Builder(this)
                 .setTitle("Cảnh báo")
@@ -1127,8 +1481,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     executor.execute(() -> {
                         db.lopHocDao().delete(lh);
-
-                        // --- KHẮC PHỤC LỖI CRASH Ở ĐÂY ---
                         runOnUiThread(() -> {
                             loadClasses();
                             Toast.makeText(ClassManageActivity.this, "Đã xóa lớp thành công!", Toast.LENGTH_SHORT).show();
@@ -1140,23 +1492,105 @@ public class ClassManageActivity extends AppCompatActivity {
 }
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\ClassStatsActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Intent; import android.os.Bundle; import androidx.appcompat.app.AppCompatActivity; import androidx.recyclerview.widget.LinearLayoutManager; import androidx.recyclerview.widget.RecyclerView; import com.example.studentportalapp.adapter.StatsAssignmentAdapter; import com.example.studentportalapp.data.AppDatabase; import com.example.studentportalapp.data.Entity.BaiTap; import com.example.studentportalapp.data.Entity.Diem; import com.example.studentportalapp.model.StatsAssignmentItem; import com.google.android.material.appbar.MaterialToolbar; import java.util.ArrayList; import java.util.List; import java.util.concurrent.Executors;
+
+public class ClassStatsActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private SimpleBarChart barChart;
+    private AppDatabase db;
+    private String maLH, tenLH;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_class_stats);
+
+        maLH = getIntent().getStringExtra("MA_LH");
+        tenLH = getIntent().getStringExtra("TEN_LH");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbarClassStats);
+        toolbar.setTitle("Thống kê: " + tenLH);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        barChart = findViewById(R.id.barChart);
+        recyclerView = findViewById(R.id.rvStatsAssignments);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        loadData();
+    }
+
+    private void loadData() {
+        db.baiTapDao().getByLop(maLH).observe(this, listBaiTap -> {
+            Executors.newSingleThreadExecutor().execute(() -> {
+                List<StatsAssignmentItem> statsList = new ArrayList<>();
+
+                for (BaiTap bt : listBaiTap) {
+                    List<Diem> listDiem = db.diemDao().getByBaiTapSync(bt.MaBT);
+
+                    double totalScore = 0;
+                    int count = 0;
+                    for (Diem d : listDiem) {
+                        totalScore += d.SoDiem;
+                        count++;
+                    }
+
+                    double avg = (count > 0) ? (totalScore / count) : 0;
+                    statsList.add(new StatsAssignmentItem(bt, avg, count));
+                }
+
+                runOnUiThread(() -> {
+                    barChart.setData(statsList);
+
+                    StatsAssignmentAdapter adapter = new StatsAssignmentAdapter(statsList, item -> {
+                        Intent intent = new Intent(ClassStatsActivity.this, AssignmentStatsActivity.class);
+                        intent.putExtra("MA_BT", item.baiTap.MaBT);
+                        intent.putExtra("TEN_BT", item.baiTap.TenBT);
+                        intent.putExtra("MA_LH", maLH);
+                        startActivity(intent);
+                    });
+                    recyclerView.setAdapter(adapter);
+                });
+            });
+        });
+    }
+}
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\CourseActivity.java
 ==================================================
 package com.example.studentportalapp;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.CourseAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.model.ActivityItem;
-import java.util.ArrayList;
-
-// --- Imports được thêm vào ---
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import android.view.View;
-import android.content.Intent; // Thêm Intent để mở Activity mới
+import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class CourseActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private TextView tvTitle, tvSubtitle;
+    private AppDatabase db;
+    private String currentMaLH;
+    private ArrayList<BaiGiang> originalList;
 
     @Override
     protected int getLayoutResourceId() {
@@ -1166,56 +1600,131 @@ public class CourseActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        db = AppDatabase.getDatabase(getApplicationContext());
 
-        // --- Ẩn/Hiện và Xử lý Click FAB ---
-        // 1. Tìm nút FAB
-        FloatingActionButton fabAdd = findViewById(R.id.fab_add);
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
+        String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
+        String role = prefs.getString("KEY_ROLE", "");
 
-        // 2. Lấy vai trò người dùng (Giả định)
-        // Cần thay thế hàm này bằng logic thật để lấy vai trò từ SharedPreferences hoặc Intent
-        String userRole = getUserRoleFromLogin();
+        tvTitle = findViewById(R.id.tv_title);
+        tvSubtitle = findViewById(R.id.tv_subtitle);
+        recyclerView = findViewById(R.id.rvActivityCourse);
+        FloatingActionButton fab = findViewById(R.id.fab_add);
 
-        // 3. Ẩn/Hiện nút FAB dựa trên vai trò
-        if (userRole.equals("teacher")) {
-            fabAdd.setVisibility(View.VISIBLE); // Hiện nút cho giáo viên
+        tvTitle.setText(tenLH);
+        tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-            // 4. Gán sự kiện click cho FAB
-            fabAdd.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // Mở màn hình Thêm Bài Giảng (AddLectureActivity)
-                    Intent intent = new Intent(CourseActivity.this, AddLectureActivity.class);
-                    startActivity(intent);
-                }
-            });
-
-        } else {
-            fabAdd.setVisibility(View.GONE); // Ẩn nút đi với học viên
-        }
-
-
-        RecyclerView recyclerView = findViewById(R.id.rvActivityCourse);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        ArrayList<ActivityItem> activityList = new ArrayList<>();
-        activityList.add(new ActivityItem("James Gosling", "July 13, 2021", "Java Stack Program", "JavaStack.docx", "26"));
-        activityList.add(new ActivityItem("James Gosling", "July 12, 2021", "Data Structures - Lesson 6", "Lesson6.docx", "28"));
-        activityList.add(new ActivityItem("Bjarne Stroustrup", "July 10, 2021", "C++ Template Programming", "C++Templates.pdf", "19"));
-        activityList.add(new ActivityItem("Bjarne Stroustrup", "July 9, 2021", "C++ Basics", "C++.pdf", "25"));
+        if ("GIAOVIEN".equals(role)) {
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> startActivity(new Intent(this, AddLectureActivity.class)));
+        } else {
+            fab.setVisibility(View.GONE);
+        }
 
-        CourseAdapter adapter = new CourseAdapter(activityList);
-        recyclerView.setAdapter(adapter);
+        loadData();
     }
 
-    // --- Hàm giả định được thêm vào ---
-    // Cần thay thế hàm này bằng logic thật của bạn để lấy vai trò người dùng
-    private String getUserRoleFromLogin() {
-        // Ví dụ: Lấy từ SharedPreferences
-        // SharedPreferences prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE);
-        // return prefs.getString("USER_ROLE", "student"); // "student" là giá trị mặc định
+    private void loadData() {
+        db.baiGiangDao().getByLop(currentMaLH).observe(this, listBG -> {
+            originalList = new ArrayList<>(listBG);
+            ArrayList<ActivityItem> items = new ArrayList<>();
 
-        // Tạm thời trả về "teacher" để bạn kiểm tra nút FAB
-        return "teacher";
+            for (BaiGiang bg : listBG) {
+                String fName = (bg.FileName != null) ? bg.FileName : "";
+                items.add(new ActivityItem(
+                        "GV: " + bg.MaGV,
+                        "Mới đăng",
+                        bg.TenBG,
+                        fName,
+                        "0"
+                ));
+            }
+
+            CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
+            recyclerView.setAdapter(adapter);
+        });
+    }
+
+    private void showLectureDialog(BaiGiang bg) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(bg.TenBG);
+
+        String msg = "Nội dung: " + (bg.NoiDung == null ? "" : bg.NoiDung);
+        if (bg.FileName != null && !bg.FileName.isEmpty()) {
+            msg += "\n\nTệp đính kèm: " + bg.FileName;
+        }
+        builder.setMessage(msg);
+
+        if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
+            builder.setNeutralButton("Mở File", (dialog, which) -> {
+                try {
+                    Uri uri = Uri.parse(bg.FilePath);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+
+                    String mimeType = getContentResolver().getType(uri);
+                    if (mimeType == null) mimeType = "*/*";
+
+                    intent.setDataAndType(uri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+
+                    startActivity(Intent.createChooser(intent, "Mở bài giảng bằng"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Lỗi: File không tồn tại hoặc không có quyền truy cập", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản lý", (dialog, which) -> showTeacherOptions(bg));
+        }
+
+        builder.setNegativeButton("Đóng", null);
+        builder.show();
+    }
+
+    private void showTeacherOptions(BaiGiang bg) {
+        String[] options = {"Chỉnh sửa", "Xóa bài giảng"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, AddLectureActivity.class);
+                            intent.putExtra("EDIT_ID", bg.MaBG);
+                            intent.putExtra("EDIT_TITLE", bg.TenBG);
+                            intent.putExtra("EDIT_CONTENT", bg.NoiDung);
+                            intent.putExtra("EDIT_FILE_PATH", bg.FilePath);
+                            intent.putExtra("EDIT_FILE_NAME", bg.FileName);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            confirmDelete(bg);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiGiang bg) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài giảng \"" + bg.TenBG + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiGiangDao().delete(bg);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài giảng!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }
 
@@ -1497,6 +2006,140 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 }
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\GradeActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.Toast;
+
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.studentportalapp.adapter.GradeAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.data.Entity.LopHoc;
+import com.google.android.material.appbar.MaterialToolbar;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+
+public class GradeActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private Spinner spinnerClasses;
+    private AppDatabase db;
+    private String currentMaTK;
+    private String realMaHV;
+    private List<LopHoc> listAllLop;
+
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_grade;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaTK = prefs.getString("KEY_USER_ID", "");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_grade);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        spinnerClasses = findViewById(R.id.spinner_classes);
+        recyclerView = findViewById(R.id.rv_grades);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        findRealStudentId();
+    }
+
+    private void findRealStudentId() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            HocVien hv = db.hocVienDao().getByMaTKSync(currentMaTK);
+            if (hv != null) {
+                realMaHV = hv.getMaHV();
+                runOnUiThread(this::loadClasses);
+            } else {
+                runOnUiThread(() -> Toast.makeText(this, "Không tìm thấy thông tin học viên!", Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    private void loadClasses() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            listAllLop = db.thamGiaDao().getClassesByStudent(currentMaTK);
+            
+            runOnUiThread(() -> {
+                if (listAllLop == null || listAllLop.isEmpty()) {
+                    Toast.makeText(this, "Bạn chưa tham gia lớp học nào.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                List<String> tenLopList = new ArrayList<>();
+                for (LopHoc lh : listAllLop) {
+                    tenLopList.add(lh.TenLH + " (" + lh.MaLH + ")");
+                }
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+                        android.R.layout.simple_spinner_item, tenLopList);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerClasses.setAdapter(adapter);
+
+                spinnerClasses.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        String selectedMaLH = listAllLop.get(position).MaLH;
+                        loadGradesByClass(selectedMaLH);
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {}
+                });
+            });
+        });
+    }
+
+    private void loadGradesByClass(String maLH) {
+        db.diemDao().getByHocVien(realMaHV).observe(this, listDiem -> {
+            if (listDiem == null) {
+                recyclerView.setAdapter(new GradeAdapter(this, new ArrayList<>()));
+                return;
+            }
+
+            Executors.newSingleThreadExecutor().execute(() -> {
+                List<Diem> filteredList = new ArrayList<>();
+                for (Diem d : listDiem) {
+                    if (isAssignmentInClass(d.MaBT, maLH)) {
+                        filteredList.add(d);
+                    }
+                }
+
+                runOnUiThread(() -> {
+                    GradeAdapter adapter = new GradeAdapter(this, filteredList);
+                    recyclerView.setAdapter(adapter);
+                });
+            });
+        });
+    }
+
+    private boolean isAssignmentInClass(String maBT, String maLH) {
+        com.example.studentportalapp.data.Entity.BaiTap bt = db.baiTapDao().getByIdSync(maBT);
+        return bt != null && maLH.equals(bt.MaLH);
+    }
+}
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\HomeActivity.java
 ==================================================
 package com.example.studentportalapp;
@@ -1526,12 +2169,8 @@ public class HomeActivity extends BaseActivity {
 
     private TextView tvWelcome;
     private RecyclerView recyclerView;
-
-    // Database
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    // Biến lưu thông tin phiên đăng nhập
     private String currentUserId;
     private String currentUserRole;
     private String currentUserName;
@@ -1545,43 +2184,45 @@ public class HomeActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Khởi tạo Database
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // 2. Lấy thông tin User từ SharedPreferences
         SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
         currentUserId = prefs.getString("KEY_USER_ID", "");
         currentUserRole = prefs.getString("KEY_ROLE", "");
         currentUserName = prefs.getString("KEY_NAME", "User");
 
-        // 3. Ánh xạ View (Khớp với layout activity_home.xml MỚI)
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
-
-        // --- SỬA LỖI Ở ĐÂY: Dùng đúng ID của layout mới ---
         View btnLogout = findViewById(R.id.quickActionLogout);
+        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
         View btnNoti = findViewById(R.id.btnNoti);
 
-        // 4. Set dữ liệu hiển thị
         if (tvWelcome != null) {
             tvWelcome.setText(currentUserName);
         }
 
-        // 5. Cấu hình RecyclerView (1 cột dọc cho đẹp)
         if (recyclerView != null) {
             recyclerView.setLayoutManager(new LinearLayoutManager(this));
             loadUserCourses();
         }
 
-        // 6. Xử lý sự kiện Click (Kiểm tra null để tránh Crash)
         if (btnLogout != null) {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
 
+        // Xử lý sự kiện click mở màn hình Xem Điểm
+        if (btnGrades != null) {
+            btnGrades.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, GradeActivity.class);
+                startActivity(intent);
+            });
+        }
+
         if (btnNoti != null) {
-            btnNoti.setOnClickListener(v ->
-                    Toast.makeText(this, "Không có thông báo mới", Toast.LENGTH_SHORT).show()
-            );
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -1598,16 +2239,21 @@ public class HomeActivity extends BaseActivity {
             List<LopHoc> finalList = listLop;
 
             runOnUiThread(() -> {
-                // Kiểm tra null lần nữa cho chắc chắn
                 if (recyclerView == null) return;
 
                 if (finalList == null || finalList.isEmpty()) {
-                    // Có thể hiện 1 textview thông báo trống nếu muốn
                     Toast.makeText(HomeActivity.this, "Chưa có lớp học nào.", Toast.LENGTH_SHORT).show();
                 }
 
                 UserCourseAdapter adapter = new UserCourseAdapter(HomeActivity.this, finalList, lopHoc -> {
-                    Toast.makeText(HomeActivity.this, "Đã chọn: " + lopHoc.TenLH, Toast.LENGTH_SHORT).show();
+                    SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putString("CURRENT_CLASS_ID", lopHoc.MaLH);
+                    editor.putString("CURRENT_CLASS_NAME", lopHoc.TenLH);
+                    editor.apply();
+
+                    Intent intent = new Intent(HomeActivity.this, CourseActivity.class);
+                    startActivity(intent);
                 });
                 recyclerView.setAdapter(adapter);
             });
@@ -1639,6 +2285,7 @@ public class HomeActivity extends BaseActivity {
         loadUserCourses();
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\LoginActivity.java
@@ -1770,6 +2417,70 @@ public class MainActivity extends AppCompatActivity {
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\NotificationActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.adapter.NotificationAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.google.android.material.appbar.MaterialToolbar;
+import java.util.concurrent.Executors;
+
+public class NotificationActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String currentMaTK;
+
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_notification;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        currentMaTK = prefs.getString("KEY_USER_ID", "");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_notification);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        }
+
+        recyclerView = findViewById(R.id.rv_notifications);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        loadNotifications();
+    }
+
+    private void loadNotifications() {
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        // Lấy thông báo gửi riêng cho mình HOẶC thông báo chung cho vai trò của mình
+        db.thongBaoDao().getByNguoiNhan(currentMaTK, role).observe(this, list -> {
+            if (list != null) {
+                NotificationAdapter adapter = new NotificationAdapter(list);
+                recyclerView.setAdapter(adapter);
+
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    db.thongBaoDao().markAllAsRead(currentMaTK, role);
+                });
+            }
+        });
+    }
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\OptionsActivity.java
 ==================================================
 package com.example.studentportalapp;
@@ -1833,51 +2544,84 @@ FILE: app\src\main\java\com\example\studentportalapp\PeopleActivity.java
 ==================================================
 package com.example.studentportalapp;
 
-
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.PeopleAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.GiaoVien;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.data.Entity.LopHoc;
 import com.example.studentportalapp.model.Person;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 public class PeopleActivity extends BaseActivity {
 
+    private RecyclerView rvProf, rvStud;
+    private TextView tvCount;
+    private AppDatabase db;
+    private String currentMaLH;
+
     @Override
     protected int getLayoutResourceId() {
-        // Chỉ định layout riêng của activity này
         return R.layout.activity_people;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(R.layout.activity_people);
+        db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Professors
-        RecyclerView recyclerViewProfessors = findViewById(R.id.recyclerViewProfessors);
-        recyclerViewProfessors.setLayoutManager(new LinearLayoutManager(this));
-        List<Person> professors = new ArrayList<>();
-        professors.add(new Person("James Gosling", "Professor"));
-        recyclerViewProfessors.setAdapter(new PeopleAdapter(professors));
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
 
-        // Students
-        RecyclerView recyclerViewStudents = findViewById(R.id.recyclerViewStudents);
-        recyclerViewStudents.setLayoutManager(new LinearLayoutManager(this));
-        List<Person> students = new ArrayList<>();
-        students.add(new Person("Antonio, Mark", "Student"));
-        students.add(new Person("Aramil, Nicole", "Student"));
-        students.add(new Person("Baganian, Benladin", "Student"));
-        students.add(new Person("Balili, Jayvie", "Student"));
-        students.add(new Person("Banca, Bernadette", "Student"));
-        students.add(new Person("Bergantinos, Eugene", "Student"));
-        recyclerViewStudents.setAdapter(new PeopleAdapter(students));
+        rvProf = findViewById(R.id.recyclerViewProfessors);
+        rvStud = findViewById(R.id.recyclerViewStudents);
+        tvCount = findViewById(R.id.txtStudentCount);
 
+        rvProf.setLayoutManager(new LinearLayoutManager(this));
+        rvStud.setLayoutManager(new LinearLayoutManager(this));
+
+        loadPeople();
+    }
+
+    private void loadPeople() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<Person> listGV = new ArrayList<>();
+            List<Person> listHV = new ArrayList<>();
+
+            LopHoc lop = db.lopHocDao().getByIdSync(currentMaLH);
+            if (lop != null) {
+                List<GiaoVien> allGV = db.giaoVienDao().getAllSync();
+                for (GiaoVien gv : allGV) {
+                    if (gv.getMaGV().equals(lop.MaGV)) {
+                        listGV.add(new Person(gv.getTenGV(), "Giáo viên chủ nhiệm"));
+                        break;
+                    }
+                }
+            }
+
+            List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(currentMaLH);
+            List<HocVien> allHV = db.hocVienDao().getAllSync();
+
+            for (HocVien hv : allHV) {
+                if (studentIds.contains(hv.getMaHV())) {
+                    listHV.add(new Person(hv.getTenHV(), "Học viên"));
+                }
+            }
+
+            runOnUiThread(() -> {
+                rvProf.setAdapter(new PeopleAdapter(listGV));
+                rvStud.setAdapter(new PeopleAdapter(listHV));
+                tvCount.setText("Sĩ số: " + listHV.size());
+            });
+        });
     }
 }
-
-
 
 
 ==================================================
@@ -2017,6 +2761,98 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\SimpleBarChart.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Context; import android.graphics.Canvas; import android.graphics.Color; import android.graphics.Paint; import android.graphics.Rect; import android.util.AttributeSet; import android.view.View;
+
+import androidx.annotation.Nullable;
+
+import com.example.studentportalapp.model.StatsAssignmentItem;
+
+import java.util.ArrayList; import java.util.List;
+
+public class SimpleBarChart extends View {
+
+    private List<StatsAssignmentItem> data = new ArrayList<>();
+    private Paint barPaint;
+    private Paint textPaint;
+    private Paint axisPaint;
+    private float maxScore = 10f;
+
+    public SimpleBarChart(Context context) {
+        super(context);
+        init();
+    }
+
+    public SimpleBarChart(Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    private void init() {
+        barPaint = new Paint();
+        barPaint.setColor(Color.parseColor("#4CAF50"));
+        barPaint.setStyle(Paint.Style.FILL);
+
+        textPaint = new Paint();
+        textPaint.setColor(Color.BLACK);
+        textPaint.setTextSize(30f);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setAntiAlias(true);
+
+        axisPaint = new Paint();
+        axisPaint.setColor(Color.GRAY);
+        axisPaint.setStrokeWidth(5f);
+    }
+
+    public void setData(List<StatsAssignmentItem> data) {
+        this.data = data;
+        invalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (data == null || data.isEmpty()) return;
+
+        float padding = 50f;
+        float chartWidth = getWidth() - 2 * padding;
+        float chartHeight = getHeight() - 2 * padding;
+        float barWidth = chartWidth / (data.size() * 2);
+        float spacing = barWidth;
+
+        canvas.drawLine(padding, getHeight() - padding, getWidth() - padding, getHeight() - padding, axisPaint);
+        canvas.drawLine(padding, getHeight() - padding, padding, padding, axisPaint);
+
+        for (int i = 0; i < data.size(); i++) {
+            StatsAssignmentItem item = data.get(i);
+            float score = (float) item.averageScore;
+
+            float barHeight = (score / maxScore) * chartHeight;
+            float left = padding + spacing + i * (barWidth + spacing);
+            float top = (getHeight() - padding) - barHeight;
+            float right = left + barWidth;
+            float bottom = getHeight() - padding;
+
+            if (score >= 8.0) barPaint.setColor(Color.parseColor("#4CAF50"));
+            else if (score >= 5.0) barPaint.setColor(Color.parseColor("#FF9800"));
+            else barPaint.setColor(Color.parseColor("#F44336"));
+
+            canvas.drawRect(left, top, right, bottom, barPaint);
+
+            String scoreText = String.format("%.1f", score);
+            canvas.drawText(scoreText, left + barWidth / 2, top - 10, textPaint);
+
+            String label = "BT" + (i + 1);
+            canvas.drawText(label, left + barWidth / 2, bottom + 40, textPaint);
+        }
     }
 }
 
@@ -2211,6 +3047,165 @@ public class StudentManageActivity extends AppCompatActivity {
         dialog.show();
     }
 }
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\SubmitAssignmentActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
+import com.google.android.material.appbar.MaterialToolbar;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+
+public class SubmitAssignmentActivity extends BaseActivity {
+
+    private EditText etSubmitTitle, etNote;
+    private Button btnAttach, btnSubmit;
+    private Uri selectedFileUri;
+    private String selectedFileName;
+    private String maBT;
+    private String currentMaHV;
+
+    private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri != null) {
+                    selectedFileUri = uri;
+                    try {
+                        getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (SecurityException e) {
+                        e.printStackTrace();
+                    }
+                    selectedFileName = getFileName(uri);
+                    btnAttach.setText("Đã chọn: " + selectedFileName);
+                }
+            }
+    );
+
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_submit_assignment;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        currentMaHV = prefs.getString("KEY_USER_ID", "");
+        maBT = getIntent().getStringExtra("MA_BT");
+        String tenBT = getIntent().getStringExtra("TEN_BT");
+
+        etSubmitTitle = findViewById(R.id.et_submit_title);
+        etNote = findViewById(R.id.et_submit_note);
+        btnAttach = findViewById(R.id.btn_attach_file_submit);
+        btnSubmit = findViewById(R.id.btn_submit_final);
+
+        if (etSubmitTitle != null && tenBT != null) {
+            etSubmitTitle.setText(tenBT);
+        }
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_submit);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        }
+
+        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+
+        btnSubmit.setOnClickListener(v -> {
+            if (selectedFileUri == null) {
+                Toast.makeText(this, "Vui lòng đính kèm bài làm!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            handlePostSubmission();
+        });
+    }
+
+    private void handlePostSubmission() {
+        String note = etNote.getText().toString().trim();
+        String timeStamp = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+
+        NopBai nb = new NopBai();
+        nb.MaNB = "NB" + System.currentTimeMillis();
+        nb.MaBT = maBT;
+        nb.MaHV = currentMaHV;
+        nb.FileName = selectedFileName;
+        nb.FilePath = selectedFileUri.toString();
+        nb.GhiChu = note;
+        nb.NgayNop = timeStamp;
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
+            database.nopBaiDao().insert(nb);
+
+            // Tìm thông tin học viên để lấy tên
+            HocVien hv = database.hocVienDao().getByMaTKSync(currentMaHV);
+            String tenHV = (hv != null) ? hv.getTenHV() : "Học viên";
+
+            // Gửi thông báo cho giáo viên
+            com.example.studentportalapp.data.Entity.BaiTap bt = database.baiTapDao().getByIdSync(maBT);
+            if (bt != null) {
+                com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
+                if (lh != null) {
+                    ThongBao tb = new ThongBao();
+                    tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
+                    tb.NgayTao = timeStamp;
+                    tb.NguoiNhan = lh.MaGV; 
+                    database.thongBaoDao().insert(tb);
+                }
+            }
+
+            runOnUiThread(() -> {
+                Toast.makeText(this, "Nộp bài thành công!", Toast.LENGTH_SHORT).show();
+                finish();
+            });
+        });
+    }
+
+    private String getFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (index >= 0) result = cursor.getString(index);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (result == null) {
+            result = uri.getPath();
+            int cut = result.lastIndexOf('/');
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
+        }
+        return result;
+    }
+}
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\TeacherManageActivity.java
@@ -2423,33 +3418,120 @@ public class ToDoActivity extends BaseActivity {
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\ViewSubmissionsActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.studentportalapp.adapter.SubmissionsAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.NopBai;
+import com.google.android.material.appbar.MaterialToolbar;
+
+import java.util.ArrayList;
+
+public class ViewSubmissionsActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String maBT;
+
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_view_submissions;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        maBT = getIntent().getStringExtra("MA_BT");
+        String tenBT = getIntent().getStringExtra("TEN_BT");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_view_submissions);
+        if (tenBT != null) toolbar.setTitle("Bài nộp: " + tenBT);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        recyclerView = findViewById(R.id.rv_submissions);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        loadData();
+    }
+
+    private void loadData() {
+        db.nopBaiDao().getByBaiTap(maBT).observe(this, list -> {
+            if (list == null) list = new ArrayList<>();
+            SubmissionsAdapter adapter = new SubmissionsAdapter(this, list, this::onSubmissionClick);
+            recyclerView.setAdapter(adapter);
+        });
+    }
+
+    private void onSubmissionClick(NopBai nb) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chi tiết bài nộp");
+        String msg = "Mã HV: " + nb.MaHV + "\nNgày nộp: " + nb.NgayNop + "\nGhi chú: " + (nb.GhiChu != null ? nb.GhiChu : "");
+        builder.setMessage(msg);
+
+        if (nb.FilePath != null) {
+            builder.setPositiveButton("Mở bài làm", (dialog, which) -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.parse(nb.FilePath), "*/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, "Mở bằng"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Không thể mở file", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        builder.setNegativeButton("Đóng", null);
+        builder.show();
+    }
+}
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\AssignmentAdapter.java
 ==================================================
 package com.example.studentportalapp.adapter;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.studentportalapp.R;
-import com.example.studentportalapp.model.Assignment;
-
+import com.example.studentportalapp.data.Entity.BaiTap;
 import java.util.List;
 
 public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.AssignmentViewHolder> {
 
     private final Context context;
-    private final List<Assignment> assignments;
+    private final List<BaiTap> assignments;
+    private final OnItemClickListener listener;
 
-    public AssignmentAdapter(Context context, List<Assignment> assignments) {
+    public interface OnItemClickListener {
+        void onItemClick(BaiTap baiTap);
+    }
+
+    public AssignmentAdapter(Context context, List<BaiTap> assignments, OnItemClickListener listener) {
         this.context = context;
         this.assignments = assignments;
+        this.listener = listener;
     }
 
     @NonNull
@@ -2461,12 +3543,34 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
 
     @Override
     public void onBindViewHolder(@NonNull AssignmentViewHolder holder, int position) {
-        Assignment item = assignments.get(position);
-        holder.tvTitle.setText(item.getTitle());
-        holder.tvPoints.setText(item.getPoints());
-        holder.tvAuthor.setText(item.getAuthor());
-        holder.tvDate.setText(item.getDate());
-        holder.btnAction.setText(item.getButtonText());
+        BaiTap item = assignments.get(position);
+        holder.tvTitle.setText(item.TenBT);
+        holder.tvPoints.setText("Hạn nộp: " + item.Deadline);
+
+        SharedPreferences prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        if ("HOCVIEN".equals(role)) {
+            holder.btnAction.setText("Submit");
+            holder.btnAction.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        } else {
+            holder.btnAction.setText("View");
+            holder.btnAction.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
+        }
+
+        if (item.FileName != null && !item.FileName.isEmpty()) {
+            holder.tvFileName.setText(item.FileName);
+            if (holder.layoutFileLink != null) {
+                holder.layoutFileLink.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (holder.layoutFileLink != null) {
+                holder.layoutFileLink.setVisibility(View.GONE);
+            }
+        }
+
+        holder.btnAction.setOnClickListener(v -> listener.onItemClick(item));
+        holder.itemView.setOnClickListener(null);
     }
 
     @Override
@@ -2475,21 +3579,24 @@ public class AssignmentAdapter extends RecyclerView.Adapter<AssignmentAdapter.As
     }
 
     public static class AssignmentViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvPoints, tvAuthor, tvDate;
+        TextView tvTitle, tvPoints, tvFileName;
+        View layoutFileLink;
         Button btnAction;
 
         public AssignmentViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvPoints = itemView.findViewById(R.id.tvPoints);
-            tvAuthor = itemView.findViewById(R.id.tvAuthor);
-            tvDate = itemView.findViewById(R.id.tvDate);
+            tvFileName = itemView.findViewById(R.id.tvFileName);
+
+            if (tvFileName != null && tvFileName.getParent() instanceof View) {
+                layoutFileLink = (View) tvFileName.getParent();
+            }
+            
             btnAction = itemView.findViewById(R.id.btnAction);
         }
     }
 }
-
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\ClassAdapter.java
@@ -2578,29 +3685,32 @@ import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.model.ActivityItem;
-
-import java.util.ArrayList;
+import java.util.List;
 
 public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.ViewHolder> {
 
-    private final ArrayList<ActivityItem> items;
+    private final List<ActivityItem> items;
+    private final OnItemClickListener listener;
 
-    public CourseAdapter(ArrayList<ActivityItem> items) {
+    public interface OnItemClickListener {
+        void onItemClick(int position);
+    }
+
+    public CourseAdapter(List<ActivityItem> items, OnItemClickListener listener) {
         this.items = items;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_course, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_course, parent, false);
         return new ViewHolder(view);
     }
 
@@ -2611,8 +3721,22 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.ViewHolder
         holder.tvAuthor.setText(item.getAuthor());
         holder.tvDate.setText(item.getDate());
         holder.tvTitle.setText(item.getTitle());
-        holder.tvFileName.setText(item.getFileName());
         holder.tvViews.setText(item.getViews() + " views");
+
+        if (item.getFileName() != null && !item.getFileName().isEmpty()) {
+            holder.tvFileName.setText(item.getFileName());
+            if(holder.layoutFile != null) holder.layoutFile.setVisibility(View.VISIBLE);
+            else holder.tvFileName.setVisibility(View.VISIBLE);
+        } else {
+            if(holder.layoutFile != null) holder.layoutFile.setVisibility(View.GONE);
+            else holder.tvFileName.setVisibility(View.GONE);
+        }
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onItemClick(position);
+            }
+        });
     }
 
     @Override
@@ -2622,6 +3746,7 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.ViewHolder
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvAuthor, tvDate, tvTitle, tvFileName, tvViews;
+        LinearLayout layoutFile;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -2630,6 +3755,96 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.ViewHolder
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvFileName = itemView.findViewById(R.id.tvFileName);
             tvViews = itemView.findViewById(R.id.tvViews);
+
+            if (tvFileName.getParent() instanceof LinearLayout) {
+                layoutFile = (LinearLayout) tvFileName.getParent();
+                if(layoutFile.getId() == View.NO_ID) layoutFile = null;
+            }
+        }
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\GradeAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.Diem;
+
+import java.util.List;
+import java.util.concurrent.Executors;
+
+public class GradeAdapter extends RecyclerView.Adapter<GradeAdapter.ViewHolder> {
+
+    private final Context context;
+    private final List<Diem> listDiem;
+    private final AppDatabase db;
+
+    public GradeAdapter(Context context, List<Diem> listDiem) {
+        this.context = context;
+        this.listDiem = listDiem;
+        this.db = AppDatabase.getDatabase(context);
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_grade, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Diem diem = listDiem.get(position);
+
+        // Hiển thị điểm số và nhận xét
+        holder.tvScore.setText(String.valueOf(diem.SoDiem));
+        holder.tvFeedback.setText("Nhận xét: " + (diem.NhanXet != null ? diem.NhanXet : "(Không có nhận xét)"));
+
+        // Lấy tên bài tập từ Database (vì trong bảng DIEM chỉ lưu MaBT)
+        Executors.newSingleThreadExecutor().execute(() -> {
+            BaiTap bt = db.baiTapDao().getByIdSync(diem.MaBT);
+            if (bt != null) {
+                if (context instanceof android.app.Activity) {
+                    ((android.app.Activity) context).runOnUiThread(() -> {
+                        holder.tvTitle.setText(bt.TenBT);
+                    });
+                }
+            } else {
+                if (context instanceof android.app.Activity) {
+                    ((android.app.Activity) context).runOnUiThread(() -> {
+                        holder.tvTitle.setText("Mã BT: " + diem.MaBT);
+                    });
+                }
+            }
+        });
+    }
+
+    @Override
+    public int getItemCount() {
+        return listDiem.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTitle, tvScore, tvFeedback;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvTitle = itemView.findViewById(R.id.tv_grade_title);
+            tvScore = itemView.findViewById(R.id.tv_grade_score);
+            tvFeedback = itemView.findViewById(R.id.tv_grade_feedback);
         }
     }
 }
@@ -2721,6 +3936,66 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 }
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\NotificationAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.data.Entity.ThongBao;
+import java.util.List;
+
+public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
+
+    private final List<ThongBao> list;
+
+    public NotificationAdapter(List<ThongBao> list) {
+        this.list = list;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_notification, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        ThongBao tb = list.get(position);
+        holder.tvContent.setText(tb.NoiDung);
+        holder.tvDate.setText(tb.NgayTao);
+        
+        if (tb.IsRead) {
+            holder.itemView.setAlpha(0.6f);
+        } else {
+            holder.itemView.setAlpha(1.0f);
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvContent, tvDate;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvContent = itemView.findViewById(R.id.tv_noti_content);
+            tvDate = itemView.findViewById(R.id.tv_noti_date);
+        }
+    }
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\PeopleAdapter.java
 ==================================================
 package com.example.studentportalapp.adapter;
@@ -2777,6 +4052,302 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
     }
 }
 
+
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\StatsAssignmentAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.StatsAssignmentItem;
+import java.util.List;
+
+public class StatsAssignmentAdapter extends RecyclerView.Adapter<StatsAssignmentAdapter.ViewHolder> {
+
+    private final List<StatsAssignmentItem> list;
+    private final OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onClick(StatsAssignmentItem item);
+    }
+
+    public StatsAssignmentAdapter(List<StatsAssignmentItem> list, OnItemClickListener listener) {
+        this.list = list;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_stats_assignment, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        StatsAssignmentItem item = list.get(position);
+        holder.tvName.setText(item.baiTap.TenBT);
+        holder.tvCount.setText("Đã chấm: " + item.submissionCount);
+
+        if (item.submissionCount > 0) {
+            holder.tvAvg.setText(String.format("TB: %.2f", item.averageScore));
+        } else {
+            holder.tvAvg.setText("Chưa có điểm");
+        }
+
+        holder.itemView.setOnClickListener(v -> listener.onClick(item));
+    }
+
+    @Override
+    public int getItemCount() { return list.size(); }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvAvg, tvCount;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvAssignmentName);
+            tvAvg = itemView.findViewById(R.id.tvAvgScore);
+            tvCount = itemView.findViewById(R.id.tvSubmissionCount);
+        }
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\StatsStudentAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.StatsStudentItem;
+import java.util.List;
+
+public class StatsStudentAdapter extends RecyclerView.Adapter<StatsStudentAdapter.ViewHolder> {
+
+    private final List<StatsStudentItem> list;
+
+    public StatsStudentAdapter(List<StatsStudentItem> list) {
+        this.list = list;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_stats_student, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        StatsStudentItem item = list.get(position);
+        holder.tvName.setText(item.hocVien.getTenHV());
+        holder.tvId.setText(item.hocVien.getMaHV());
+
+        if (item.hasScore) {
+            holder.tvScore.setText(String.valueOf(item.score));
+            holder.tvScore.setTextColor(android.graphics.Color.parseColor("#FF9800"));
+        } else {
+            holder.tvScore.setText("-");
+            holder.tvScore.setTextColor(android.graphics.Color.GRAY);
+        }
+    }
+
+    @Override
+    public int getItemCount() { return list.size(); }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvId, tvScore;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvStudentName);
+            tvId = itemView.findViewById(R.id.tvStudentID);
+            tvScore = itemView.findViewById(R.id.tvScore);
+        }
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\SubmissionsAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+
+public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.ViewHolder> {
+
+    private final Context context;
+    private final List<NopBai> list;
+    private final OnItemClickListener listener;
+    private final AppDatabase db;
+    private final String currentMaGV;
+
+    public interface OnItemClickListener {
+        void onItemClick(NopBai nb);
+    }
+
+    public SubmissionsAdapter(Context context, List<NopBai> list, OnItemClickListener listener) {
+        this.context = context;
+        this.list = list;
+        this.listener = listener;
+        this.db = AppDatabase.getDatabase(context);
+        SharedPreferences prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        this.currentMaGV = prefs.getString("KEY_USER_ID", "");
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.item_submission, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        NopBai nb = list.get(position);
+
+        holder.tvId.setText("Mã HV: " + nb.MaHV);
+        holder.tvDate.setText(nb.NgayNop);
+        holder.tvNote.setText("Ghi chú: " + (nb.GhiChu != null && !nb.GhiChu.isEmpty() ? nb.GhiChu : "(Không có ghi chú)"));
+
+        if (nb.FileName != null && !nb.FileName.isEmpty()) {
+            holder.tvFileName.setText(nb.FileName);
+            holder.layoutFile.setVisibility(View.VISIBLE);
+        } else {
+            holder.layoutFile.setVisibility(View.GONE);
+        }
+
+        // 1. Load tên học viên và ĐIỂM CŨ (nếu có)
+        Executors.newSingleThreadExecutor().execute(() -> {
+            HocVien hv = db.hocVienDao().getByIdSync(nb.MaHV);
+            
+            if (context instanceof androidx.lifecycle.LifecycleOwner) {
+                ((android.app.Activity) context).runOnUiThread(() -> {
+                    if (hv != null) holder.tvName.setText(hv.getTenHV());
+                    
+                    db.diemDao().getByHocVienBaiTap(nb.MaHV, nb.MaBT).observe((androidx.lifecycle.LifecycleOwner) context, existingDiem -> {
+                        if (existingDiem != null) {
+                            holder.etGrade.setText(String.valueOf(existingDiem.SoDiem));
+                            holder.etFeedback.setText(existingDiem.NhanXet);
+                            holder.btnSaveGrade.setText("Cập nhật điểm");
+                        } else {
+                            holder.etGrade.setText("");
+                            holder.etFeedback.setText("");
+                            holder.btnSaveGrade.setText("Lưu điểm & Nhận xét");
+                        }
+                    });
+                });
+            }
+        });
+
+        // 2. Xử lý nút Lưu điểm
+        holder.btnSaveGrade.setOnClickListener(v -> {
+            String gradeStr = holder.etGrade.getText().toString().trim();
+            String feedback = holder.etFeedback.getText().toString().trim();
+
+            if (gradeStr.isEmpty()) {
+                Toast.makeText(context, "Vui lòng nhập điểm!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            try {
+                double grade = Double.parseDouble(gradeStr);
+                Diem diemObj = new Diem();
+                diemObj.MaHV = nb.MaHV;
+                diemObj.MaBT = nb.MaBT;
+                diemObj.MaGV = currentMaGV;
+                diemObj.SoDiem = grade;
+                diemObj.NhanXet = feedback;
+
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    db.diemDao().insert(diemObj);
+                    
+                    // GỬI THÔNG BÁO CHO HỌC VIÊN KHI CÓ ĐIỂM
+                    BaiTap bt = db.baiTapDao().getByIdSync(nb.MaBT);
+                    if (bt != null) {
+                        ThongBao tb = new ThongBao();
+                        tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
+                        tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                        tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
+                        db.thongBaoDao().insert(tb);
+                    }
+
+                    if (context instanceof android.app.Activity) {
+                        ((android.app.Activity) context).runOnUiThread(() -> {
+                            Toast.makeText(context, "Đã lưu điểm và thông báo cho học viên!", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+            } catch (NumberFormatException e) {
+                Toast.makeText(context, "Điểm không hợp lệ!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        holder.itemView.setOnClickListener(v -> listener.onItemClick(nb));
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvId, tvDate, tvNote, tvName, tvFileName;
+        EditText etGrade, etFeedback;
+        Button btnSaveGrade;
+        View layoutFile;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tv_submitter_name);
+            tvId = itemView.findViewById(R.id.tv_submitter_id);
+            tvDate = itemView.findViewById(R.id.tv_submit_date);
+            tvNote = itemView.findViewById(R.id.tv_submit_note);
+            tvFileName = itemView.findViewById(R.id.tv_submission_file_name);
+            layoutFile = itemView.findViewById(R.id.layout_submission_file);
+            
+            etGrade = itemView.findViewById(R.id.et_grade);
+            etFeedback = itemView.findViewById(R.id.et_feedback);
+            btnSaveGrade = itemView.findViewById(R.id.btn_save_grade);
+        }
+    }
+}
 
 
 ==================================================
@@ -3030,16 +4601,20 @@ import com.example.studentportalapp.data.Dao.BaiTapDao;
 import com.example.studentportalapp.data.Dao.DiemDao;
 import com.example.studentportalapp.data.Dao.HocVienDao;
 import com.example.studentportalapp.data.Dao.LopHocDao;
+import com.example.studentportalapp.data.Dao.NopBaiDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
 import com.example.studentportalapp.data.Dao.ThamGiaDao;
+import com.example.studentportalapp.data.Dao.ThongBaoDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.GiaoVien;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -3053,26 +4628,18 @@ import java.util.concurrent.Executors;
                 BaiGiang.class,
                 BaiTap.class,
                 ThamGia.class,
-                Diem.class
+                Diem.class,
+                NopBai.class,
+                ThongBao.class
         },
-        version = 6,
+        version = 9,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
 
-    // ===========================
-    //       SINGLETON INSTANCE
-    // ===========================
     private static volatile AppDatabase INSTANCE;
+    public static final ExecutorService databaseWriteExecutor = Executors.newFixedThreadPool(4);
 
-    // Thread pool (background insert/update/delete)
-    public static final ExecutorService databaseWriteExecutor =
-            Executors.newFixedThreadPool(4);
-
-
-    // ===========================
-    //            DAO
-    // ===========================
     public abstract TaiKhoanDao taiKhoanDao();
     public abstract GiaoVienDao giaoVienDao();
     public abstract HocVienDao hocVienDao();
@@ -3081,23 +4648,19 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract BaiTapDao baiTapDao();
     public abstract DiemDao diemDao();
     public abstract ThamGiaDao thamGiaDao();
+    public abstract NopBaiDao nopBaiDao();
+    public abstract ThongBaoDao thongBaoDao();
 
-    // ===========================
-    //      GET DATABASE INSTANCE
-    // ===========================
     public static AppDatabase getDatabase(final Context context) {
-
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
-
                     INSTANCE = Room.databaseBuilder(
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "school_db"
                             )
-                            // Tự xóa DB khi thay đổi version (tránh crash)
-                            .fallbackToDestructiveMigration()
+                            .fallbackToDestructiveMigration(true)
                             .build();
                 }
             }
@@ -3182,7 +4745,6 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
-import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 
 import java.util.List;
@@ -3205,8 +4767,12 @@ public interface BaiTapDao {
     @Query("SELECT * FROM BAITAP")
     LiveData<List<BaiTap>> getAll();
 
-    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT") // sửa từ 'id' → 'MaBG'
+    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT")
     LiveData<BaiTap> getById(String maBT);
+
+    // Thêm phương thức này để lấy dữ liệu đồng bộ
+    @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT LIMIT 1")
+    BaiTap getByIdSync(String maBT);
 }
 
 
@@ -3244,13 +4810,16 @@ public interface DiemDao {
 
     @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
     LiveData<List<Diem>> getByBaiTap(String maBT);
+
+    @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
+    List<Diem> getByBaiTapSync(String maBT);
+
     @Query("SELECT * FROM DIEM")
     LiveData<List<Diem>> getAll();
 
     @Query("SELECT * FROM DIEM WHERE MaHV = :maHV AND MaBT = :maBT LIMIT 1")
     LiveData<Diem> getByHocVienBaiTap(String maHV, String maBT);
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Dao\GiaoVienDao.java
@@ -3330,14 +4899,19 @@ public interface HocVienDao {
 
     @Query("SELECT * FROM HOCVIEN")
     LiveData<List<HocVien>> getAll();
-    // Trong HocVienDao.java
+
     @Query("SELECT * FROM HOCVIEN")
     List<HocVien> getAllSync();
 
     @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id")
     LiveData<HocVien> getById(String id);
-}
 
+    @Query("SELECT * FROM HOCVIEN WHERE MaHV = :id LIMIT 1")
+    HocVien getByIdSync(String id);
+
+    @Query("SELECT * FROM HOCVIEN WHERE MaTK = :maTK LIMIT 1")
+    HocVien getByMaTKSync(String maTK);
+}
 
 
 ==================================================
@@ -3379,12 +4953,40 @@ public interface LopHocDao {
     List<String> getClassNamesByTeacher(String maGV);
 
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
-    LopHoc getById(String maLH);
+    LopHoc getByIdSync(String maLH); // Đổi tên thành getByIdSync để khớp với SubmitAssignmentActivity
 
-    // --- QUAN TRỌNG: Phải có dòng @Query này ---
     @Query("SELECT * FROM LOPHOC WHERE MaGV = :maGV")
     List<LopHoc> getClassesByTeacher(String maGV);
 }
+
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Dao\NopBaiDao.java
+==================================================
+package com.example.studentportalapp.data.Dao;
+
+import androidx.lifecycle.LiveData;
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+
+import com.example.studentportalapp.data.Entity.NopBai;
+
+import java.util.List;
+
+@Dao
+public interface NopBaiDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insert(NopBai nopBai);
+
+    @Query("SELECT * FROM NOPBAI WHERE MaBT = :maBT")
+    LiveData<List<NopBai>> getByBaiTap(String maBT);
+
+    @Query("SELECT * FROM NOPBAI WHERE MaBT = :maBT AND MaHV = :maHV LIMIT 1")
+    NopBai getSubmission(String maBT, String maHV);
+}
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Dao\TaiKhoanDao.java
@@ -3472,6 +5074,40 @@ public interface ThamGiaDao {
 }
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Dao\ThongBaoDao.java
+==================================================
+package com.example.studentportalapp.data.Dao;
+
+import androidx.lifecycle.LiveData;
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.Query;
+import androidx.room.Update;
+
+import com.example.studentportalapp.data.Entity.ThongBao;
+
+import java.util.List;
+
+@Dao
+public interface ThongBaoDao {
+    @Insert
+    void insert(ThongBao thongBao);
+
+    @Query("SELECT * FROM THONGBAO WHERE NguoiNhan = :maTK OR NguoiNhan = 'ALL' OR NguoiNhan = :roleMarker ORDER BY NgayTao DESC")
+    LiveData<List<ThongBao>> getByNguoiNhan(String maTK, String roleMarker);
+
+    @Query("SELECT COUNT(*) FROM THONGBAO WHERE (NguoiNhan = :maTK OR NguoiNhan = 'ALL' OR NguoiNhan = :roleMarker) AND IsRead = 0")
+    LiveData<Integer> getUnreadCount(String maTK, String roleMarker);
+
+    @Update
+    void update(ThongBao thongBao);
+
+    @Query("UPDATE THONGBAO SET IsRead = 1 WHERE NguoiNhan = :maTK OR NguoiNhan = :roleMarker")
+    void markAllAsRead(String maTK, String roleMarker);
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Entity\BaiGiang.java
 ==================================================
 package com.example.studentportalapp.data.Entity;
@@ -3497,7 +5133,8 @@ import androidx.room.PrimaryKey;
         }
 )
 public class BaiGiang {
-
+    public String FileName; // Tên file hiển thị (vd: slide_chuong1.pdf)
+    public String FilePath;
     @PrimaryKey
     @NonNull
     public String MaBG;
@@ -3534,7 +5171,8 @@ import androidx.room.PrimaryKey;
         }
 )
 public class BaiTap {
-
+    public String FileName;
+    public String FilePath;
     @PrimaryKey
     @NonNull
     public String MaBT;
@@ -3592,8 +5230,9 @@ public class Diem {
     public String MaGV;
 
     public double SoDiem;
-}
 
+    public String NhanXet; // Thêm thuộc tính này
+}
 
 
 ==================================================
@@ -3765,6 +5404,36 @@ public class LopHoc {
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Entity\NopBai.java
+==================================================
+package com.example.studentportalapp.data.Entity;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.PrimaryKey;
+
+@Entity(
+    tableName = "NOPBAI",
+    foreignKeys = {
+        @ForeignKey(entity = BaiTap.class, parentColumns = "MaBT", childColumns = "MaBT", onDelete = ForeignKey.CASCADE),
+        @ForeignKey(entity = HocVien.class, parentColumns = "MaHV", childColumns = "MaHV", onDelete = ForeignKey.CASCADE)
+    }
+)
+public class NopBai {
+    @PrimaryKey
+    @NonNull
+    public String MaNB;
+    public String MaBT;
+    public String MaHV;
+    public String FileName;
+    public String FilePath;
+    public String GhiChu;
+    public String NgayNop;
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Entity\TaiKhoan.java
 ==================================================
 package com.example.studentportalapp.data.Entity;
@@ -3827,6 +5496,32 @@ public class ThamGia {
         this.MaLH = MaLH;
     }
 }
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Entity\ThongBao.java
+==================================================
+package com.example.studentportalapp.data.Entity;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "THONGBAO")
+public class ThongBao {
+    @PrimaryKey
+    @NonNull
+    public String MaTB;
+    public String NoiDung;
+    public String NgayTao;
+    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL"
+    public boolean IsRead;
+
+    public ThongBao() {
+        this.MaTB = "TB" + System.currentTimeMillis();
+        this.IsRead = false;
+    }
+}
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Repository\BaiGiangRepository.java
@@ -4282,7 +5977,7 @@ public class UserLopHocRepository {
     }
 
     public LopHoc getLopHocById(String id) {
-        return lopHocDao.getById(id);
+        return lopHocDao.getByIdSync(id);
     }
 
     public LiveData<List<LopHoc>> getAllLopHoc() {
@@ -4431,6 +6126,44 @@ public class Person {
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\model\StatsAssignmentItem.java
+==================================================
+package com.example.studentportalapp.model;
+
+import com.example.studentportalapp.data.Entity.BaiTap;
+
+public class StatsAssignmentItem {
+    public BaiTap baiTap;
+    public double averageScore;
+    public int submissionCount;
+
+    public StatsAssignmentItem(BaiTap baiTap, double averageScore, int submissionCount) {
+        this.baiTap = baiTap;
+        this.averageScore = averageScore;
+        this.submissionCount = submissionCount;
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\model\StatsStudentItem.java
+==================================================
+package com.example.studentportalapp.model;
+
+import com.example.studentportalapp.data.Entity.HocVien;
+
+public class StatsStudentItem {
+    public HocVien hocVien;
+    public double score;
+    public boolean hasScore;
+
+    public StatsStudentItem(HocVien hocVien, double score, boolean hasScore) {
+        this.hocVien = hocVien;
+        this.score = score;
+        this.hasScore = hasScore;
+    }
+}
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\model\StudentItem.java
 ==================================================
 package com.example.studentportalapp.model;
@@ -4531,7 +6264,7 @@ FILE: app\src\main\res\drawable\bg_circle.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#018786" />
+    <solid android:color="#ffe6ed" />
 </shape>
 
 
@@ -4542,7 +6275,7 @@ FILE: app\src\main\res\drawable\bg_file_link.xml
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#EDE7F6" />
+    <solid android:color="#ffffff" />
     <corners android:radius="8dp" />
 </shape>
 
@@ -4552,7 +6285,7 @@ FILE: app\src\main\res\drawable\bg_home_header.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/primary_pink"/>
+    <solid android:color="#ffe6ed"/>
     <corners
         android:bottomLeftRadius="30dp"
         android:bottomRightRadius="30dp"/>
@@ -4645,6 +6378,19 @@ FILE: app\src\main\res\drawable\ic_add.xml
     
 </vector>
 
+
+==================================================
+FILE: app\src\main\res\drawable\ic_arrow_back.xml
+==================================================
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <path
+      android:fillColor="#FF000000"
+      android:pathData="M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z"/>
+</vector>
 
 ==================================================
 FILE: app\src\main\res\drawable\ic_assignment.xml
@@ -5287,7 +7033,8 @@ FILE: app\src\main\res\layout\activity_add_assignment.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -5396,7 +7143,8 @@ FILE: app\src\main\res\layout\activity_add_lecture.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -5449,11 +7197,21 @@ FILE: app\src\main\res\layout\activity_add_lecture.xml
         app:icon="@drawable/ic_attach_file"
         style="@style/Widget.MaterialComponents.Button.TextButton" />
 
+    <TextView
+        android:id="@+id/tv_file_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Chưa có tệp nào được chọn"
+        android:textColor="#777"
+        android:textSize="12sp"
+        android:paddingStart="4dp"
+        android:layout_marginBottom="8dp"/>
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_post_lecture"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         android:text="Đăng bài"
         android:textColor="#ffffff"
         app:backgroundTint="#c96e80"/>
@@ -5497,8 +7255,7 @@ FILE: app\src\main\res\layout\activity_add_user.xml
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:src="@drawable/logo_new"
-                    android:padding="1dp"
-                    app:tint="#c96e80"/>
+                    android:padding="1dp" />
             </androidx.cardview.widget.CardView>
 
             <TextView
@@ -5680,7 +7437,7 @@ FILE: app\src\main\res\layout\activity_admin.xml
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -6007,7 +7764,7 @@ FILE: app\src\main\res\layout\activity_admin.xml
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Đăng xuất"
-            android:textColor="#F44336"
+            android:textColor="#cf7486"
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_gravity="center"
@@ -6033,7 +7790,7 @@ FILE: app\src\main\res\layout\activity_assignment.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#F8F8F8">
+        android:background="#ffe6ed">
 
         <include
             android:id="@+id/include_background"
@@ -6050,6 +7807,7 @@ FILE: app\src\main\res\layout\activity_assignment.xml
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -6085,6 +7843,44 @@ FILE: app\src\main\res\layout\activity_assignment.xml
         android:layout_marginBottom="72dp" /> </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 ==================================================
+FILE: app\src\main\res\layout\activity_assignment_stats.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarAssignmentStats"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#c96e80"
+        app:title="Chi Tiết Điểm"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvAssignmentTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Danh sách điểm sinh viên"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#333"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStatsStudents"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
+</LinearLayout>
+
+==================================================
 FILE: app\src\main\res\layout\activity_base.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -6113,7 +7909,7 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="#fde0e0"> <LinearLayout
+    android:background="#ffe6ed"> <LinearLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -6147,7 +7943,7 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="+ Thêm Lớp Học Mới"
-        android:backgroundTint="#c96e80"
+        android:backgroundTint="#cf7486"
         android:textColor="#FFF"
         android:layout_marginBottom="12dp"/>
 
@@ -6156,6 +7952,59 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+</LinearLayout>
+
+==================================================
+FILE: app\src\main\res\layout\activity_class_stats.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#F5F5F5">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarClassStats"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#c96e80"
+        app:title="Thống Kê Lớp Học"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvClassStatsTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Biểu đồ điểm trung bình"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#333"/>
+
+    <com.example.studentportalapp.SimpleBarChart
+        android:id="@+id/barChart"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:text="Danh sách bài tập"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#333"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStatsAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
 </LinearLayout>
 
 ==================================================
@@ -6174,7 +8023,7 @@ FILE: app\src\main\res\layout\activity_course.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#F8F8F8">
+        android:background="#ffe6ed">
 
         <include
             android:id="@+id/include_background"
@@ -6233,7 +8082,7 @@ FILE: app\src\main\res\layout\activity_forgot_password.xml
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -6321,7 +8170,7 @@ FILE: app\src\main\res\layout\activity_forgot_password.xml
                     android:layout_marginTop="16dp"
                     android:text="Lấy Mã OTP"
                     android:textStyle="bold"
-                    app:backgroundTint="#c96e80"
+                    app:backgroundTint="#cf7486"
                     app:cornerRadius="8dp"/>
 
                 <LinearLayout
@@ -6399,6 +8248,70 @@ FILE: app\src\main\res\layout\activity_forgot_password.xml
 </ScrollView>
 
 ==================================================
+FILE: app\src\main\res\layout\activity_grade.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#ffe6ed">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar_grade"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#cf7486"
+            app:title="Bảng Điểm Cá Nhân"
+            app:titleTextColor="#FFFFFF"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="#FFFFFF" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Phần chọn lớp học -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="2dp">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chọn lớp học để xem điểm:"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp"/>
+                
+            <Spinner
+                android:id="@+id/spinner_classes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_file_link" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_grades"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>
+
+==================================================
 FILE: app\src\main\res\layout\activity_home.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -6424,11 +8337,11 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:id="@+id/imgAvatar"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="#FFFFFF"
                 android:padding="10dp"
-                app:tint="#c96e80"
+
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 android:layout_margin="24dp"/>
@@ -6463,9 +8376,9 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_circle"
-                android:backgroundTint="#FFFFFF"
-                android:padding="8dp"
-                app:tint="#c96e80"
+                android:src="@drawable/ic_bell"
+                android:padding="1dp"
+                android:backgroundTint="#ffffff"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/imgAvatar"
                 android:layout_marginEnd="24dp"/>
@@ -6487,6 +8400,7 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:padding="16dp"
                 android:weightSum="4">
 
+                <!-- Nút TKB -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -6507,12 +8421,17 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút ĐIỂM SỐ (ĐÃ THÊM ID) -->
                 <LinearLayout
+                    android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
                     <ImageView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
@@ -6528,6 +8447,7 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút Bài tập -->
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -6549,6 +8469,7 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
+                <!-- Nút Thoát -->
                 <LinearLayout
                     android:id="@+id/quickActionLogout"
                     android:layout_width="0dp"
@@ -6622,7 +8543,7 @@ FILE: app\src\main\res\layout\activity_login.xml
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -6725,7 +8646,7 @@ FILE: app\src\main\res\layout\activity_login.xml
                     android:text="Đăng Nhập"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    app:backgroundTint="#c96e80"
+                    app:backgroundTint="#cf7486"
                     app:cornerRadius="8dp"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -6740,7 +8661,7 @@ FILE: app\src\main\res\layout\activity_main.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -6763,6 +8684,41 @@ FILE: app\src\main\res\layout\activity_main.xml
         android:layout_marginBottom="48dp"
         style="@style/StudentPortalButton"/>
 </RelativeLayout>
+
+
+==================================================
+FILE: app\src\main\res\layout\activity_notification.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F8F9FA">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar_notification"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#c96e80"
+            app:title="Thông báo"
+            app:titleTextColor="#FFFFFF"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="#FFFFFF" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_notifications"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>
 
 
 ==================================================
@@ -6911,7 +8867,7 @@ FILE: app\src\main\res\layout\activity_people.xml
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#ffe6ed"
     tools:context=".PeopleActivity">
     <include
         android:id="@+id/include_background"
@@ -7037,8 +8993,8 @@ FILE: app\src\main\res\layout\activity_profile.xml
                 android:layout_width="match_parent"
                 android:layout_height="160dp"
                 android:scaleType="centerCrop"
-                android:src="@android:drawable/sym_def_app_icon"
-                android:background="#c96e80" />
+
+                android:background="#ffe6ed" />
 
             <ImageView
                 android:id="@+id/btnBack"
@@ -7063,11 +9019,10 @@ FILE: app\src\main\res\layout\activity_profile.xml
                     android:id="@+id/imgAvatar"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:src="@drawable/ic_person"
+                    android:src="@drawable/logo_new"
                     android:padding="20dp"
                     android:background="@drawable/circle_bg"
-                    android:elevation="4dp"
-                    app:tint="#c96e80"/>
+                    android:elevation="4dp" />
 
                 <TextView
                     android:id="@+id/tvHeaderName"
@@ -7205,7 +9160,7 @@ FILE: app\src\main\res\layout\activity_profile.xml
                         android:text="Đổi"
                         android:textColor="#FFFFFF"
                         android:textSize="12sp"
-                        android:backgroundTint="#c96e80"
+                        android:backgroundTint="#cf7486"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"/>
                 </LinearLayout>
@@ -7289,7 +9244,7 @@ FILE: app\src\main\res\layout\activity_student_manage.xml
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
     <Button
         android:id="@+id/btnBack"
@@ -7308,6 +9263,84 @@ FILE: app\src\main\res\layout\activity_student_manage.xml
 
 
 ==================================================
+FILE: app\src\main\res\layout\activity_submit_assignment.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#ffe6ed">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar_submit"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="Nộp Bài Tập"
+            app:titleTextColor="#ffffff"
+            app:navigationIcon="@drawable/ic_close"
+            app:navigationIconTint="#ffffff"
+            android:background="#c96e80" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Ô Tiêu đề (Chế độ chỉ đọc để biết đang nộp cho bài nào) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_submit_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tiêu đề bài tập"
+            android:enabled="false"
+            android:textColor="@color/black" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Ô Nội dung/Ghi chú -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_submit_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ghi chú bài làm (ví dụ: Em gửi bài tập ạ)"
+            android:minLines="4"
+            android:gravity="top" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/btn_attach_file_submit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Đính kèm tệp"
+        app:icon="@drawable/ic_attach_file"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    <Button
+        android:id="@+id/btn_submit_final"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Nộp bài"
+        style="@style/StudentPortalButton"/>
+
+</LinearLayout>
+
+==================================================
 FILE: app\src\main\res\layout\activity_teacher_manage.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -7316,7 +9349,7 @@ FILE: app\src\main\res\layout\activity_teacher_manage.xml
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     >
     <Button
         android:id="@+id/btnBack"
@@ -7366,6 +9399,34 @@ FILE: app\src\main\res\layout\activity_todo.xml
         android:layout_height="match_parent" />
 </LinearLayout>
 
+
+==================================================
+FILE: app\src\main\res\layout\activity_view_submissions.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar_view_submissions"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#cf7486"
+        app:title="Bài Tập Đã Nộp"
+        app:titleTextColor="#ffffff"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#ffffff" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_submissions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp" />
+
+</LinearLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\background.xml
@@ -7640,7 +9701,7 @@ FILE: app\src\main\res\layout\header_layout.xml
         android:id="@+id/avatar"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/logo"
+        android:src="@drawable/logo_new"
         android:layout_marginEnd="8dp"
         android:scaleType="centerCrop"
         android:contentDescription="@string/avatar"
@@ -7680,25 +9741,25 @@ FILE: app\src\main\res\layout\header_layout.xml
 
         <ImageView
             android:id="@+id/tickIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_tick"
             android:contentDescription="@string/tick" />
 
         <ImageView
             android:id="@+id/chatIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_chat"
             android:contentDescription="@string/chat" />
 
         <ImageView
             android:id="@+id/notificationIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_notification"
             android:contentDescription="@string/notification" />
     </LinearLayout>
@@ -7723,55 +9784,16 @@ FILE: app\src\main\res\layout\item_assignment.xml
         android:orientation="vertical"
         android:padding="12dp">
 
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/ic_person"
-                android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_circle"/>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvAuthor"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="James Gosling"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="July 13, 2021"
-                    android:textSize="13sp"
-                    android:textColor="@color/darker_gray" />
-            </LinearLayout>
-        </LinearLayout>
-
-
+        <!-- Title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Task 8 – Group Work"
+            android:text="@string/java_stack_program"
             android:textSize="15sp"
             android:textStyle="bold"
             android:textColor="@color/black"
             android:layout_marginTop="8dp" />
-
 
         <TextView
             android:id="@+id/tvPoints"
@@ -7781,6 +9803,32 @@ FILE: app\src\main\res\layout\item_assignment.xml
             android:textSize="14sp"
             android:layout_marginTop="4dp"
             android:textColor="@color/darker_gray" />
+
+        <!-- File link -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:padding="20dp"
+            android:background="@drawable/bg_file_link">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_file"
+                app:tint="@color/purple_500"
+                android:layout_marginEnd="6dp" />
+
+            <TextView
+                android:id="@+id/tvFileName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/java_stack_docx_45_5_kb"
+                android:textColor="@color/purple_500"
+                android:textSize="14sp" />
+        </LinearLayout>
 
         <RelativeLayout
             android:layout_width="match_parent"
@@ -7804,7 +9852,7 @@ FILE: app\src\main\res\layout\item_assignment.xml
                 android:layout_height="40dp"
                 android:text="View"
                 android:textAllCaps="false"
-                android:backgroundTint="@color/green"
+                android:backgroundTint="#cf7486"
                 android:textColor="@android:color/white"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true" />
@@ -7956,7 +10004,7 @@ FILE: app\src\main\res\layout\item_course.xml
                 android:id="@+id/imgAvatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:layout_marginEnd="8dp" />
 
@@ -8094,13 +10142,13 @@ FILE: app\src\main\res\layout\item_course_user.xml
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="90dp"
-            android:background="#FFF0F3">
+            android:background="#ffe6ed">
 
             <ImageView
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/ic_file"
-                app:tint="#c96e80"
+                app:tint="#cf7486"
                 android:layout_centerInParent="true"/>
         </RelativeLayout>
 
@@ -8144,7 +10192,7 @@ FILE: app\src\main\res\layout\item_course_user.xml
                     android:layout_height="6dp"
                     android:layout_weight="1"
                     android:progress="65"
-                    android:progressTint="#c96e80"
+                    android:progressTint="#cf7486"
                     android:backgroundTint="#EEE"/>
 
                 <TextView
@@ -8152,10 +10200,67 @@ FILE: app\src\main\res\layout\item_course_user.xml
                     android:layout_height="wrap_content"
                     android:text="65%"
                     android:textSize="10sp"
-                    android:textColor="#c96e80"
+                    android:textColor="#cf7486"
                     android:layout_marginStart="8dp"/>
             </LinearLayout>
         </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+==================================================
+FILE: app\src\main\res\layout\item_grade.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_grade_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Tên bài tập"
+                android:textStyle="bold"
+                android:textSize="16sp"
+                android:textColor="@color/black" />
+
+            <TextView
+                android:id="@+id/tv_grade_score"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="9.5"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FF9800"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_grade_feedback"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nhận xét: Bài làm tốt, trình bày sạch đẹp."
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:textColor="#555555" />
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>
 
@@ -8188,11 +10293,10 @@ FILE: app\src\main\res\layout\item_hocvien.xml
             <ImageView
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:padding="8dp"
-                android:contentDescription="Avatar"
-                app:tint="#FFFFFF"/>
+                android:contentDescription="Avatar" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -8278,6 +10382,46 @@ FILE: app\src\main\res\layout\item_hocvien.xml
 </androidx.cardview.widget.CardView>
 
 ==================================================
+FILE: app\src\main\res\layout\item_notification.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tv_noti_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nội dung thông báo"
+            android:textColor="#333333"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_noti_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Ngày tạo: 01/01/2023"
+            android:textColor="#888888"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+
+==================================================
 FILE: app\src\main\res\layout\item_person.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -8296,7 +10440,7 @@ FILE: app\src\main\res\layout\item_person.xml
         android:id="@+id/imgAvatar"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:src="@drawable/ic_person"
+        android:src="@drawable/logo_new"
         android:layout_marginEnd="12dp"
         android:background="@drawable/bg_circle"
         android:scaleType="centerCrop" />
@@ -8327,6 +10471,263 @@ FILE: app\src\main\res\layout\item_person.xml
 
 </LinearLayout>
 
+
+==================================================
+FILE: app\src\main\res\layout\item_stats_assignment.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvAssignmentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên bài tập"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#000"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/tvAvgScore"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TB: 0.0"
+                android:textColor="#4CAF50"
+                android:textStyle="bold"
+                android:textSize="15sp"/>
+
+            <TextView
+                android:id="@+id/tvSubmissionCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đã chấm: 0"
+                android:textColor="#666"/>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+==================================================
+FILE: app\src\main\res\layout\item_stats_student.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="@drawable/bg_card_people"
+    android:layout_marginBottom="8dp"
+    android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvStudentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên Sinh Viên"
+            android:textStyle="bold"
+            android:textColor="#000"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tvStudentID"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mã SV"
+            android:textColor="#666"
+            android:textSize="12sp"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0.0"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#FF9800"/>
+</LinearLayout>
+
+==================================================
+FILE: app\src\main\res\layout\item_submission.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/logo_new"
+                android:background="@drawable/bg_circle"
+                android:layout_marginEnd="12dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_submitter_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tên Học Viên"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:textColor="@color/black" />
+
+                <TextView
+                    android:id="@+id/tv_submitter_id"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mã HV: SV001"
+                    android:textSize="13sp"
+                    android:textColor="@color/darker_gray" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_submit_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20/12/2023"
+                android:textSize="12sp"
+                android:textColor="@color/darker_gray" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_submit_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ghi chú: Em gửi bài tập ạ"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/black" />
+
+        <!-- Submission File Link -->
+        <LinearLayout
+            android:id="@+id/layout_submission_file"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="12dp"
+            android:padding="12dp"
+            android:background="@drawable/bg_file_link">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_file"
+                app:tint="@color/purple_500"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tv_submission_file_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="bai_lam.pdf"
+                android:textColor="@color/purple_500"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Phần nhập điểm và nhận xét (Dành cho Giáo viên) -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#DDDDDD"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="74dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_grade"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Điểm"
+                    android:inputType="numberDecimal"
+                    android:textColor="@color/black" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="3">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/et_feedback"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Nhận xét"
+                    android:textColor="@color/black" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_save_grade"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="12dp"
+            android:backgroundTint="#c96e80"
+            android:text="Lưu điểm &amp; Nhận xét"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
 
 ==================================================
 FILE: app\src\main\res\layout\item_task.xml
@@ -8413,9 +10814,8 @@ FILE: app\src\main\res\layout\item_teacher.xml
             <ImageView
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:src="@drawable/ic_person"
-                android:background="@drawable/logo_new"
-                app:tint="#FFFFFF"
+                android:src="@drawable/logo_new"
+                android:background="@drawable/bg_circle"
                 android:padding="10dp"/>
 
             <LinearLayout
@@ -8639,6 +11039,70 @@ FILE: app\src\main\res\layout\layout_header.xml
 
 </LinearLayout>
 
+
+==================================================
+FILE: app\src\main\res\layout\layout_top_header.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_home_header"
+    android:paddingBottom="30dp">
+
+    <ImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_margin="24dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="#FFFFFF"
+        android:padding="10dp"
+        android:src="@drawable/ic_person"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#c96e80" />
+
+    <TextView
+        android:id="@+id/tvGreeting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="Xin chào,"
+        android:textColor="#555"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@id/imgAvatar"
+        app:layout_constraintTop_toTopOf="@id/imgAvatar" />
+
+    <TextView
+        android:id="@+id/tvWelcomeUser"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:text="User"
+        android:textColor="#333"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/btnNoti"
+        app:layout_constraintStart_toEndOf="@id/imgAvatar"
+        app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
+
+    <ImageView
+        android:id="@+id/btnNoti"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="#FFFFFF"
+        android:padding="8dp"
+        android:src="@drawable/ic_notification"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/imgAvatar"
+        app:tint="#c96e80" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\popup_contact.xml

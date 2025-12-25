@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#F5F5F5">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarClassStats"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#c96e80"
+        app:title="Thống Kê Lớp Học"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvClassStatsTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Biểu đồ điểm trung bình"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#333"/>
+
+    <com.example.studentportalapp.SimpleBarChart
+        android:id="@+id/barChart"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:text="Danh sách bài tập"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#333"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStatsAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
+</LinearLayout>

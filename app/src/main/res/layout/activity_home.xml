@@ -21,11 +21,11 @@
                 android:id="@+id/imgAvatar"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="#FFFFFF"
                 android:padding="10dp"
-                app:tint="#c96e80"
+
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 android:layout_margin="24dp"/>
@@ -60,9 +60,9 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="@drawable/bg_circle"
-                android:backgroundTint="#FFFFFF"
-                android:padding="8dp"
-                app:tint="#c96e80"
+                android:src="@drawable/ic_bell"
+                android:padding="1dp"
+                android:backgroundTint="#ffffff"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/imgAvatar"
                 android:layout_marginEnd="24dp"/>
@@ -134,22 +134,28 @@
 
                 <!-- Nút Bài tập -->
                 <LinearLayout
+                    android:id="@+id/quickActionProfile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
                     <ImageView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:src="@drawable/ic_file"
-                        app:tint="#2196F3"
-                        android:background="#E3F2FD"
+                        android:src="@drawable/ic_person"
+                        app:tint="#9C27B0"
+                        android:background="#F3E5F5"
                         android:padding="8dp"/>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Bài tập"
+                        android:text="Hồ sơ"
                         android:textSize="12sp"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>

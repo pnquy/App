@@ -16,11 +16,13 @@ import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.model.ActivityItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class CourseActivity extends BaseActivity {
 
     private RecyclerView recyclerView;
     private TextView tvTitle, tvSubtitle;
+    private View layoutEmptyState;
     private AppDatabase db;
     private String currentMaLH;
     private ArrayList<BaiGiang> originalList;
@@ -43,10 +45,21 @@ public class CourseActivity extends BaseActivity {
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
         recyclerView = findViewById(R.id.rvActivityCourse);
+        layoutEmptyState = findViewById(R.id.layoutEmptyState);
         FloatingActionButton fab = findViewById(R.id.fab_add);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
 
-        tvTitle.setText(tenLH);
-        tvSubtitle.setText("Mã lớp: " + currentMaLH);
+        if (tvTitle != null) tvTitle.setText(tenLH);
+        if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
+
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -58,30 +71,55 @@ public class CourseActivity extends BaseActivity {
         }
 
         loadData();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadData();
     }
 
     private void loadData() {
         db.baiGiangDao().getByLop(currentMaLH).observe(this, listBG -> {
-            originalList = new ArrayList<>(listBG);
-            ArrayList<ActivityItem> items = new ArrayList<>();
+            if (listBG == null || listBG.isEmpty()) {
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            } else {
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
 
-            for (BaiGiang bg : listBG) {
-                String fName = (bg.FileName != null) ? bg.FileName : "";
-                items.add(new ActivityItem(
-                        "GV: " + bg.MaGV,
-                        "Mới đăng",
-                        bg.TenBG,
-                        fName,
-                        "0"
-                ));
+                originalList = new ArrayList<>(listBG);
+                ArrayList<ActivityItem> items = new ArrayList<>();
+
+                for (BaiGiang bg : listBG) {
+                    String fName = (bg.FileName != null) ? bg.FileName : "";
+                    items.add(new ActivityItem(
+                            "GV: " + bg.MaGV,
+                            "Mới đăng",
+                            bg.TenBG,
+                            fName,
+                            "0"
+                    ));
+                }
+
+                CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
+                recyclerView.setAdapter(adapter);
             }
-
-            CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
-            recyclerView.setAdapter(adapter);
         });
     }
 
     private void showLectureDialog(BaiGiang bg) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bg.TenBG);
 
@@ -92,18 +130,18 @@ public class CourseActivity extends BaseActivity {
         builder.setMessage(msg);
 
         if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
-            builder.setPositiveButton("Mở File", (dialog, which) -> {
+            builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
                     Uri uri = Uri.parse(bg.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
 
                     String mimeType = getContentResolver().getType(uri);
                     if (mimeType == null) mimeType = "*/*";
-                    
+
                     intent.setDataAndType(uri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                    
+
                     startActivity(Intent.createChooser(intent, "Mở bài giảng bằng"));
                 } catch (Exception e) {
                     Toast.makeText(this, "Lỗi: File không tồn tại hoặc không có quyền truy cập", Toast.LENGTH_LONG).show();
@@ -111,7 +149,49 @@ public class CourseActivity extends BaseActivity {
             });
         }
 
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản lý", (dialog, which) -> showTeacherOptions(bg));
+        }
+
         builder.setNegativeButton("Đóng", null);
         builder.show();
+    }
+
+    private void showTeacherOptions(BaiGiang bg) {
+        String[] options = {"Chỉnh sửa", "Xóa bài giảng"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, AddLectureActivity.class);
+                            intent.putExtra("EDIT_ID", bg.MaBG);
+                            intent.putExtra("EDIT_TITLE", bg.TenBG);
+                            intent.putExtra("EDIT_CONTENT", bg.NoiDung);
+                            intent.putExtra("EDIT_FILE_PATH", bg.FilePath);
+                            intent.putExtra("EDIT_FILE_NAME", bg.FileName);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            confirmDelete(bg);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiGiang bg) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài giảng \"" + bg.TenBG + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiGiangDao().delete(bg);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài giảng!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -107,7 +107,7 @@
                     android:text="Đăng Nhập"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    app:backgroundTint="#c96e80"
+                    app:backgroundTint="#cf7486"
                     app:cornerRadius="8dp"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>

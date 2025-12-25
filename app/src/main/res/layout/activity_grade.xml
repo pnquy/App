@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8F9FA">
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -13,7 +13,7 @@
             android:id="@+id/toolbar_grade"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="#c96e80"
+            android:background="#cf7486"
             app:title="Bảng Điểm Cá Nhân"
             app:titleTextColor="#FFFFFF"
             app:navigationIcon="@drawable/ic_arrow_back"

@@ -12,7 +12,7 @@
         android:id="@+id/avatar"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/logo"
+        android:src="@drawable/logo_new"
         android:layout_marginEnd="8dp"
         android:scaleType="centerCrop"
         android:contentDescription="@string/avatar"
@@ -52,25 +52,25 @@
 
         <ImageView
             android:id="@+id/tickIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_tick"
             android:contentDescription="@string/tick" />
 
         <ImageView
             android:id="@+id/chatIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_chat"
             android:contentDescription="@string/chat" />
 
         <ImageView
             android:id="@+id/notificationIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_notification"
             android:contentDescription="@string/notification" />
     </LinearLayout>

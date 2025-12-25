@@ -1,106 +1,155 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#F5F7FA"
+    android:orientation="vertical"
     tools:context=".PeopleActivity">
-    <include
-        android:id="@+id/include_background"
-        layout="@layout/background" />
 
-    <ScrollView
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_home_header"
+        android:backgroundTint="#c96e80"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
+
+        <ImageView
+            android:id="@+id/btnHomeLogo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#FFFFFF"
+            android:clickable="true"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/logo_new"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/btnNotiHeader"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#33FFFFFF"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_notification"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btnHomeLogo" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+            app:layout_constraintEnd_toStartOf="@id/btnNotiHeader"
+            app:layout_constraintStart_toEndOf="@id/btnHomeLogo"
+            app:layout_constraintTop_toTopOf="@id/btnHomeLogo">
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Thành Viên"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtStudentCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alpha="0.9"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Sĩ số: ..."
+                android:textColor="#F0F0F0"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="16dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <TextView
-                android:id="@+id/txtPeopleInClass"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="People in this class"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp"
+                android:text="Giảng viên"
+                android:textColor="#c96e80"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-
-            <LinearLayout
-                android:id="@+id/containerPeople"
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:background="@drawable/bg_card_people"
-                android:layout_marginBottom="16dp">
-
-
-                <TextView
-                    android:id="@+id/txtProfessors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Professors"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/black"
-                    android:layout_marginTop="8dp" />
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerViewProfessors"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
+                    tools:itemCount="1"
                     tools:listitem="@layout/item_person" />
+            </androidx.cardview.widget.CardView>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Danh sách Học viên"
+                android:textColor="#c96e80"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="16dp">
-
-                    <TextView
-                        android:id="@+id/txtStudents"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Students"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/black" />
-
-                    <TextView
-                        android:id="@+id/txtStudentCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="👥 32"
-                        android:textSize="14sp"
-                        android:textColor="#808080" />
-                </LinearLayout>
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerViewStudents"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_person" />
-
-            </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
-    <include layout="@layout/layout_footer" />
+    <include
+        android:id="@+id/layout_footer"
+        layout="@layout/layout_footer" />
 
 </LinearLayout>

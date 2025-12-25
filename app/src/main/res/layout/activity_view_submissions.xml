@@ -9,7 +9,7 @@
         android:id="@+id/toolbar_view_submissions"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#c96e80"
+        android:background="#cf7486"
         app:title="Bài Tập Đã Nộp"
         app:titleTextColor="#ffffff"
         app:navigationIcon="@drawable/ic_arrow_back"
