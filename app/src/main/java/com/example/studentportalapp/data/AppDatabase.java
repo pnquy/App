@@ -43,7 +43,7 @@ import java.util.concurrent.Executors;
                 NopBai.class,
                 ThongBao.class
         },
-        version = 10, // Tăng lên 10 để Room cập nhật schema mới (LoaiTB, TargetId)
+        version = 10,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {

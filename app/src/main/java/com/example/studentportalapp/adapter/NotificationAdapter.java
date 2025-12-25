@@ -43,15 +43,17 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         holder.tvDate.setText(tb.NgayTao != null ? tb.NgayTao : "");
         
         if (tb.IsRead) {
-            holder.itemView.setAlpha(0.6f);
+            holder.layoutClick.setAlpha(0.6f);
         } else {
-            holder.itemView.setAlpha(1.0f);
+            holder.layoutClick.setAlpha(1.0f);
         }
 
-        holder.itemView.setOnClickListener(v -> {
+        // Xử lý sự kiện click chuyển trang
+        holder.layoutClick.setOnClickListener(v -> {
             Context context = v.getContext();
             try {
                 if (tb.LoaiTB == null || tb.LoaiTB.isEmpty()) {
+                    Toast.makeText(context, "Thông báo không có dữ liệu điều hướng", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -60,8 +62,7 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                     case "ASSIGNMENT":
                     case "LECTURE":
                         if (tb.TargetId != null) {
-                            SharedPreferences prefs = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE);
-                            SharedPreferences.Editor editor = prefs.edit();
+                            SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
                             editor.putString("CURRENT_CLASS_ID", tb.TargetId);
                             editor.apply();
                             intent = new Intent(context, AssignmentActivity.class);
@@ -69,22 +70,27 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                         break;
                     case "GRADE":
                         intent = new Intent(context, GradeActivity.class);
+                        if (tb.TargetId != null) {
+                            intent.putExtra("TARGET_CLASS_ID", tb.TargetId);
+                        }
                         break;
                     case "SUBMISSION":
                         if (tb.TargetId != null) {
                             intent = new Intent(context, ViewSubmissionsActivity.class);
                             intent.putExtra("MA_BT", tb.TargetId);
-                            intent.putExtra("TEN_BT", "Bài tập liên quan");
+                            intent.putExtra("TEN_BT", "Chi tiết bài nộp");
                         }
                         break;
                 }
 
                 if (intent != null) {
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
+                } else {
+                    Toast.makeText(context, "Không tìm thấy trang liên kết", Toast.LENGTH_SHORT).show();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Toast.makeText(context, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -96,11 +102,13 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvContent, tvDate;
+        View layoutClick;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvContent = itemView.findViewById(R.id.tv_noti_content);
             tvDate = itemView.findViewById(R.id.tv_noti_date);
+            layoutClick = itemView;
         }
     }
 }

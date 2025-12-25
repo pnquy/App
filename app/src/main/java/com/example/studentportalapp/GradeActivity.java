@@ -31,6 +31,9 @@ public class GradeActivity extends BaseActivity {
     private String realMaHV;
     private List<LopHoc> listAllLop;
 
+    // Biến để lưu mã lớp được truyền từ thông báo (nếu có)
+    private String targetClassIdFromNoti = null;
+
     @Override
     protected int getLayoutResourceId() {
         return R.layout.activity_grade;
@@ -43,6 +46,11 @@ public class GradeActivity extends BaseActivity {
         db = AppDatabase.getDatabase(getApplicationContext());
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         currentMaTK = prefs.getString("KEY_USER_ID", "");
+
+        // Nhận dữ liệu từ Intent (nếu mở từ thông báo)
+        if (getIntent().hasExtra("TARGET_CLASS_ID")) {
+            targetClassIdFromNoti = getIntent().getStringExtra("TARGET_CLASS_ID");
+        }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar_grade);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -77,14 +85,25 @@ public class GradeActivity extends BaseActivity {
                 }
 
                 List<String> tenLopList = new ArrayList<>();
-                for (LopHoc lh : listAllLop) {
+                int selectedPosition = 0;
+
+                for (int i = 0; i < listAllLop.size(); i++) {
+                    LopHoc lh = listAllLop.get(i);
                     tenLopList.add(lh.TenLH + " (" + lh.MaLH + ")");
+
+                    // Nếu có mã lớp từ thông báo, ta tìm vị trí của nó
+                    if (targetClassIdFromNoti != null && lh.MaLH.equals(targetClassIdFromNoti)) {
+                        selectedPosition = i;
+                    }
                 }
 
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
                         android.R.layout.simple_spinner_item, tenLopList);
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spinnerClasses.setAdapter(adapter);
+
+                // Tự động chọn lớp từ thông báo
+                spinnerClasses.setSelection(selectedPosition);
 
                 spinnerClasses.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
