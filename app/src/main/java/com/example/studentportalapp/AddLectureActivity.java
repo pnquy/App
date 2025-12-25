@@ -143,11 +143,13 @@ public class AddLectureActivity extends BaseActivity {
             } else {
                 database.baiGiangDao().insert(bg);
                 
-                // Tạo thông báo cho học viên
+                // Gửi thông báo cho HỌC VIÊN
                 ThongBao tb = new ThongBao();
                 tb.NoiDung = "Có bài giảng mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                tb.NguoiNhan = "ALL";
+                tb.NguoiNhan = "HOCVIEN";
+                tb.LoaiTB = "LECTURE"; // QUAN TRỌNG: Để click vào là chuyển trang
+                tb.TargetId = currentMaLH; // QUAN TRỌNG: ID lớp học
                 database.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());

@@ -119,6 +119,8 @@ public class SubmitAssignmentActivity extends BaseActivity {
                     tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
                     tb.NgayTao = timeStamp;
                     tb.NguoiNhan = lh.MaGV; 
+                    tb.LoaiTB = "SUBMISSION"; // THÊM DÒNG NÀY
+                    tb.TargetId = maBT;       // THÊM DÒNG NÀY (Mã bài tập để GV vào xem list bài nộp)
                     database.thongBaoDao().insert(tb);
                 }
             }

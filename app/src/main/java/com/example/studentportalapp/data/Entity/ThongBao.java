@@ -11,7 +11,9 @@ public class ThongBao {
     public String MaTB;
     public String NoiDung;
     public String NgayTao;
-    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL"
+    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL", "HOCVIEN", "GIAOVIEN"
+    public String LoaiTB;    // "ASSIGNMENT", "LECTURE", "SUBMISSION", "GRADE"
+    public String TargetId;  // MaBT, MaBG, hoặc MaLH tương ứng
     public boolean IsRead;
 
     public ThongBao() {

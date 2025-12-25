@@ -173,6 +173,8 @@ public class AddAssignmentActivity extends BaseActivity {
                 tb.NoiDung = "Có bài tập mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                 tb.NguoiNhan = "HOCVIEN";
+                tb.LoaiTB = "ASSIGNMENT";
+                tb.TargetId = currentMaLH;
                 db.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
