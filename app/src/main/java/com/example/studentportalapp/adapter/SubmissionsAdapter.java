@@ -15,11 +15,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.ViewHolder> {
@@ -67,13 +72,7 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
         // 1. Load tên học viên và ĐIỂM CŨ (nếu có)
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Lấy tên
             HocVien hv = db.hocVienDao().getByIdSync(nb.MaHV);
-            
-            // Lấy điểm đã chấm từ bảng DIEM
-            // Chú ý: Cần đảm bảo DiemDao có phương thức getByHocVienBaiTapSync (trả về Diem trực tiếp)
-            // Tạm thời dùng Query trực tiếp hoặc LiveData nếu context là LifecycleOwner
-            // Ở đây tôi giả định bạn dùng một hàm sync để load nhanh
             
             if (context instanceof androidx.lifecycle.LifecycleOwner) {
                 ((android.app.Activity) context).runOnUiThread(() -> {
@@ -115,9 +114,20 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
                 Executors.newSingleThreadExecutor().execute(() -> {
                     db.diemDao().insert(diemObj);
+                    
+                    // GỬI THÔNG BÁO CHO HỌC VIÊN KHI CÓ ĐIỂM
+                    BaiTap bt = db.baiTapDao().getByIdSync(nb.MaBT);
+                    if (bt != null) {
+                        ThongBao tb = new ThongBao();
+                        tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
+                        tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                        tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
+                        db.thongBaoDao().insert(tb);
+                    }
+
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> {
-                            Toast.makeText(context, "Đã lưu điểm và nhận xét!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Đã lưu điểm và thông báo cho học viên!", Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
