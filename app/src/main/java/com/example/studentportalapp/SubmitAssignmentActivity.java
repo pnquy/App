@@ -7,8 +7,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -18,7 +20,6 @@ import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThongBao;
-import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -28,7 +29,9 @@ import java.util.concurrent.Executors;
 public class SubmitAssignmentActivity extends BaseActivity {
 
     private EditText etSubmitTitle, etNote;
-    private Button btnAttach, btnSubmit;
+    private View btnAttach; // Đổi thành View vì là LinearLayout
+    private TextView tvFileName; // Thêm TextView hiển thị tên file
+    private Button btnSubmit;
     private Uri selectedFileUri;
     private String selectedFileName;
     private String maBT;
@@ -45,7 +48,12 @@ public class SubmitAssignmentActivity extends BaseActivity {
                         e.printStackTrace();
                     }
                     selectedFileName = getFileName(uri);
-                    btnAttach.setText("Đã chọn: " + selectedFileName);
+
+                    // Cập nhật giao diện khi chọn file xong
+                    if (tvFileName != null) {
+                        tvFileName.setText("Đã chọn: " + selectedFileName);
+                        tvFileName.setTextColor(getResources().getColor(R.color.purple_500));
+                    }
                 }
             }
     );
@@ -64,22 +72,27 @@ public class SubmitAssignmentActivity extends BaseActivity {
         maBT = getIntent().getStringExtra("MA_BT");
         String tenBT = getIntent().getStringExtra("TEN_BT");
 
+        // Ánh xạ theo ID mới
         etSubmitTitle = findViewById(R.id.et_submit_title);
         etNote = findViewById(R.id.et_submit_note);
         btnAttach = findViewById(R.id.btn_attach_file_submit);
+        tvFileName = findViewById(R.id.tvFileName); // Ánh xạ TextView tên file
         btnSubmit = findViewById(R.id.btn_submit_final);
+        View btnBack = findViewById(R.id.btnBack);
 
         if (etSubmitTitle != null && tenBT != null) {
             etSubmitTitle.setText(tenBT);
         }
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar_submit);
-        if (toolbar != null) {
-            toolbar.setNavigationOnClickListener(v -> finish());
+        // Xử lý nút Back
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
         }
 
+        // Xử lý chọn file
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
+        // Xử lý submit
         btnSubmit.setOnClickListener(v -> {
             if (selectedFileUri == null) {
                 Toast.makeText(this, "Vui lòng đính kèm bài làm!", Toast.LENGTH_SHORT).show();
@@ -106,11 +119,9 @@ public class SubmitAssignmentActivity extends BaseActivity {
             AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
             database.nopBaiDao().insert(nb);
 
-            // Tìm thông tin học viên để lấy tên
             HocVien hv = database.hocVienDao().getByMaTKSync(currentMaHV);
             String tenHV = (hv != null) ? hv.getTenHV() : "Học viên";
 
-            // Gửi thông báo cho giáo viên
             com.example.studentportalapp.data.Entity.BaiTap bt = database.baiTapDao().getByIdSync(maBT);
             if (bt != null) {
                 com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
@@ -118,9 +129,7 @@ public class SubmitAssignmentActivity extends BaseActivity {
                     ThongBao tb = new ThongBao();
                     tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
                     tb.NgayTao = timeStamp;
-                    tb.NguoiNhan = lh.MaGV; 
-                    tb.LoaiTB = "SUBMISSION"; // THÊM DÒNG NÀY
-                    tb.TargetId = maBT;       // THÊM DÒNG NÀY (Mã bài tập để GV vào xem list bài nộp)
+                    tb.NguoiNhan = lh.MaGV;
                     database.thongBaoDao().insert(tb);
                 }
             }
