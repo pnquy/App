@@ -52,6 +52,7 @@ public class HomeActivity extends BaseActivity {
         View btnLogout = findViewById(R.id.quickActionLogout);
         View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
         View btnTKB = findViewById(R.id.quickActionTKB);
+        View btnProfile = findViewById(R.id.quickActionProfile);
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -78,6 +79,13 @@ public class HomeActivity extends BaseActivity {
         if (btnTKB != null) {
             btnTKB.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, ToDoActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (btnProfile != null) {
+            btnProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
                 startActivity(intent);
             });
         }
@@ -133,7 +141,7 @@ public class HomeActivity extends BaseActivity {
                     editor.clear();
                     editor.apply();
 
-                    Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
+                    Intent intent = new Intent(this, LoginActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();

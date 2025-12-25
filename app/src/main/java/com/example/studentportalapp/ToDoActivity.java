@@ -58,7 +58,9 @@ public class ToDoActivity extends BaseActivity {
                     for (BaiTap baiTap : assignments) {
                         if (isDeadlineActive(baiTap.Deadline)) {
                             int submissionCount = db.nopBaiDao().countSubmissionsForAssignment(baiTap.MaBT);
-                            tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole, submissionCount, totalStudents));
+                            if (submissionCount < totalStudents) { // Chỉ hiển thị nếu chưa nộp đủ
+                                tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole, submissionCount, totalStudents));
+                            }
                         }
                     }
                 }

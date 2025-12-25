@@ -47,10 +47,10 @@ public class ProfileActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // 2. Lấy thông tin phiên đăng nhập
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        currentUserId = prefs.getString("USER_ID", "");
-        String role = prefs.getString("USER_ROLE", "");
+        // 2. Lấy thông tin phiên đăng nhập từ "UserSession"
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentUserId = prefs.getString("KEY_USER_ID", "");
+        String role = prefs.getString("KEY_ROLE", "");
 
         // 3. Logic hiển thị Label theo Role
         if (role.equalsIgnoreCase("GIAOVIEN")) {
@@ -69,6 +69,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            Toast.makeText(this, "Lỗi: Không tìm thấy thông tin người dùng.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         executor.execute(() -> {
             TaiKhoan user = db.taiKhoanDao().getById(userId);
 
