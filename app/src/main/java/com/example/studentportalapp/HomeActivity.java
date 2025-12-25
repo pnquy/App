@@ -50,7 +50,7 @@ public class HomeActivity extends BaseActivity {
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
-        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
+        View btnGrades = findViewById(R.id.quickActionGrades);
         View btnTKB = findViewById(R.id.quickActionTKB);
         View btnNoti = findViewById(R.id.btnNoti);
 
@@ -82,10 +82,12 @@ public class HomeActivity extends BaseActivity {
             });
         }
 
+        // SỬA: Chuyển hướng sang màn hình thông báo thay vì hiện Toast
         if (btnNoti != null) {
-            btnNoti.setOnClickListener(v ->
-                    Toast.makeText(this, "Không có thông báo mới", Toast.LENGTH_SHORT).show()
-            );
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
