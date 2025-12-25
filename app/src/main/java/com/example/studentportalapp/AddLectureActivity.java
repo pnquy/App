@@ -19,7 +19,11 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiGiang;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class AddLectureActivity extends BaseActivity {
@@ -132,11 +136,20 @@ public class AddLectureActivity extends BaseActivity {
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
             if (isEditMode) {
-                AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().update(bg);
+                database.baiGiangDao().update(bg);
                 runOnUiThread(() -> Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show());
             } else {
-                AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().insert(bg);
+                database.baiGiangDao().insert(bg);
+                
+                // Tạo thông báo cho học viên
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài giảng mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "ALL";
+                database.thongBaoDao().insert(tb);
+
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
             }
             runOnUiThread(this::finish);

@@ -17,10 +17,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
@@ -143,7 +145,7 @@ public class AddAssignmentActivity extends BaseActivity {
             return;
         }
 
-        BaiTap bt = new BaiTap();
+        final BaiTap bt = new BaiTap();
         bt.MaBT = isEditMode ? existingId : "BT" + System.currentTimeMillis();
         bt.TenBT = title;
         bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
@@ -159,11 +161,20 @@ public class AddAssignmentActivity extends BaseActivity {
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
             if (isEditMode) {
-                AppDatabase.getDatabase(getApplicationContext()).baiTapDao().update(bt);
+                db.baiTapDao().update(bt);
                 runOnUiThread(() -> Toast.makeText(this, "Đã cập nhật bài tập!", Toast.LENGTH_SHORT).show());
             } else {
-                AppDatabase.getDatabase(getApplicationContext()).baiTapDao().insert(bt);
+                db.baiTapDao().insert(bt);
+                
+                // Gửi thông báo cho HỌC VIÊN
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài tập mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "HOCVIEN";
+                db.thongBaoDao().insert(tb);
+
                 runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
             }
             runOnUiThread(this::finish);

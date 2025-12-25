@@ -75,9 +75,10 @@ public class HomeActivity extends BaseActivity {
         }
 
         if (btnNoti != null) {
-            btnNoti.setOnClickListener(v ->
-                    Toast.makeText(this, "Không có thông báo mới", Toast.LENGTH_SHORT).show()
-            );
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
+                startActivity(intent);
+            });
         }
     }
 

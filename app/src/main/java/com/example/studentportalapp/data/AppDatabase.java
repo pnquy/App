@@ -15,6 +15,7 @@ import com.example.studentportalapp.data.Dao.LopHocDao;
 import com.example.studentportalapp.data.Dao.NopBaiDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
 import com.example.studentportalapp.data.Dao.ThamGiaDao;
+import com.example.studentportalapp.data.Dao.ThongBaoDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
@@ -24,6 +25,7 @@ import com.example.studentportalapp.data.Entity.LopHoc;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,9 +40,10 @@ import java.util.concurrent.Executors;
                 BaiTap.class,
                 ThamGia.class,
                 Diem.class,
-                NopBai.class
+                NopBai.class,
+                ThongBao.class
         },
-        version = 8,
+        version = 9,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -57,6 +60,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DiemDao diemDao();
     public abstract ThamGiaDao thamGiaDao();
     public abstract NopBaiDao nopBaiDao();
+    public abstract ThongBaoDao thongBaoDao();
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -67,7 +71,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     "school_db"
                             )
-                            .fallbackToDestructiveMigration()
+                            .fallbackToDestructiveMigration(true)
                             .build();
                 }
             }
