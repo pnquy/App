@@ -50,7 +50,8 @@ public class HomeActivity extends BaseActivity {
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
-        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
+        View btnGrades = findViewById(R.id.quickActionGrades);
+        View btnProfile = findViewById(R.id.quickActionProfile); // Ánh xạ nút Profile mới
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -66,10 +67,17 @@ public class HomeActivity extends BaseActivity {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
 
-        // Xử lý sự kiện click mở màn hình Xem Điểm
         if (btnGrades != null) {
             btnGrades.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, GradeActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // Xử lý sự kiện click nút Profile
+        if (btnProfile != null) {
+            btnProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
                 startActivity(intent);
             });
         }
@@ -82,6 +90,7 @@ public class HomeActivity extends BaseActivity {
         }
     }
 
+    // ... (Giữ nguyên các hàm loadUserCourses và showLogoutDialog)
     private void loadUserCourses() {
         executor.execute(() -> {
             List<LopHoc> listLop = new ArrayList<>();
@@ -98,7 +107,7 @@ public class HomeActivity extends BaseActivity {
                 if (recyclerView == null) return;
 
                 if (finalList == null || finalList.isEmpty()) {
-                    Toast.makeText(HomeActivity.this, "Chưa có lớp học nào.", Toast.LENGTH_SHORT).show();
+                    // Toast.makeText(HomeActivity.this, "Chưa có lớp học nào.", Toast.LENGTH_SHORT).show();
                 }
 
                 UserCourseAdapter adapter = new UserCourseAdapter(HomeActivity.this, finalList, lopHoc -> {

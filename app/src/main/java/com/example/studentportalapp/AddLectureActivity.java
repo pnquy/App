@@ -15,7 +15,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.widget.Toolbar;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiGiang;
@@ -29,9 +28,9 @@ import java.util.concurrent.Executors;
 public class AddLectureActivity extends BaseActivity {
 
     private EditText etTitle, etDesc;
-    private Button btnAttach;
-    private TextView tvFileName;
-    private View btnPost;
+    private View btnPickFile;
+    private TextView tvFileName, tvHeaderTitle;
+    private Button btnSubmit;
 
     private String currentMaLH;
     private String currentMaGV;
@@ -56,6 +55,7 @@ public class AddLectureActivity extends BaseActivity {
                     selectedFileName = getFileName(uri);
                     if (tvFileName != null) {
                         tvFileName.setText("Đã chọn: " + selectedFileName);
+                        tvFileName.setTextColor(getResources().getColor(R.color.purple_500));
                     }
                 }
             }
@@ -74,18 +74,20 @@ public class AddLectureActivity extends BaseActivity {
         currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
         currentMaGV = prefs.getString("KEY_USER_ID", "");
 
-        etTitle = findViewById(R.id.et_lecture_title);
-        etDesc = findViewById(R.id.et_lecture_description);
-        btnAttach = findViewById(R.id.btn_attach_file);
-        btnPost = findViewById(R.id.btn_post_lecture);
-        tvFileName = findViewById(R.id.tv_file_name);
+        // Ánh xạ theo Layout Mới
+        etTitle = findViewById(R.id.edtTitle);
+        etDesc = findViewById(R.id.edtContent);
+        btnPickFile = findViewById(R.id.btnPickFile);
+        tvFileName = findViewById(R.id.tvFileName);
+        btnSubmit = findViewById(R.id.btnSubmit);
+        tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
+        View btnBack = findViewById(R.id.btnBack);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        if (toolbar != null) toolbar.setNavigationOnClickListener(v -> finish());
+        if (btnBack != null) btnBack.setOnClickListener(v -> finish());
 
-        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+        btnPickFile.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
-        btnPost.setOnClickListener(v -> handlePost());
+        btnSubmit.setOnClickListener(v -> handlePost());
 
         checkEditMode();
     }
@@ -106,8 +108,8 @@ public class AddLectureActivity extends BaseActivity {
                 tvFileName.setText("File cũ: " + existingFileName);
             }
 
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            if (toolbar != null) toolbar.setTitle("Sửa Bài Giảng");
+            if (tvHeaderTitle != null) tvHeaderTitle.setText("Sửa Bài Giảng");
+            btnSubmit.setText("Cập Nhật");
         }
     }
 
@@ -142,14 +144,12 @@ public class AddLectureActivity extends BaseActivity {
                 runOnUiThread(() -> Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show());
             } else {
                 database.baiGiangDao().insert(bg);
-                
-                // Gửi thông báo cho HỌC VIÊN
+
+                // Tạo thông báo cho học viên
                 ThongBao tb = new ThongBao();
                 tb.NoiDung = "Có bài giảng mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                tb.NguoiNhan = "HOCVIEN";
-                tb.LoaiTB = "LECTURE"; // QUAN TRỌNG: Để click vào là chuyển trang
-                tb.TargetId = currentMaLH; // QUAN TRỌNG: ID lớp học
+                tb.NguoiNhan = "ALL";
                 database.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
