@@ -34,6 +34,11 @@ public class AddLectureActivity extends BaseActivity {
     private Uri selectedFileUri = null;
     private String selectedFileName = null;
 
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
+
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
             uri -> {
@@ -77,6 +82,29 @@ public class AddLectureActivity extends BaseActivity {
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnPost.setOnClickListener(v -> handlePost());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String content = intent.getStringExtra("EDIT_CONTENT");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etDesc.setText(content);
+            if (existingFileName != null) {
+                tvFileName.setText("File cũ: " + existingFileName);
+            }
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            if (toolbar != null) toolbar.setTitle("Sửa Bài Giảng");
+        }
     }
 
     private void handlePost() {
@@ -89,7 +117,7 @@ public class AddLectureActivity extends BaseActivity {
         }
 
         BaiGiang bg = new BaiGiang();
-        bg.MaBG = "BG" + System.currentTimeMillis();
+        bg.MaBG = isEditMode ? existingId : "BG" + System.currentTimeMillis();
         bg.TenBG = title;
         bg.NoiDung = desc;
         bg.MaLH = currentMaLH;
@@ -98,14 +126,20 @@ public class AddLectureActivity extends BaseActivity {
         if (selectedFileUri != null) {
             bg.FilePath = selectedFileUri.toString();
             bg.FileName = selectedFileName;
+        } else {
+            bg.FilePath = existingFilePath;
+            bg.FileName = existingFileName;
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().insert(bg);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
-                finish();
-            });
+            if (isEditMode) {
+                AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().update(bg);
+                runOnUiThread(() -> Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show());
+            } else {
+                AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().insert(bg);
+                runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
+            }
+            runOnUiThread(this::finish);
         });
     }
 

@@ -15,6 +15,7 @@ import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class AssignmentActivity extends BaseActivity {
 
@@ -78,22 +79,6 @@ public class AssignmentActivity extends BaseActivity {
         }
         builder.setMessage(msg);
 
-        if ("GIAOVIEN".equals(role)) {
-            builder.setPositiveButton("Xem bài nộp", (dialog, which) -> {
-                Intent intent = new Intent(this, ViewSubmissionsActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
-            });
-        } else if ("HOCVIEN".equals(role)) {
-            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
-                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
-            });
-        }
-
         if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
@@ -111,7 +96,63 @@ public class AssignmentActivity extends BaseActivity {
             });
         }
 
-        builder.setNegativeButton("Hủy", null);
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản Lý", (dialog, which) -> showTeacherOptions(bt));
+        } else if ("HOCVIEN".equals(role)) {
+            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                intent.putExtra("MA_BT", bt.MaBT);
+                intent.putExtra("TEN_BT", bt.TenBT);
+                startActivity(intent);
+            });
+        }
+
+        builder.setNegativeButton("Đóng", null);
         builder.show();
+    }
+
+    private void showTeacherOptions(BaiTap bt) {
+        String[] options = {"Xem bài nộp", "Chỉnh sửa", "Xóa bài tập"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, ViewSubmissionsActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            Intent editIntent = new Intent(this, AddAssignmentActivity.class);
+                            editIntent.putExtra("EDIT_ID", bt.MaBT);
+                            editIntent.putExtra("EDIT_TITLE", bt.TenBT);
+                            editIntent.putExtra("EDIT_DESC", bt.MoTa);
+                            editIntent.putExtra("EDIT_DATE", bt.Deadline);
+                            editIntent.putExtra("EDIT_FILE_PATH", bt.FilePath);
+                            editIntent.putExtra("EDIT_FILE_NAME", bt.FileName);
+                            startActivity(editIntent);
+                            break;
+                        case 2:
+                            confirmDelete(bt);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiTap bt) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài tập \"" + bt.TenBT + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiTapDao().delete(bt);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài tập!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }

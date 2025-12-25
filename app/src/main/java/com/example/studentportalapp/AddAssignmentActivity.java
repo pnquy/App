@@ -34,6 +34,11 @@ public class AddAssignmentActivity extends BaseActivity {
     private String selectedFileName;
     private String currentMaLH;
 
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
+
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
             uri -> {
@@ -89,6 +94,32 @@ public class AddAssignmentActivity extends BaseActivity {
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnAssign.setOnClickListener(v -> handleAssign());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String desc = intent.getStringExtra("EDIT_DESC");
+            String date = intent.getStringExtra("EDIT_DATE");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etInstructions.setText(desc);
+            etDueDate.setText(date);
+
+            if (existingFileName != null) {
+                btnAttach.setText("File cũ: " + existingFileName);
+            }
+
+            toolbar.setTitle("Cập Nhật Bài Tập");
+            btnAssign.setText("Lưu Thay Đổi");
+        }
     }
 
     private void updateLabel() {
@@ -113,7 +144,7 @@ public class AddAssignmentActivity extends BaseActivity {
         }
 
         BaiTap bt = new BaiTap();
-        bt.MaBT = "BT" + System.currentTimeMillis();
+        bt.MaBT = isEditMode ? existingId : "BT" + System.currentTimeMillis();
         bt.TenBT = title;
         bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
         bt.Deadline = dueDate;
@@ -122,14 +153,20 @@ public class AddAssignmentActivity extends BaseActivity {
         if (selectedFileUri != null) {
             bt.FilePath = selectedFileUri.toString();
             bt.FileName = selectedFileName;
+        } else {
+            bt.FilePath = existingFilePath;
+            bt.FileName = existingFileName;
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).baiTapDao().insert(bt);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show();
-                finish();
-            });
+            if (isEditMode) {
+                AppDatabase.getDatabase(getApplicationContext()).baiTapDao().update(bt);
+                runOnUiThread(() -> Toast.makeText(this, "Đã cập nhật bài tập!", Toast.LENGTH_SHORT).show());
+            } else {
+                AppDatabase.getDatabase(getApplicationContext()).baiTapDao().insert(bt);
+                runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
+            }
+            runOnUiThread(this::finish);
         });
     }
 

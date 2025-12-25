@@ -16,6 +16,7 @@ import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.model.ActivityItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class CourseActivity extends BaseActivity {
 
@@ -82,6 +83,9 @@ public class CourseActivity extends BaseActivity {
     }
 
     private void showLectureDialog(BaiGiang bg) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bg.TenBG);
 
@@ -92,18 +96,18 @@ public class CourseActivity extends BaseActivity {
         builder.setMessage(msg);
 
         if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
-            builder.setPositiveButton("Mở File", (dialog, which) -> {
+            builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
                     Uri uri = Uri.parse(bg.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
 
                     String mimeType = getContentResolver().getType(uri);
                     if (mimeType == null) mimeType = "*/*";
-                    
+
                     intent.setDataAndType(uri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                    
+
                     startActivity(Intent.createChooser(intent, "Mở bài giảng bằng"));
                 } catch (Exception e) {
                     Toast.makeText(this, "Lỗi: File không tồn tại hoặc không có quyền truy cập", Toast.LENGTH_LONG).show();
@@ -111,7 +115,49 @@ public class CourseActivity extends BaseActivity {
             });
         }
 
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản lý", (dialog, which) -> showTeacherOptions(bg));
+        }
+
         builder.setNegativeButton("Đóng", null);
         builder.show();
+    }
+
+    private void showTeacherOptions(BaiGiang bg) {
+        String[] options = {"Chỉnh sửa", "Xóa bài giảng"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, AddLectureActivity.class);
+                            intent.putExtra("EDIT_ID", bg.MaBG);
+                            intent.putExtra("EDIT_TITLE", bg.TenBG);
+                            intent.putExtra("EDIT_CONTENT", bg.NoiDung);
+                            intent.putExtra("EDIT_FILE_PATH", bg.FilePath);
+                            intent.putExtra("EDIT_FILE_NAME", bg.FileName);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            confirmDelete(bg);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiGiang bg) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài giảng \"" + bg.TenBG + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiGiangDao().delete(bg);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài giảng!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }
