@@ -29,6 +29,10 @@ public interface DiemDao {
 
     @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
     LiveData<List<Diem>> getByBaiTap(String maBT);
+
+    @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
+    List<Diem> getByBaiTapSync(String maBT);
+
     @Query("SELECT * FROM DIEM")
     LiveData<List<Diem>> getAll();
 

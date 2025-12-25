@@ -1,6 +1,6 @@
 package com.example.studentportalapp;
 
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -30,7 +30,7 @@ public class ClassManageActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private List<TeacherItem> allTeachers = new ArrayList<>(); // Danh sách tất cả GV để chọn
+    private List<TeacherItem> allTeachers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +44,6 @@ public class ClassManageActivity extends AppCompatActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnAddClass).setOnClickListener(v -> showAddEditDialog(null));
 
-        // Tải danh sách giáo viên trước để dùng cho việc chọn GVCN
         loadTeachers();
     }
 
@@ -54,31 +53,23 @@ public class ClassManageActivity extends AppCompatActivity {
         loadClasses();
     }
 
-    // Tải danh sách giáo viên vào bộ nhớ để dùng cho Dialog chọn GV
     private void loadTeachers() {
         executor.execute(() -> {
-            // Lưu ý: Đảm bảo GiaoVienDao có hàm getAllSync() trả về List<GiaoVien>
             try {
                 List<GiaoVien> teachers = db.giaoVienDao().getAllSync();
-                // Nếu dùng TeacherItem thì convert, ở đây giả định dùng GiaoVien trực tiếp cho đơn giản
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    // Tải danh sách lớp kèm thông tin phụ (Tên GV, Sĩ số)
     private void loadClasses() {
-        // Observer chạy trên Main Thread, nên an toàn
         db.lopHocDao().getAll().observe(this, lopHocList -> {
             executor.execute(() -> {
                 List<ClassDisplayItem> displayList = new ArrayList<>();
-
-                // Lấy danh sách GV để map tên
                 List<GiaoVien> currentTeachers = db.giaoVienDao().getAllSync();
 
                 for (LopHoc lh : lopHocList) {
-                    // 1. Lấy tên GVCN
                     String tenGV = "Chưa phân công";
                     for (GiaoVien gv : currentTeachers) {
                         if (gv.getMaGV().equals(lh.MaGV)) {
@@ -86,13 +77,10 @@ public class ClassManageActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    // 2. Đếm sĩ số từ bảng trung gian THAMGIA
                     int count = db.thamGiaDao().countStudentsByClass(lh.MaLH);
-
                     displayList.add(new ClassDisplayItem(lh, tenGV, count));
                 }
 
-                // Cập nhật UI (Bắt buộc runOnUiThread)
                 runOnUiThread(() -> {
                     ClassAdapter adapter = new ClassAdapter(displayList, new ClassAdapter.OnItemClickListener() {
                         @Override
@@ -102,7 +90,10 @@ public class ClassManageActivity extends AppCompatActivity {
 
                         @Override
                         public void onStats(ClassDisplayItem item) {
-                            Toast.makeText(ClassManageActivity.this, "Chức năng thống kê đang phát triển", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(ClassManageActivity.this, ClassStatsActivity.class);
+                            intent.putExtra("MA_LH", item.lopHoc.MaLH);
+                            intent.putExtra("TEN_LH", item.lopHoc.TenLH);
+                            startActivity(intent);
                         }
 
                         @Override
@@ -121,8 +112,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Dialog Thêm/Sửa Lớp
-    // Dialog Thêm/Sửa Lớp (Đã cập nhật Check trùng + Khóa mã khi sửa)
     private String[] teacherNames;
     private List<GiaoVien> teacherList;
 
@@ -130,22 +119,17 @@ public class ClassManageActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(existingClass == null ? "Thêm Lớp Mới" : "Sửa Lớp Học");
 
-        // Layout dialog cần thêm 1 TextView hoặc EditText để chọn GV
-        // Bạn cần sửa file xml dialog_add_class.xml thêm 1 EditText id là etMaGV
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_class, null);
 
         TextInputEditText etMa = view.findViewById(R.id.etMaLH);
         TextInputEditText etTen = view.findViewById(R.id.etTenLH);
-        TextInputEditText etGV = view.findViewById(R.id.etMaGV); // Ô chọn giáo viên
+        TextInputEditText etGV = view.findViewById(R.id.etMaGV);
 
-        // Cấu hình ô chọn GV: Không cho nhập tay, chỉ được chọn
         etGV.setFocusable(false);
         etGV.setClickable(true);
 
-        // Biến lưu mã GV được chọn
         final String[] selectedMaGV = {existingClass != null ? existingClass.MaGV : null};
 
-        // Load danh sách giáo viên để chuẩn bị cho việc chọn
         executor.execute(() -> {
             teacherList = db.giaoVienDao().getAllSync();
             teacherNames = new String[teacherList.size()];
@@ -153,7 +137,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 teacherNames[i] = teacherList.get(i).getMaGV() + " - " + teacherList.get(i).getTenGV();
             }
 
-            // Hiển thị tên GV hiện tại (nếu đang sửa)
             if (existingClass != null && existingClass.MaGV != null) {
                 for (GiaoVien gv : teacherList) {
                     if (gv.getMaGV().equals(existingClass.MaGV)) {
@@ -164,7 +147,6 @@ public class ClassManageActivity extends AppCompatActivity {
             }
         });
 
-        // Sự kiện bấm vào ô chọn GV -> Hiện list chọn
         etGV.setOnClickListener(v -> {
             if (teacherNames == null || teacherNames.length == 0) {
                 Toast.makeText(this, "Chưa có giáo viên nào!", Toast.LENGTH_SHORT).show();
@@ -175,12 +157,11 @@ public class ClassManageActivity extends AppCompatActivity {
                     .setItems(teacherNames, (dialog, which) -> {
                         GiaoVien selected = teacherList.get(which);
                         etGV.setText(selected.getMaGV() + " - " + selected.getTenGV());
-                        selectedMaGV[0] = selected.getMaGV(); // Lưu mã GV đã chọn
+                        selectedMaGV[0] = selected.getMaGV();
                     })
                     .show();
         });
 
-        // ... Code fill dữ liệu cũ vào etMa, etTen ...
         if (existingClass != null) {
             etMa.setText(existingClass.MaLH);
             etMa.setEnabled(false);
@@ -201,7 +182,7 @@ public class ClassManageActivity extends AppCompatActivity {
             LopHoc lh = new LopHoc();
             lh.MaLH = ma;
             lh.TenLH = ten;
-            lh.MaGV = selectedMaGV[0]; // <-- LƯU MÃ GV VÀO ĐÂY
+            lh.MaGV = selectedMaGV[0];
 
             executor.execute(() -> {
                 if (existingClass == null) db.lopHocDao().insert(lh);
@@ -218,13 +199,9 @@ public class ClassManageActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // Dialog chọn nhiều học viên vào lớp (Logic Many-to-Many)
     private void showAddStudentToClassDialog(LopHoc lh) {
         executor.execute(() -> {
-            // Lấy tất cả học viên
             List<HocVien> allStudents = db.hocVienDao().getAllSync();
-
-            // Lấy danh sách ID học viên ĐANG ở trong lớp này (từ bảng THAMGIA)
             List<String> enrolledStudentIds = db.thamGiaDao().getStudentIdsByClass(lh.MaLH);
 
             String[] studentNames = new String[allStudents.size()];
@@ -267,17 +244,14 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Lưu thay đổi vào bảng THAMGIA
     private void saveStudentClassChanges(LopHoc currentClass, List<String> oldIds, List<String> newIds) {
         executor.execute(() -> {
-            // A. Thêm mới
             for (String newId : newIds) {
                 if (!oldIds.contains(newId)) {
                     db.thamGiaDao().insert(new com.example.studentportalapp.data.Entity.ThamGia(newId, currentClass.MaLH));
                 }
             }
 
-            // B. Xóa bỏ
             for (String oldId : oldIds) {
                 if (!newIds.contains(oldId)) {
                     db.thamGiaDao().removeStudentFromClass(oldId, currentClass.MaLH);
@@ -291,7 +265,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Xóa lớp học
     private void showDeleteConfirm(LopHoc lh) {
         new AlertDialog.Builder(this)
                 .setTitle("Cảnh báo")
@@ -299,8 +272,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     executor.execute(() -> {
                         db.lopHocDao().delete(lh);
-
-                        // --- KHẮC PHỤC LỖI CRASH Ở ĐÂY ---
                         runOnUiThread(() -> {
                             loadClasses();
                             Toast.makeText(ClassManageActivity.this, "Đã xóa lớp thành công!", Toast.LENGTH_SHORT).show();

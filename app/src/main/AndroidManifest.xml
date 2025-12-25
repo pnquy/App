@@ -45,6 +45,8 @@
         <activity android:name=".SubmitAssignmentActivity" />
         <activity android:name=".ViewSubmissionsActivity" />
         <activity android:name=".GradeActivity" />
+        <activity android:name=".ClassStatsActivity" />
+        <activity android:name=".AssignmentStatsActivity" />
     </application>
 
 </manifest>
