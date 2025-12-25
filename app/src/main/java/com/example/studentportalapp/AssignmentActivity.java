@@ -40,16 +40,20 @@ public class AssignmentActivity extends BaseActivity {
         String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
         String role = prefs.getString("KEY_ROLE", "");
 
+        // Ánh xạ Views
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
         recyclerView = findViewById(R.id.recyclerViewAssignments);
         layoutEmptyState = findViewById(R.id.layoutEmptyState);
         FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
         View btnHomeLogo = findViewById(R.id.btnHomeLogo);
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
 
+        // Setup UI texts
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
+        // Setup Button Listeners
         if (btnHomeLogo != null) {
             btnHomeLogo.setOnClickListener(v -> {
                 Intent intent = new Intent(this, HomeActivity.class);
@@ -59,8 +63,18 @@ public class AssignmentActivity extends BaseActivity {
             });
         }
 
+        // Đảm bảo nút thông báo hoạt động
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        // Setup FAB for Teacher
         if ("GIAOVIEN".equals(role)) {
             fab.setVisibility(View.VISIBLE);
             fab.setOnClickListener(v -> startActivity(new Intent(this, AddAssignmentActivity.class)));
@@ -69,14 +83,6 @@ public class AssignmentActivity extends BaseActivity {
         }
 
         loadData();
-        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
-
-        if (btnNotiHeader != null) {
-            btnNotiHeader.setOnClickListener(v -> {
-                Intent intent = new Intent(this, NotificationActivity.class);
-                startActivity(intent);
-            });
-        }
     }
 
     private void loadData() {
@@ -90,6 +96,7 @@ public class AssignmentActivity extends BaseActivity {
                 recyclerView.setVisibility(View.VISIBLE);
             }
 
+            // Giữ nguyên logic Adapter: chỉ click vào nút View/Submit mới gọi showAssignmentDialog
             AssignmentAdapter adapter = new AssignmentAdapter(this, listBT, this::showAssignmentDialog);
             recyclerView.setAdapter(adapter);
         });

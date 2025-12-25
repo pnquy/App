@@ -50,9 +50,8 @@ public class HomeActivity extends BaseActivity {
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
-        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
+        View btnGrades = findViewById(R.id.quickActionGrades);
         View btnTKB = findViewById(R.id.quickActionTKB);
-        View btnProfile = findViewById(R.id.quickActionProfile);
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -83,17 +82,12 @@ public class HomeActivity extends BaseActivity {
             });
         }
 
-        if (btnProfile != null) {
-            btnProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+        // SỬA: Chuyển hướng sang màn hình thông báo thay vì hiện Toast
+        if (btnNoti != null) {
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
                 startActivity(intent);
             });
-        }
-
-        if (btnNoti != null) {
-            btnNoti.setOnClickListener(v ->
-                    Toast.makeText(this, "Không có thông báo mới", Toast.LENGTH_SHORT).show()
-            );
         }
     }
 
@@ -141,7 +135,7 @@ public class HomeActivity extends BaseActivity {
                     editor.clear();
                     editor.apply();
 
-                    Intent intent = new Intent(this, LoginActivity.class);
+                    Intent intent = new Intent(HomeActivity.this, LoginActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                     finish();

@@ -106,7 +106,7 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút ĐIỂM SỐ (ĐÃ THÊM ID) -->
+                <!-- Nút ĐIỂM SỐ -->
                 <LinearLayout
                     android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"

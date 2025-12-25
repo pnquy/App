@@ -122,6 +122,8 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
                         tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
                         tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                         tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
+                        tb.LoaiTB = "GRADE"; // QUAN TRỌNG
+                        tb.TargetId = bt.MaLH; // Mã lớp học để điều hướng
                         db.thongBaoDao().insert(tb);
                     }
 

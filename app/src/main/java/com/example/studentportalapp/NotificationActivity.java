@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.NotificationAdapter;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 import java.util.concurrent.Executors;
 
@@ -50,9 +51,20 @@ public class NotificationActivity extends BaseActivity {
                 NotificationAdapter adapter = new NotificationAdapter(list);
                 recyclerView.setAdapter(adapter);
 
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.thongBaoDao().markAllAsRead(currentMaTK, role);
-                });
+                // Kiểm tra xem có tin chưa đọc không mới update DB để tránh vòng lặp vô tận (update -> reload -> update)
+                boolean hasUnread = false;
+                for (ThongBao tb : list) {
+                    if (!tb.IsRead) {
+                        hasUnread = true;
+                        break;
+                    }
+                }
+
+                if (hasUnread) {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.thongBaoDao().markAllAsRead(currentMaTK, role);
+                    });
+                }
             }
         });
     }
