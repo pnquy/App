@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.AssignmentActivity;
+import com.example.studentportalapp.CourseActivity;
 import com.example.studentportalapp.GradeActivity;
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.ViewSubmissionsActivity;
@@ -60,12 +61,20 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                 Intent intent = null;
                 switch (tb.LoaiTB) {
                     case "ASSIGNMENT":
-                    case "LECTURE":
                         if (tb.TargetId != null) {
                             SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
                             editor.putString("CURRENT_CLASS_ID", tb.TargetId);
                             editor.apply();
                             intent = new Intent(context, AssignmentActivity.class);
+                        }
+                        break;
+                    case "LECTURE":
+                        if (tb.TargetId != null) {
+                            SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
+                            editor.putString("CURRENT_CLASS_ID", tb.TargetId);
+                            editor.apply();
+                            // SỬA: Link tới màn hình Bài Giảng (CourseActivity)
+                            intent = new Intent(context, CourseActivity.class);
                         }
                         break;
                     case "GRADE":
