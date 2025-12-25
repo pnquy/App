@@ -6264,7 +6264,7 @@ FILE: app\src\main\res\drawable\bg_circle.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#018786" />
+    <solid android:color="#ffe6ed" />
 </shape>
 
 
@@ -6275,7 +6275,7 @@ FILE: app\src\main\res\drawable\bg_file_link.xml
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#EDE7F6" />
+    <solid android:color="#ffffff" />
     <corners android:radius="8dp" />
 </shape>
 
@@ -6285,7 +6285,7 @@ FILE: app\src\main\res\drawable\bg_home_header.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/primary_pink"/>
+    <solid android:color="#ffe6ed"/>
     <corners
         android:bottomLeftRadius="30dp"
         android:bottomRightRadius="30dp"/>
@@ -7033,7 +7033,8 @@ FILE: app\src\main\res\layout\activity_add_assignment.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -7142,7 +7143,8 @@ FILE: app\src\main\res\layout\activity_add_lecture.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -7253,8 +7255,7 @@ FILE: app\src\main\res\layout\activity_add_user.xml
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:src="@drawable/logo_new"
-                    android:padding="1dp"
-                    app:tint="#c96e80"/>
+                    android:padding="1dp" />
             </androidx.cardview.widget.CardView>
 
             <TextView
@@ -7436,7 +7437,7 @@ FILE: app\src\main\res\layout\activity_admin.xml
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -7763,7 +7764,7 @@ FILE: app\src\main\res\layout\activity_admin.xml
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Đăng xuất"
-            android:textColor="#F44336"
+            android:textColor="#cf7486"
             android:textSize="16sp"
             android:textStyle="bold"
             android:layout_gravity="center"
@@ -7789,7 +7790,7 @@ FILE: app\src\main\res\layout\activity_assignment.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#F8F8F8">
+        android:background="#ffe6ed">
 
         <include
             android:id="@+id/include_background"
@@ -7806,6 +7807,7 @@ FILE: app\src\main\res\layout\activity_assignment.xml
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -7907,7 +7909,7 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
-    android:background="#fde0e0"> <LinearLayout
+    android:background="#ffe6ed"> <LinearLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
@@ -7941,7 +7943,7 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="+ Thêm Lớp Học Mới"
-        android:backgroundTint="#c96e80"
+        android:backgroundTint="#cf7486"
         android:textColor="#FFF"
         android:layout_marginBottom="12dp"/>
 
@@ -8021,7 +8023,7 @@ FILE: app\src\main\res\layout\activity_course.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:background="#F8F8F8">
+        android:background="#ffe6ed">
 
         <include
             android:id="@+id/include_background"
@@ -8080,7 +8082,7 @@ FILE: app\src\main\res\layout\activity_forgot_password.xml
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -8168,7 +8170,7 @@ FILE: app\src\main\res\layout\activity_forgot_password.xml
                     android:layout_marginTop="16dp"
                     android:text="Lấy Mã OTP"
                     android:textStyle="bold"
-                    app:backgroundTint="#c96e80"
+                    app:backgroundTint="#cf7486"
                     app:cornerRadius="8dp"/>
 
                 <LinearLayout
@@ -8254,7 +8256,7 @@ FILE: app\src\main\res\layout\activity_grade.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8F9FA">
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -8263,7 +8265,7 @@ FILE: app\src\main\res\layout\activity_grade.xml
             android:id="@+id/toolbar_grade"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="#c96e80"
+            android:background="#cf7486"
             app:title="Bảng Điểm Cá Nhân"
             app:titleTextColor="#FFFFFF"
             app:navigationIcon="@drawable/ic_arrow_back"
@@ -8335,11 +8337,11 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:id="@+id/imgAvatar"
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="#FFFFFF"
                 android:padding="10dp"
-                app:tint="#c96e80"
+
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 android:layout_margin="24dp"/>
@@ -8373,11 +8375,10 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:id="@+id/btnNoti"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@android:drawable/ic_popup_reminder"
                 android:background="@drawable/bg_circle"
-                android:backgroundTint="#FFFFFF"
-                android:padding="8dp"
-                app:tint="#c96e80"
+                android:src="@drawable/ic_bell"
+                android:padding="1dp"
+                android:backgroundTint="#ffffff"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="@id/imgAvatar"
                 android:layout_marginEnd="24dp"/>
@@ -8542,7 +8543,7 @@ FILE: app\src\main\res\layout\activity_login.xml
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     android:fillViewport="true">
 
     <LinearLayout
@@ -8645,7 +8646,7 @@ FILE: app\src\main\res\layout\activity_login.xml
                     android:text="Đăng Nhập"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    app:backgroundTint="#c96e80"
+                    app:backgroundTint="#cf7486"
                     app:cornerRadius="8dp"/>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -8660,7 +8661,7 @@ FILE: app\src\main\res\layout\activity_main.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -8866,7 +8867,7 @@ FILE: app\src\main\res\layout\activity_people.xml
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#ffe6ed"
     tools:context=".PeopleActivity">
     <include
         android:id="@+id/include_background"
@@ -8992,8 +8993,8 @@ FILE: app\src\main\res\layout\activity_profile.xml
                 android:layout_width="match_parent"
                 android:layout_height="160dp"
                 android:scaleType="centerCrop"
-                android:src="@android:drawable/sym_def_app_icon"
-                android:background="#c96e80" />
+
+                android:background="#ffe6ed" />
 
             <ImageView
                 android:id="@+id/btnBack"
@@ -9018,11 +9019,10 @@ FILE: app\src\main\res\layout\activity_profile.xml
                     android:id="@+id/imgAvatar"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:src="@drawable/ic_person"
+                    android:src="@drawable/logo_new"
                     android:padding="20dp"
                     android:background="@drawable/circle_bg"
-                    android:elevation="4dp"
-                    app:tint="#c96e80"/>
+                    android:elevation="4dp" />
 
                 <TextView
                     android:id="@+id/tvHeaderName"
@@ -9160,7 +9160,7 @@ FILE: app\src\main\res\layout\activity_profile.xml
                         android:text="Đổi"
                         android:textColor="#FFFFFF"
                         android:textSize="12sp"
-                        android:backgroundTint="#c96e80"
+                        android:backgroundTint="#cf7486"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"/>
                 </LinearLayout>
@@ -9244,7 +9244,7 @@ FILE: app\src\main\res\layout\activity_student_manage.xml
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
     <Button
         android:id="@+id/btnBack"
@@ -9272,7 +9272,8 @@ FILE: app\src\main\res\layout\activity_submit_assignment.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="#ffe6ed">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
@@ -9348,7 +9349,7 @@ FILE: app\src\main\res\layout\activity_teacher_manage.xml
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0"
+    android:background="#ffe6ed"
     >
     <Button
         android:id="@+id/btnBack"
@@ -9413,7 +9414,7 @@ FILE: app\src\main\res\layout\activity_view_submissions.xml
         android:id="@+id/toolbar_view_submissions"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#c96e80"
+        android:background="#cf7486"
         app:title="Bài Tập Đã Nộp"
         app:titleTextColor="#ffffff"
         app:navigationIcon="@drawable/ic_arrow_back"
@@ -9700,7 +9701,7 @@ FILE: app\src\main\res\layout\header_layout.xml
         android:id="@+id/avatar"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/logo"
+        android:src="@drawable/logo_new"
         android:layout_marginEnd="8dp"
         android:scaleType="centerCrop"
         android:contentDescription="@string/avatar"
@@ -9740,25 +9741,25 @@ FILE: app\src\main\res\layout\header_layout.xml
 
         <ImageView
             android:id="@+id/tickIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_tick"
             android:contentDescription="@string/tick" />
 
         <ImageView
             android:id="@+id/chatIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_chat"
             android:contentDescription="@string/chat" />
 
         <ImageView
             android:id="@+id/notificationIcon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_margin="4dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="1dp"
             android:src="@drawable/ic_notification"
             android:contentDescription="@string/notification" />
     </LinearLayout>
@@ -9851,7 +9852,7 @@ FILE: app\src\main\res\layout\item_assignment.xml
                 android:layout_height="40dp"
                 android:text="View"
                 android:textAllCaps="false"
-                android:backgroundTint="@color/green"
+                android:backgroundTint="#cf7486"
                 android:textColor="@android:color/white"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true" />
@@ -10003,7 +10004,7 @@ FILE: app\src\main\res\layout\item_course.xml
                 android:id="@+id/imgAvatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:layout_marginEnd="8dp" />
 
@@ -10141,13 +10142,13 @@ FILE: app\src\main\res\layout\item_course_user.xml
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="90dp"
-            android:background="#FFF0F3">
+            android:background="#ffe6ed">
 
             <ImageView
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/ic_file"
-                app:tint="#c96e80"
+                app:tint="#cf7486"
                 android:layout_centerInParent="true"/>
         </RelativeLayout>
 
@@ -10191,7 +10192,7 @@ FILE: app\src\main\res\layout\item_course_user.xml
                     android:layout_height="6dp"
                     android:layout_weight="1"
                     android:progress="65"
-                    android:progressTint="#c96e80"
+                    android:progressTint="#cf7486"
                     android:backgroundTint="#EEE"/>
 
                 <TextView
@@ -10199,7 +10200,7 @@ FILE: app\src\main\res\layout\item_course_user.xml
                     android:layout_height="wrap_content"
                     android:text="65%"
                     android:textSize="10sp"
-                    android:textColor="#c96e80"
+                    android:textColor="#cf7486"
                     android:layout_marginStart="8dp"/>
             </LinearLayout>
         </LinearLayout>
@@ -10292,11 +10293,10 @@ FILE: app\src\main\res\layout\item_hocvien.xml
             <ImageView
                 android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
                 android:background="@drawable/bg_circle"
                 android:padding="8dp"
-                android:contentDescription="Avatar"
-                app:tint="#FFFFFF"/>
+                android:contentDescription="Avatar" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -10440,7 +10440,7 @@ FILE: app\src\main\res\layout\item_person.xml
         android:id="@+id/imgAvatar"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:src="@drawable/ic_person"
+        android:src="@drawable/logo_new"
         android:layout_marginEnd="12dp"
         android:background="@drawable/bg_circle"
         android:scaleType="centerCrop" />
@@ -10599,7 +10599,8 @@ FILE: app\src\main\res\layout\item_submission.xml
             <ImageView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:src="@drawable/ic_person"
+                android:src="@drawable/logo_new"
+                android:background="@drawable/bg_circle"
                 android:layout_marginEnd="12dp" />
 
             <LinearLayout
@@ -10813,9 +10814,8 @@ FILE: app\src\main\res\layout\item_teacher.xml
             <ImageView
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:src="@drawable/ic_person"
-                android:background="@drawable/logo_new"
-                app:tint="#FFFFFF"
+                android:src="@drawable/logo_new"
+                android:background="@drawable/bg_circle"
                 android:padding="10dp"/>
 
             <LinearLayout
