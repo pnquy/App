@@ -4,7 +4,7 @@
     android:padding="16dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
     <Button
         android:id="@+id/btnBack"

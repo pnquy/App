@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
-    android:background="#fde0e0">
+    android:background="#ffe6ed">
 
 
     <com.google.android.material.imageview.ShapeableImageView

@@ -16,13 +16,13 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="90dp"
-            android:background="#FFF0F3">
+            android:background="#ffe6ed">
 
             <ImageView
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:src="@drawable/ic_file"
-                app:tint="#c96e80"
+                app:tint="#cf7486"
                 android:layout_centerInParent="true"/>
         </RelativeLayout>
 
@@ -66,7 +66,7 @@
                     android:layout_height="6dp"
                     android:layout_weight="1"
                     android:progress="65"
-                    android:progressTint="#c96e80"
+                    android:progressTint="#cf7486"
                     android:backgroundTint="#EEE"/>
 
                 <TextView
@@ -74,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:text="65%"
                     android:textSize="10sp"
-                    android:textColor="#c96e80"
+                    android:textColor="#cf7486"
                     android:layout_marginStart="8dp"/>
             </LinearLayout>
         </LinearLayout>

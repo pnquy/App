@@ -49,6 +49,9 @@ FILE: app\src\main\AndroidManifest.xml
         <activity android:name=".SubmitAssignmentActivity" />
         <activity android:name=".ViewSubmissionsActivity" />
         <activity android:name=".GradeActivity" />
+        <activity android:name=".ClassStatsActivity" />
+        <activity android:name=".AssignmentStatsActivity" />
+        <activity android:name=".NotificationActivity" />
     </application>
 
 </manifest>
@@ -75,10 +78,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
@@ -91,6 +96,11 @@ public class AddAssignmentActivity extends BaseActivity {
     private Uri selectedFileUri;
     private String selectedFileName;
     private String currentMaLH;
+
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
 
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -147,6 +157,32 @@ public class AddAssignmentActivity extends BaseActivity {
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnAssign.setOnClickListener(v -> handleAssign());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String desc = intent.getStringExtra("EDIT_DESC");
+            String date = intent.getStringExtra("EDIT_DATE");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etInstructions.setText(desc);
+            etDueDate.setText(date);
+
+            if (existingFileName != null) {
+                btnAttach.setText("File cũ: " + existingFileName);
+            }
+
+            toolbar.setTitle("Cập Nhật Bài Tập");
+            btnAssign.setText("Lưu Thay Đổi");
+        }
     }
 
     private void updateLabel() {
@@ -170,8 +206,8 @@ public class AddAssignmentActivity extends BaseActivity {
             return;
         }
 
-        BaiTap bt = new BaiTap();
-        bt.MaBT = "BT" + System.currentTimeMillis();
+        final BaiTap bt = new BaiTap();
+        bt.MaBT = isEditMode ? existingId : "BT" + System.currentTimeMillis();
         bt.TenBT = title;
         bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
         bt.Deadline = dueDate;
@@ -180,14 +216,29 @@ public class AddAssignmentActivity extends BaseActivity {
         if (selectedFileUri != null) {
             bt.FilePath = selectedFileUri.toString();
             bt.FileName = selectedFileName;
+        } else {
+            bt.FilePath = existingFilePath;
+            bt.FileName = existingFileName;
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).baiTapDao().insert(bt);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show();
-                finish();
-            });
+            AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
+            if (isEditMode) {
+                db.baiTapDao().update(bt);
+                runOnUiThread(() -> Toast.makeText(this, "Đã cập nhật bài tập!", Toast.LENGTH_SHORT).show());
+            } else {
+                db.baiTapDao().insert(bt);
+                
+                // Gửi thông báo cho HỌC VIÊN
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài tập mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "HOCVIEN";
+                db.thongBaoDao().insert(tb);
+
+                runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
+            }
+            runOnUiThread(this::finish);
         });
     }
 
@@ -214,6 +265,7 @@ public class AddAssignmentActivity extends BaseActivity {
     }
 }
 
+
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\AddLectureActivity.java
 ==================================================
@@ -238,7 +290,11 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiGiang;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class AddLectureActivity extends BaseActivity {
@@ -252,6 +308,11 @@ public class AddLectureActivity extends BaseActivity {
     private String currentMaGV;
     private Uri selectedFileUri = null;
     private String selectedFileName = null;
+
+    private boolean isEditMode = false;
+    private String existingId = null;
+    private String existingFilePath = null;
+    private String existingFileName = null;
 
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
@@ -296,6 +357,29 @@ public class AddLectureActivity extends BaseActivity {
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
         btnPost.setOnClickListener(v -> handlePost());
+
+        checkEditMode();
+    }
+
+    private void checkEditMode() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("EDIT_ID")) {
+            isEditMode = true;
+            existingId = intent.getStringExtra("EDIT_ID");
+            String title = intent.getStringExtra("EDIT_TITLE");
+            String content = intent.getStringExtra("EDIT_CONTENT");
+            existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
+            existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
+
+            etTitle.setText(title);
+            etDesc.setText(content);
+            if (existingFileName != null) {
+                tvFileName.setText("File cũ: " + existingFileName);
+            }
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            if (toolbar != null) toolbar.setTitle("Sửa Bài Giảng");
+        }
     }
 
     private void handlePost() {
@@ -308,7 +392,7 @@ public class AddLectureActivity extends BaseActivity {
         }
 
         BaiGiang bg = new BaiGiang();
-        bg.MaBG = "BG" + System.currentTimeMillis();
+        bg.MaBG = isEditMode ? existingId : "BG" + System.currentTimeMillis();
         bg.TenBG = title;
         bg.NoiDung = desc;
         bg.MaLH = currentMaLH;
@@ -317,14 +401,29 @@ public class AddLectureActivity extends BaseActivity {
         if (selectedFileUri != null) {
             bg.FilePath = selectedFileUri.toString();
             bg.FileName = selectedFileName;
+        } else {
+            bg.FilePath = existingFilePath;
+            bg.FileName = existingFileName;
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).baiGiangDao().insert(bg);
-            runOnUiThread(() -> {
-                Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show();
-                finish();
-            });
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
+            if (isEditMode) {
+                database.baiGiangDao().update(bg);
+                runOnUiThread(() -> Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show());
+            } else {
+                database.baiGiangDao().insert(bg);
+                
+                // Tạo thông báo cho học viên
+                ThongBao tb = new ThongBao();
+                tb.NoiDung = "Có bài giảng mới: " + title;
+                tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                tb.NguoiNhan = "ALL";
+                database.thongBaoDao().insert(tb);
+
+                runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
+            }
+            runOnUiThread(this::finish);
         });
     }
 
@@ -350,6 +449,7 @@ public class AddLectureActivity extends BaseActivity {
         return result;
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\AddUserActivity.java
@@ -680,6 +780,7 @@ import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class AssignmentActivity extends BaseActivity {
 
@@ -707,6 +808,15 @@ public class AssignmentActivity extends BaseActivity {
         tvSubtitle = findViewById(R.id.tv_subtitle);
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
+
+        // Ánh xạ nút thông báo nếu có trong layout (thường nằm trong include background)
+        View btnNoti = findViewById(R.id.btnNoti);
+        if (btnNoti != null) {
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
 
         recyclerView = findViewById(R.id.recyclerViewAssignments);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -743,22 +853,6 @@ public class AssignmentActivity extends BaseActivity {
         }
         builder.setMessage(msg);
 
-        if ("GIAOVIEN".equals(role)) {
-            builder.setPositiveButton("Xem bài nộp", (dialog, which) -> {
-                Intent intent = new Intent(this, ViewSubmissionsActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
-            });
-        } else if ("HOCVIEN".equals(role)) {
-            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
-                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
-            });
-        }
-
         if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
@@ -776,8 +870,148 @@ public class AssignmentActivity extends BaseActivity {
             });
         }
 
-        builder.setNegativeButton("Hủy", null);
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản Lý", (dialog, which) -> showTeacherOptions(bt));
+        } else if ("HOCVIEN".equals(role)) {
+            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                intent.putExtra("MA_BT", bt.MaBT);
+                intent.putExtra("TEN_BT", bt.TenBT);
+                startActivity(intent);
+            });
+        }
+
+        builder.setNegativeButton("Đóng", null);
         builder.show();
+    }
+
+    private void showTeacherOptions(BaiTap bt) {
+        String[] options = {"Xem bài nộp", "Chỉnh sửa", "Xóa bài tập"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, ViewSubmissionsActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            Intent editIntent = new Intent(this, AddAssignmentActivity.class);
+                            editIntent.putExtra("EDIT_ID", bt.MaBT);
+                            editIntent.putExtra("EDIT_TITLE", bt.TenBT);
+                            editIntent.putExtra("EDIT_DESC", bt.MoTa);
+                            editIntent.putExtra("EDIT_DATE", bt.Deadline);
+                            editIntent.putExtra("EDIT_FILE_PATH", bt.FilePath);
+                            editIntent.putExtra("EDIT_FILE_NAME", bt.FileName);
+                            startActivity(editIntent);
+                            break;
+                        case 2:
+                            confirmDelete(bt);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiTap bt) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài tập \"" + bt.TenBT + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiTapDao().delete(bt);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài tập!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+}
+
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\AssignmentStatsActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.os.Bundle;
+import android.widget.TextView;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.adapter.StatsStudentAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
+import com.example.studentportalapp.model.StatsStudentItem;
+import com.google.android.material.appbar.MaterialToolbar;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+
+public class AssignmentStatsActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String maBT, tenBT, maLH;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_assignment_stats);
+
+        maBT = getIntent().getStringExtra("MA_BT");
+        tenBT = getIntent().getStringExtra("TEN_BT");
+        maLH = getIntent().getStringExtra("MA_LH");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbarAssignmentStats);
+        toolbar.setTitle(tenBT);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        TextView tvTitle = findViewById(R.id.tvAssignmentTitle);
+        tvTitle.setText("Bảng điểm: " + tenBT);
+
+        recyclerView = findViewById(R.id.rvStatsStudents);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        loadData();
+    }
+
+    private void loadData() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(maLH);
+            List<HocVien> allStudents = new ArrayList<>();
+            for(String id : studentIds) {
+                HocVien hv = db.hocVienDao().getByIdSync(id);
+                if(hv != null) allStudents.add(hv);
+            }
+
+            List<Diem> scores = db.diemDao().getByBaiTapSync(maBT);
+
+            List<StatsStudentItem> displayList = new ArrayList<>();
+            for (HocVien hv : allStudents) {
+                double score = 0;
+                boolean hasScore = false;
+
+                for (Diem d : scores) {
+                    if (d.MaHV.equals(hv.getMaHV())) {
+                        score = d.SoDiem;
+                        hasScore = true;
+                        break;
+                    }
+                }
+                displayList.add(new StatsStudentItem(hv, score, hasScore));
+            }
+
+            runOnUiThread(() -> {
+                StatsStudentAdapter adapter = new StatsStudentAdapter(displayList);
+                recyclerView.setAdapter(adapter);
+            });
+        });
     }
 }
 
@@ -975,7 +1209,7 @@ FILE: app\src\main\java\com\example\studentportalapp\ClassManageActivity.java
 ==================================================
 package com.example.studentportalapp;
 
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -1005,7 +1239,7 @@ public class ClassManageActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private List<TeacherItem> allTeachers = new ArrayList<>(); // Danh sách tất cả GV để chọn
+    private List<TeacherItem> allTeachers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1019,7 +1253,6 @@ public class ClassManageActivity extends AppCompatActivity {
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnAddClass).setOnClickListener(v -> showAddEditDialog(null));
 
-        // Tải danh sách giáo viên trước để dùng cho việc chọn GVCN
         loadTeachers();
     }
 
@@ -1029,31 +1262,23 @@ public class ClassManageActivity extends AppCompatActivity {
         loadClasses();
     }
 
-    // Tải danh sách giáo viên vào bộ nhớ để dùng cho Dialog chọn GV
     private void loadTeachers() {
         executor.execute(() -> {
-            // Lưu ý: Đảm bảo GiaoVienDao có hàm getAllSync() trả về List<GiaoVien>
             try {
                 List<GiaoVien> teachers = db.giaoVienDao().getAllSync();
-                // Nếu dùng TeacherItem thì convert, ở đây giả định dùng GiaoVien trực tiếp cho đơn giản
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    // Tải danh sách lớp kèm thông tin phụ (Tên GV, Sĩ số)
     private void loadClasses() {
-        // Observer chạy trên Main Thread, nên an toàn
         db.lopHocDao().getAll().observe(this, lopHocList -> {
             executor.execute(() -> {
                 List<ClassDisplayItem> displayList = new ArrayList<>();
-
-                // Lấy danh sách GV để map tên
                 List<GiaoVien> currentTeachers = db.giaoVienDao().getAllSync();
 
                 for (LopHoc lh : lopHocList) {
-                    // 1. Lấy tên GVCN
                     String tenGV = "Chưa phân công";
                     for (GiaoVien gv : currentTeachers) {
                         if (gv.getMaGV().equals(lh.MaGV)) {
@@ -1061,13 +1286,10 @@ public class ClassManageActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    // 2. Đếm sĩ số từ bảng trung gian THAMGIA
                     int count = db.thamGiaDao().countStudentsByClass(lh.MaLH);
-
                     displayList.add(new ClassDisplayItem(lh, tenGV, count));
                 }
 
-                // Cập nhật UI (Bắt buộc runOnUiThread)
                 runOnUiThread(() -> {
                     ClassAdapter adapter = new ClassAdapter(displayList, new ClassAdapter.OnItemClickListener() {
                         @Override
@@ -1077,7 +1299,10 @@ public class ClassManageActivity extends AppCompatActivity {
 
                         @Override
                         public void onStats(ClassDisplayItem item) {
-                            Toast.makeText(ClassManageActivity.this, "Chức năng thống kê đang phát triển", Toast.LENGTH_SHORT).show();
+                            Intent intent = new Intent(ClassManageActivity.this, ClassStatsActivity.class);
+                            intent.putExtra("MA_LH", item.lopHoc.MaLH);
+                            intent.putExtra("TEN_LH", item.lopHoc.TenLH);
+                            startActivity(intent);
                         }
 
                         @Override
@@ -1096,8 +1321,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Dialog Thêm/Sửa Lớp
-    // Dialog Thêm/Sửa Lớp (Đã cập nhật Check trùng + Khóa mã khi sửa)
     private String[] teacherNames;
     private List<GiaoVien> teacherList;
 
@@ -1105,22 +1328,17 @@ public class ClassManageActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(existingClass == null ? "Thêm Lớp Mới" : "Sửa Lớp Học");
 
-        // Layout dialog cần thêm 1 TextView hoặc EditText để chọn GV
-        // Bạn cần sửa file xml dialog_add_class.xml thêm 1 EditText id là etMaGV
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_class, null);
 
         TextInputEditText etMa = view.findViewById(R.id.etMaLH);
         TextInputEditText etTen = view.findViewById(R.id.etTenLH);
-        TextInputEditText etGV = view.findViewById(R.id.etMaGV); // Ô chọn giáo viên
+        TextInputEditText etGV = view.findViewById(R.id.etMaGV);
 
-        // Cấu hình ô chọn GV: Không cho nhập tay, chỉ được chọn
         etGV.setFocusable(false);
         etGV.setClickable(true);
 
-        // Biến lưu mã GV được chọn
         final String[] selectedMaGV = {existingClass != null ? existingClass.MaGV : null};
 
-        // Load danh sách giáo viên để chuẩn bị cho việc chọn
         executor.execute(() -> {
             teacherList = db.giaoVienDao().getAllSync();
             teacherNames = new String[teacherList.size()];
@@ -1128,7 +1346,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 teacherNames[i] = teacherList.get(i).getMaGV() + " - " + teacherList.get(i).getTenGV();
             }
 
-            // Hiển thị tên GV hiện tại (nếu đang sửa)
             if (existingClass != null && existingClass.MaGV != null) {
                 for (GiaoVien gv : teacherList) {
                     if (gv.getMaGV().equals(existingClass.MaGV)) {
@@ -1139,7 +1356,6 @@ public class ClassManageActivity extends AppCompatActivity {
             }
         });
 
-        // Sự kiện bấm vào ô chọn GV -> Hiện list chọn
         etGV.setOnClickListener(v -> {
             if (teacherNames == null || teacherNames.length == 0) {
                 Toast.makeText(this, "Chưa có giáo viên nào!", Toast.LENGTH_SHORT).show();
@@ -1150,12 +1366,11 @@ public class ClassManageActivity extends AppCompatActivity {
                     .setItems(teacherNames, (dialog, which) -> {
                         GiaoVien selected = teacherList.get(which);
                         etGV.setText(selected.getMaGV() + " - " + selected.getTenGV());
-                        selectedMaGV[0] = selected.getMaGV(); // Lưu mã GV đã chọn
+                        selectedMaGV[0] = selected.getMaGV();
                     })
                     .show();
         });
 
-        // ... Code fill dữ liệu cũ vào etMa, etTen ...
         if (existingClass != null) {
             etMa.setText(existingClass.MaLH);
             etMa.setEnabled(false);
@@ -1176,7 +1391,7 @@ public class ClassManageActivity extends AppCompatActivity {
             LopHoc lh = new LopHoc();
             lh.MaLH = ma;
             lh.TenLH = ten;
-            lh.MaGV = selectedMaGV[0]; // <-- LƯU MÃ GV VÀO ĐÂY
+            lh.MaGV = selectedMaGV[0];
 
             executor.execute(() -> {
                 if (existingClass == null) db.lopHocDao().insert(lh);
@@ -1193,13 +1408,9 @@ public class ClassManageActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // Dialog chọn nhiều học viên vào lớp (Logic Many-to-Many)
     private void showAddStudentToClassDialog(LopHoc lh) {
         executor.execute(() -> {
-            // Lấy tất cả học viên
             List<HocVien> allStudents = db.hocVienDao().getAllSync();
-
-            // Lấy danh sách ID học viên ĐANG ở trong lớp này (từ bảng THAMGIA)
             List<String> enrolledStudentIds = db.thamGiaDao().getStudentIdsByClass(lh.MaLH);
 
             String[] studentNames = new String[allStudents.size()];
@@ -1242,17 +1453,14 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Lưu thay đổi vào bảng THAMGIA
     private void saveStudentClassChanges(LopHoc currentClass, List<String> oldIds, List<String> newIds) {
         executor.execute(() -> {
-            // A. Thêm mới
             for (String newId : newIds) {
                 if (!oldIds.contains(newId)) {
                     db.thamGiaDao().insert(new com.example.studentportalapp.data.Entity.ThamGia(newId, currentClass.MaLH));
                 }
             }
 
-            // B. Xóa bỏ
             for (String oldId : oldIds) {
                 if (!newIds.contains(oldId)) {
                     db.thamGiaDao().removeStudentFromClass(oldId, currentClass.MaLH);
@@ -1266,7 +1474,6 @@ public class ClassManageActivity extends AppCompatActivity {
         });
     }
 
-    // Xóa lớp học
     private void showDeleteConfirm(LopHoc lh) {
         new AlertDialog.Builder(this)
                 .setTitle("Cảnh báo")
@@ -1274,8 +1481,6 @@ public class ClassManageActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     executor.execute(() -> {
                         db.lopHocDao().delete(lh);
-
-                        // --- KHẮC PHỤC LỖI CRASH Ở ĐÂY ---
                         runOnUiThread(() -> {
                             loadClasses();
                             Toast.makeText(ClassManageActivity.this, "Đã xóa lớp thành công!", Toast.LENGTH_SHORT).show();
@@ -1283,6 +1488,76 @@ public class ClassManageActivity extends AppCompatActivity {
                     });
                 })
                 .setNegativeButton("Hủy", null).show();
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\ClassStatsActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Intent; import android.os.Bundle; import androidx.appcompat.app.AppCompatActivity; import androidx.recyclerview.widget.LinearLayoutManager; import androidx.recyclerview.widget.RecyclerView; import com.example.studentportalapp.adapter.StatsAssignmentAdapter; import com.example.studentportalapp.data.AppDatabase; import com.example.studentportalapp.data.Entity.BaiTap; import com.example.studentportalapp.data.Entity.Diem; import com.example.studentportalapp.model.StatsAssignmentItem; import com.google.android.material.appbar.MaterialToolbar; import java.util.ArrayList; import java.util.List; import java.util.concurrent.Executors;
+
+public class ClassStatsActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private SimpleBarChart barChart;
+    private AppDatabase db;
+    private String maLH, tenLH;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_class_stats);
+
+        maLH = getIntent().getStringExtra("MA_LH");
+        tenLH = getIntent().getStringExtra("TEN_LH");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbarClassStats);
+        toolbar.setTitle("Thống kê: " + tenLH);
+        toolbar.setNavigationOnClickListener(v -> finish());
+
+        barChart = findViewById(R.id.barChart);
+        recyclerView = findViewById(R.id.rvStatsAssignments);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        loadData();
+    }
+
+    private void loadData() {
+        db.baiTapDao().getByLop(maLH).observe(this, listBaiTap -> {
+            Executors.newSingleThreadExecutor().execute(() -> {
+                List<StatsAssignmentItem> statsList = new ArrayList<>();
+
+                for (BaiTap bt : listBaiTap) {
+                    List<Diem> listDiem = db.diemDao().getByBaiTapSync(bt.MaBT);
+
+                    double totalScore = 0;
+                    int count = 0;
+                    for (Diem d : listDiem) {
+                        totalScore += d.SoDiem;
+                        count++;
+                    }
+
+                    double avg = (count > 0) ? (totalScore / count) : 0;
+                    statsList.add(new StatsAssignmentItem(bt, avg, count));
+                }
+
+                runOnUiThread(() -> {
+                    barChart.setData(statsList);
+
+                    StatsAssignmentAdapter adapter = new StatsAssignmentAdapter(statsList, item -> {
+                        Intent intent = new Intent(ClassStatsActivity.this, AssignmentStatsActivity.class);
+                        intent.putExtra("MA_BT", item.baiTap.MaBT);
+                        intent.putExtra("TEN_BT", item.baiTap.TenBT);
+                        intent.putExtra("MA_LH", maLH);
+                        startActivity(intent);
+                    });
+                    recyclerView.setAdapter(adapter);
+                });
+            });
+        });
     }
 }
 
@@ -1307,6 +1582,7 @@ import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.model.ActivityItem;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
 public class CourseActivity extends BaseActivity {
 
@@ -1373,6 +1649,9 @@ public class CourseActivity extends BaseActivity {
     }
 
     private void showLectureDialog(BaiGiang bg) {
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bg.TenBG);
 
@@ -1383,18 +1662,18 @@ public class CourseActivity extends BaseActivity {
         builder.setMessage(msg);
 
         if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
-            builder.setPositiveButton("Mở File", (dialog, which) -> {
+            builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
                     Uri uri = Uri.parse(bg.FilePath);
                     Intent intent = new Intent(Intent.ACTION_VIEW);
 
                     String mimeType = getContentResolver().getType(uri);
                     if (mimeType == null) mimeType = "*/*";
-                    
+
                     intent.setDataAndType(uri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                    
+
                     startActivity(Intent.createChooser(intent, "Mở bài giảng bằng"));
                 } catch (Exception e) {
                     Toast.makeText(this, "Lỗi: File không tồn tại hoặc không có quyền truy cập", Toast.LENGTH_LONG).show();
@@ -1402,8 +1681,50 @@ public class CourseActivity extends BaseActivity {
             });
         }
 
+        if ("GIAOVIEN".equals(role)) {
+            builder.setPositiveButton("Quản lý", (dialog, which) -> showTeacherOptions(bg));
+        }
+
         builder.setNegativeButton("Đóng", null);
         builder.show();
+    }
+
+    private void showTeacherOptions(BaiGiang bg) {
+        String[] options = {"Chỉnh sửa", "Xóa bài giảng"};
+
+        new AlertDialog.Builder(this)
+                .setTitle("Tùy chọn quản lý")
+                .setItems(options, (dialog, which) -> {
+                    switch (which) {
+                        case 0:
+                            Intent intent = new Intent(this, AddLectureActivity.class);
+                            intent.putExtra("EDIT_ID", bg.MaBG);
+                            intent.putExtra("EDIT_TITLE", bg.TenBG);
+                            intent.putExtra("EDIT_CONTENT", bg.NoiDung);
+                            intent.putExtra("EDIT_FILE_PATH", bg.FilePath);
+                            intent.putExtra("EDIT_FILE_NAME", bg.FileName);
+                            startActivity(intent);
+                            break;
+                        case 1:
+                            confirmDelete(bg);
+                            break;
+                    }
+                })
+                .show();
+    }
+
+    private void confirmDelete(BaiGiang bg) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc muốn xóa bài giảng \"" + bg.TenBG + "\" không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.baiGiangDao().delete(bg);
+                        runOnUiThread(() -> Toast.makeText(this, "Đã xóa bài giảng!", Toast.LENGTH_SHORT).show());
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }
 
@@ -1898,9 +2219,10 @@ public class HomeActivity extends BaseActivity {
         }
 
         if (btnNoti != null) {
-            btnNoti.setOnClickListener(v ->
-                    Toast.makeText(this, "Không có thông báo mới", Toast.LENGTH_SHORT).show()
-            );
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
+                startActivity(intent);
+            });
         }
     }
 
@@ -1963,6 +2285,7 @@ public class HomeActivity extends BaseActivity {
         loadUserCourses();
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\LoginActivity.java
@@ -2094,6 +2417,70 @@ public class MainActivity extends AppCompatActivity {
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\NotificationActivity.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.adapter.NotificationAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.google.android.material.appbar.MaterialToolbar;
+import java.util.concurrent.Executors;
+
+public class NotificationActivity extends BaseActivity {
+
+    private RecyclerView recyclerView;
+    private AppDatabase db;
+    private String currentMaTK;
+
+    @Override
+    protected int getLayoutResourceId() {
+        return R.layout.activity_notification;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        db = AppDatabase.getDatabase(getApplicationContext());
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        currentMaTK = prefs.getString("KEY_USER_ID", "");
+
+        MaterialToolbar toolbar = findViewById(R.id.toolbar_notification);
+        if (toolbar != null) {
+            toolbar.setNavigationOnClickListener(v -> finish());
+        }
+
+        recyclerView = findViewById(R.id.rv_notifications);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        loadNotifications();
+    }
+
+    private void loadNotifications() {
+        SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
+        String role = prefs.getString("KEY_ROLE", "");
+
+        // Lấy thông báo gửi riêng cho mình HOẶC thông báo chung cho vai trò của mình
+        db.thongBaoDao().getByNguoiNhan(currentMaTK, role).observe(this, list -> {
+            if (list != null) {
+                NotificationAdapter adapter = new NotificationAdapter(list);
+                recyclerView.setAdapter(adapter);
+
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    db.thongBaoDao().markAllAsRead(currentMaTK, role);
+                });
+            }
+        });
+    }
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\OptionsActivity.java
 ==================================================
 package com.example.studentportalapp;
@@ -2207,7 +2594,7 @@ public class PeopleActivity extends BaseActivity {
             List<Person> listGV = new ArrayList<>();
             List<Person> listHV = new ArrayList<>();
 
-            LopHoc lop = db.lopHocDao().getById(currentMaLH);
+            LopHoc lop = db.lopHocDao().getByIdSync(currentMaLH);
             if (lop != null) {
                 List<GiaoVien> allGV = db.giaoVienDao().getAllSync();
                 for (GiaoVien gv : allGV) {
@@ -2235,6 +2622,7 @@ public class PeopleActivity extends BaseActivity {
         });
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\ProfileActivity.java
@@ -2373,6 +2761,98 @@ public class ProfileActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\SimpleBarChart.java
+==================================================
+package com.example.studentportalapp;
+
+import android.content.Context; import android.graphics.Canvas; import android.graphics.Color; import android.graphics.Paint; import android.graphics.Rect; import android.util.AttributeSet; import android.view.View;
+
+import androidx.annotation.Nullable;
+
+import com.example.studentportalapp.model.StatsAssignmentItem;
+
+import java.util.ArrayList; import java.util.List;
+
+public class SimpleBarChart extends View {
+
+    private List<StatsAssignmentItem> data = new ArrayList<>();
+    private Paint barPaint;
+    private Paint textPaint;
+    private Paint axisPaint;
+    private float maxScore = 10f;
+
+    public SimpleBarChart(Context context) {
+        super(context);
+        init();
+    }
+
+    public SimpleBarChart(Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+
+    private void init() {
+        barPaint = new Paint();
+        barPaint.setColor(Color.parseColor("#4CAF50"));
+        barPaint.setStyle(Paint.Style.FILL);
+
+        textPaint = new Paint();
+        textPaint.setColor(Color.BLACK);
+        textPaint.setTextSize(30f);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setAntiAlias(true);
+
+        axisPaint = new Paint();
+        axisPaint.setColor(Color.GRAY);
+        axisPaint.setStrokeWidth(5f);
+    }
+
+    public void setData(List<StatsAssignmentItem> data) {
+        this.data = data;
+        invalidate();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
+        if (data == null || data.isEmpty()) return;
+
+        float padding = 50f;
+        float chartWidth = getWidth() - 2 * padding;
+        float chartHeight = getHeight() - 2 * padding;
+        float barWidth = chartWidth / (data.size() * 2);
+        float spacing = barWidth;
+
+        canvas.drawLine(padding, getHeight() - padding, getWidth() - padding, getHeight() - padding, axisPaint);
+        canvas.drawLine(padding, getHeight() - padding, padding, padding, axisPaint);
+
+        for (int i = 0; i < data.size(); i++) {
+            StatsAssignmentItem item = data.get(i);
+            float score = (float) item.averageScore;
+
+            float barHeight = (score / maxScore) * chartHeight;
+            float left = padding + spacing + i * (barWidth + spacing);
+            float top = (getHeight() - padding) - barHeight;
+            float right = left + barWidth;
+            float bottom = getHeight() - padding;
+
+            if (score >= 8.0) barPaint.setColor(Color.parseColor("#4CAF50"));
+            else if (score >= 5.0) barPaint.setColor(Color.parseColor("#FF9800"));
+            else barPaint.setColor(Color.parseColor("#F44336"));
+
+            canvas.drawRect(left, top, right, bottom, barPaint);
+
+            String scoreText = String.format("%.1f", score);
+            canvas.drawText(scoreText, left + barWidth / 2, top - 10, textPaint);
+
+            String label = "BT" + (i + 1);
+            canvas.drawText(label, left + barWidth / 2, bottom + 40, textPaint);
+        }
     }
 }
 
@@ -2588,7 +3068,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
@@ -2674,7 +3156,26 @@ public class SubmitAssignmentActivity extends BaseActivity {
         nb.NgayNop = timeStamp;
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).nopBaiDao().insert(nb);
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
+            database.nopBaiDao().insert(nb);
+
+            // Tìm thông tin học viên để lấy tên
+            HocVien hv = database.hocVienDao().getByMaTKSync(currentMaHV);
+            String tenHV = (hv != null) ? hv.getTenHV() : "Học viên";
+
+            // Gửi thông báo cho giáo viên
+            com.example.studentportalapp.data.Entity.BaiTap bt = database.baiTapDao().getByIdSync(maBT);
+            if (bt != null) {
+                com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
+                if (lh != null) {
+                    ThongBao tb = new ThongBao();
+                    tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
+                    tb.NgayTao = timeStamp;
+                    tb.NguoiNhan = lh.MaGV; 
+                    database.thongBaoDao().insert(tb);
+                }
+            }
+
             runOnUiThread(() -> {
                 Toast.makeText(this, "Nộp bài thành công!", Toast.LENGTH_SHORT).show();
                 finish();
@@ -2704,6 +3205,7 @@ public class SubmitAssignmentActivity extends BaseActivity {
         return result;
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\TeacherManageActivity.java
@@ -3434,6 +3936,66 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 }
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\NotificationAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.data.Entity.ThongBao;
+import java.util.List;
+
+public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
+
+    private final List<ThongBao> list;
+
+    public NotificationAdapter(List<ThongBao> list) {
+        this.list = list;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_notification, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        ThongBao tb = list.get(position);
+        holder.tvContent.setText(tb.NoiDung);
+        holder.tvDate.setText(tb.NgayTao);
+        
+        if (tb.IsRead) {
+            holder.itemView.setAlpha(0.6f);
+        } else {
+            holder.itemView.setAlpha(1.0f);
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvContent, tvDate;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvContent = itemView.findViewById(R.id.tv_noti_content);
+            tvDate = itemView.findViewById(R.id.tv_noti_date);
+        }
+    }
+}
+
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\PeopleAdapter.java
 ==================================================
 package com.example.studentportalapp.adapter;
@@ -3493,6 +4055,130 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
 
 
 ==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\StatsAssignmentAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.StatsAssignmentItem;
+import java.util.List;
+
+public class StatsAssignmentAdapter extends RecyclerView.Adapter<StatsAssignmentAdapter.ViewHolder> {
+
+    private final List<StatsAssignmentItem> list;
+    private final OnItemClickListener listener;
+
+    public interface OnItemClickListener {
+        void onClick(StatsAssignmentItem item);
+    }
+
+    public StatsAssignmentAdapter(List<StatsAssignmentItem> list, OnItemClickListener listener) {
+        this.list = list;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_stats_assignment, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        StatsAssignmentItem item = list.get(position);
+        holder.tvName.setText(item.baiTap.TenBT);
+        holder.tvCount.setText("Đã chấm: " + item.submissionCount);
+
+        if (item.submissionCount > 0) {
+            holder.tvAvg.setText(String.format("TB: %.2f", item.averageScore));
+        } else {
+            holder.tvAvg.setText("Chưa có điểm");
+        }
+
+        holder.itemView.setOnClickListener(v -> listener.onClick(item));
+    }
+
+    @Override
+    public int getItemCount() { return list.size(); }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvAvg, tvCount;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvAssignmentName);
+            tvAvg = itemView.findViewById(R.id.tvAvgScore);
+            tvCount = itemView.findViewById(R.id.tvSubmissionCount);
+        }
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\adapter\StatsStudentAdapter.java
+==================================================
+package com.example.studentportalapp.adapter;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.model.StatsStudentItem;
+import java.util.List;
+
+public class StatsStudentAdapter extends RecyclerView.Adapter<StatsStudentAdapter.ViewHolder> {
+
+    private final List<StatsStudentItem> list;
+
+    public StatsStudentAdapter(List<StatsStudentItem> list) {
+        this.list = list;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_stats_student, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        StatsStudentItem item = list.get(position);
+        holder.tvName.setText(item.hocVien.getTenHV());
+        holder.tvId.setText(item.hocVien.getMaHV());
+
+        if (item.hasScore) {
+            holder.tvScore.setText(String.valueOf(item.score));
+            holder.tvScore.setTextColor(android.graphics.Color.parseColor("#FF9800"));
+        } else {
+            holder.tvScore.setText("-");
+            holder.tvScore.setTextColor(android.graphics.Color.GRAY);
+        }
+    }
+
+    @Override
+    public int getItemCount() { return list.size(); }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvName, tvId, tvScore;
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvName = itemView.findViewById(R.id.tvStudentName);
+            tvId = itemView.findViewById(R.id.tvStudentID);
+            tvScore = itemView.findViewById(R.id.tvScore);
+        }
+    }
+}
+
+==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\SubmissionsAdapter.java
 ==================================================
 package com.example.studentportalapp.adapter;
@@ -3512,11 +4198,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.ViewHolder> {
@@ -3564,13 +4255,7 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
         // 1. Load tên học viên và ĐIỂM CŨ (nếu có)
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Lấy tên
             HocVien hv = db.hocVienDao().getByIdSync(nb.MaHV);
-            
-            // Lấy điểm đã chấm từ bảng DIEM
-            // Chú ý: Cần đảm bảo DiemDao có phương thức getByHocVienBaiTapSync (trả về Diem trực tiếp)
-            // Tạm thời dùng Query trực tiếp hoặc LiveData nếu context là LifecycleOwner
-            // Ở đây tôi giả định bạn dùng một hàm sync để load nhanh
             
             if (context instanceof androidx.lifecycle.LifecycleOwner) {
                 ((android.app.Activity) context).runOnUiThread(() -> {
@@ -3612,9 +4297,20 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
                 Executors.newSingleThreadExecutor().execute(() -> {
                     db.diemDao().insert(diemObj);
+                    
+                    // GỬI THÔNG BÁO CHO HỌC VIÊN KHI CÓ ĐIỂM
+                    BaiTap bt = db.baiTapDao().getByIdSync(nb.MaBT);
+                    if (bt != null) {
+                        ThongBao tb = new ThongBao();
+                        tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
+                        tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
+                        tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
+                        db.thongBaoDao().insert(tb);
+                    }
+
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> {
-                            Toast.makeText(context, "Đã lưu điểm và nhận xét!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Đã lưu điểm và thông báo cho học viên!", Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
@@ -3652,6 +4348,7 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
         }
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\TaskAdapter.java
@@ -3907,6 +4604,7 @@ import com.example.studentportalapp.data.Dao.LopHocDao;
 import com.example.studentportalapp.data.Dao.NopBaiDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
 import com.example.studentportalapp.data.Dao.ThamGiaDao;
+import com.example.studentportalapp.data.Dao.ThongBaoDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
@@ -3916,6 +4614,7 @@ import com.example.studentportalapp.data.Entity.LopHoc;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
+import com.example.studentportalapp.data.Entity.ThongBao;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -3930,9 +4629,10 @@ import java.util.concurrent.Executors;
                 BaiTap.class,
                 ThamGia.class,
                 Diem.class,
-                NopBai.class
+                NopBai.class,
+                ThongBao.class
         },
-        version = 8,
+        version = 9,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -3949,6 +4649,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract DiemDao diemDao();
     public abstract ThamGiaDao thamGiaDao();
     public abstract NopBaiDao nopBaiDao();
+    public abstract ThongBaoDao thongBaoDao();
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
@@ -3959,7 +4660,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     "school_db"
                             )
-                            .fallbackToDestructiveMigration()
+                            .fallbackToDestructiveMigration(true)
                             .build();
                 }
             }
@@ -4109,13 +4810,16 @@ public interface DiemDao {
 
     @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
     LiveData<List<Diem>> getByBaiTap(String maBT);
+
+    @Query("SELECT * FROM DIEM WHERE MaBT = :maBT")
+    List<Diem> getByBaiTapSync(String maBT);
+
     @Query("SELECT * FROM DIEM")
     LiveData<List<Diem>> getAll();
 
     @Query("SELECT * FROM DIEM WHERE MaHV = :maHV AND MaBT = :maBT LIMIT 1")
     LiveData<Diem> getByHocVienBaiTap(String maHV, String maBT);
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Dao\GiaoVienDao.java
@@ -4249,12 +4953,12 @@ public interface LopHocDao {
     List<String> getClassNamesByTeacher(String maGV);
 
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
-    LopHoc getById(String maLH);
+    LopHoc getByIdSync(String maLH); // Đổi tên thành getByIdSync để khớp với SubmitAssignmentActivity
 
-    // --- QUAN TRỌNG: Phải có dòng @Query này ---
     @Query("SELECT * FROM LOPHOC WHERE MaGV = :maGV")
     List<LopHoc> getClassesByTeacher(String maGV);
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Dao\NopBaiDao.java
@@ -4368,6 +5072,40 @@ public interface ThamGiaDao {
     @Query("SELECT LOPHOC.* FROM LOPHOC INNER JOIN THAMGIA ON LOPHOC.MaLH = THAMGIA.MaLH WHERE THAMGIA.MaHV = :maHV")
     List<LopHoc> getClassesByStudent(String maHV);
 }
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Dao\ThongBaoDao.java
+==================================================
+package com.example.studentportalapp.data.Dao;
+
+import androidx.lifecycle.LiveData;
+import androidx.room.Dao;
+import androidx.room.Insert;
+import androidx.room.Query;
+import androidx.room.Update;
+
+import com.example.studentportalapp.data.Entity.ThongBao;
+
+import java.util.List;
+
+@Dao
+public interface ThongBaoDao {
+    @Insert
+    void insert(ThongBao thongBao);
+
+    @Query("SELECT * FROM THONGBAO WHERE NguoiNhan = :maTK OR NguoiNhan = 'ALL' OR NguoiNhan = :roleMarker ORDER BY NgayTao DESC")
+    LiveData<List<ThongBao>> getByNguoiNhan(String maTK, String roleMarker);
+
+    @Query("SELECT COUNT(*) FROM THONGBAO WHERE (NguoiNhan = :maTK OR NguoiNhan = 'ALL' OR NguoiNhan = :roleMarker) AND IsRead = 0")
+    LiveData<Integer> getUnreadCount(String maTK, String roleMarker);
+
+    @Update
+    void update(ThongBao thongBao);
+
+    @Query("UPDATE THONGBAO SET IsRead = 1 WHERE NguoiNhan = :maTK OR NguoiNhan = :roleMarker")
+    void markAllAsRead(String maTK, String roleMarker);
+}
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Entity\BaiGiang.java
@@ -4758,6 +5496,32 @@ public class ThamGia {
         this.MaLH = MaLH;
     }
 }
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\data\Entity\ThongBao.java
+==================================================
+package com.example.studentportalapp.data.Entity;
+
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "THONGBAO")
+public class ThongBao {
+    @PrimaryKey
+    @NonNull
+    public String MaTB;
+    public String NoiDung;
+    public String NgayTao;
+    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL"
+    public boolean IsRead;
+
+    public ThongBao() {
+        this.MaTB = "TB" + System.currentTimeMillis();
+        this.IsRead = false;
+    }
+}
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\data\Repository\BaiGiangRepository.java
@@ -5213,7 +5977,7 @@ public class UserLopHocRepository {
     }
 
     public LopHoc getLopHocById(String id) {
-        return lopHocDao.getById(id);
+        return lopHocDao.getByIdSync(id);
     }
 
     public LiveData<List<LopHoc>> getAllLopHoc() {
@@ -5360,6 +6124,44 @@ public class Person {
 }
 
 
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\model\StatsAssignmentItem.java
+==================================================
+package com.example.studentportalapp.model;
+
+import com.example.studentportalapp.data.Entity.BaiTap;
+
+public class StatsAssignmentItem {
+    public BaiTap baiTap;
+    public double averageScore;
+    public int submissionCount;
+
+    public StatsAssignmentItem(BaiTap baiTap, double averageScore, int submissionCount) {
+        this.baiTap = baiTap;
+        this.averageScore = averageScore;
+        this.submissionCount = submissionCount;
+    }
+}
+
+==================================================
+FILE: app\src\main\java\com\example\studentportalapp\model\StatsStudentItem.java
+==================================================
+package com.example.studentportalapp.model;
+
+import com.example.studentportalapp.data.Entity.HocVien;
+
+public class StatsStudentItem {
+    public HocVien hocVien;
+    public double score;
+    public boolean hasScore;
+
+    public StatsStudentItem(HocVien hocVien, double score, boolean hasScore) {
+        this.hocVien = hocVien;
+        this.score = score;
+        this.hasScore = hasScore;
+    }
+}
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\model\StudentItem.java
@@ -7039,6 +7841,44 @@ FILE: app\src\main\res\layout\activity_assignment.xml
         android:layout_marginBottom="72dp" /> </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 ==================================================
+FILE: app\src\main\res\layout\activity_assignment_stats.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F5F5F5">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarAssignmentStats"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#c96e80"
+        app:title="Chi Tiết Điểm"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvAssignmentTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Danh sách điểm sinh viên"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#333"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStatsStudents"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
+</LinearLayout>
+
+==================================================
 FILE: app\src\main\res\layout\activity_base.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -7110,6 +7950,59 @@ FILE: app\src\main\res\layout\activity_class_manage.xml
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+</LinearLayout>
+
+==================================================
+FILE: app\src\main\res\layout\activity_class_stats.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="#F5F5F5">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbarClassStats"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#c96e80"
+        app:title="Thống Kê Lớp Học"
+        app:titleTextColor="#FFFFFF"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="#FFFFFF"/>
+
+    <TextView
+        android:id="@+id/tvClassStatsTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Biểu đồ điểm trung bình"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#333"/>
+
+    <com.example.studentportalapp.SimpleBarChart
+        android:id="@+id/barChart"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="@android:color/white"
+        android:elevation="4dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        android:text="Danh sách bài tập"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#333"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvStatsAssignments"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"/>
 </LinearLayout>
 
 ==================================================
@@ -7480,6 +8373,7 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:id="@+id/btnNoti"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:src="@android:drawable/ic_popup_reminder"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="#FFFFFF"
                 android:padding="8dp"
@@ -7789,6 +8683,41 @@ FILE: app\src\main\res\layout\activity_main.xml
         android:layout_marginBottom="48dp"
         style="@style/StudentPortalButton"/>
 </RelativeLayout>
+
+
+==================================================
+FILE: app\src\main\res\layout\activity_notification.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#F8F9FA">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar_notification"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#c96e80"
+            app:title="Thông báo"
+            app:titleTextColor="#FFFFFF"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:navigationIconTint="#FFFFFF" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_notifications"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp"
+        android:clipToPadding="false" />
+
+</LinearLayout>
 
 
 ==================================================
@@ -9453,6 +10382,46 @@ FILE: app\src\main\res\layout\item_hocvien.xml
 </androidx.cardview.widget.CardView>
 
 ==================================================
+FILE: app\src\main\res\layout\item_notification.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tv_noti_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Nội dung thông báo"
+            android:textColor="#333333"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_noti_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Ngày tạo: 01/01/2023"
+            android:textColor="#888888"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+
+==================================================
 FILE: app\src\main\res\layout\item_person.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
@@ -9502,6 +10471,106 @@ FILE: app\src\main\res\layout\item_person.xml
 
 </LinearLayout>
 
+
+==================================================
+FILE: app\src\main\res\layout\item_stats_assignment.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tvAssignmentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên bài tập"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="#000"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <TextView
+                android:id="@+id/tvAvgScore"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TB: 0.0"
+                android:textColor="#4CAF50"
+                android:textStyle="bold"
+                android:textSize="15sp"/>
+
+            <TextView
+                android:id="@+id/tvSubmissionCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Đã chấm: 0"
+                android:textColor="#666"/>
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+==================================================
+FILE: app\src\main\res\layout\item_stats_student.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:background="@drawable/bg_card_people"
+    android:layout_marginBottom="8dp"
+    android:gravity="center_vertical">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvStudentName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên Sinh Viên"
+            android:textStyle="bold"
+            android:textColor="#000"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/tvStudentID"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mã SV"
+            android:textColor="#666"
+            android:textSize="12sp"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvScore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0.0"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#FF9800"/>
+</LinearLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\item_submission.xml
@@ -9970,6 +11039,70 @@ FILE: app\src\main\res\layout\layout_header.xml
 
 </LinearLayout>
 
+
+==================================================
+FILE: app\src\main\res\layout\layout_top_header.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_home_header"
+    android:paddingBottom="30dp">
+
+    <ImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_margin="24dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="#FFFFFF"
+        android:padding="10dp"
+        android:src="@drawable/ic_person"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="#c96e80" />
+
+    <TextView
+        android:id="@+id/tvGreeting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="Xin chào,"
+        android:textColor="#555"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@id/imgAvatar"
+        app:layout_constraintTop_toTopOf="@id/imgAvatar" />
+
+    <TextView
+        android:id="@+id/tvWelcomeUser"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:text="User"
+        android:textColor="#333"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/btnNoti"
+        app:layout_constraintStart_toEndOf="@id/imgAvatar"
+        app:layout_constraintTop_toBottomOf="@id/tvGreeting" />
+
+    <ImageView
+        android:id="@+id/btnNoti"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_circle"
+        android:backgroundTint="#FFFFFF"
+        android:padding="8dp"
+        android:src="@drawable/ic_notification"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/imgAvatar"
+        app:tint="#c96e80" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\popup_contact.xml

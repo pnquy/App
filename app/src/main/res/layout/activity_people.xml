@@ -4,7 +4,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F8F8"
+    android:background="#ffe6ed"
     tools:context=".PeopleActivity">
     <include
         android:id="@+id/include_background"
