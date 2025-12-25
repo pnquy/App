@@ -44,6 +44,15 @@ public class AssignmentActivity extends BaseActivity {
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
+        // Ánh xạ nút thông báo nếu có trong layout (thường nằm trong include background)
+        View btnNoti = findViewById(R.id.btnNoti);
+        if (btnNoti != null) {
+            btnNoti.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
+
         recyclerView = findViewById(R.id.recyclerViewAssignments);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         FloatingActionButton fab = findViewById(R.id.fab_add_assignment);

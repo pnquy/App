@@ -15,7 +15,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
@@ -101,7 +103,26 @@ public class SubmitAssignmentActivity extends BaseActivity {
         nb.NgayNop = timeStamp;
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase.getDatabase(getApplicationContext()).nopBaiDao().insert(nb);
+            AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
+            database.nopBaiDao().insert(nb);
+
+            // Tìm thông tin học viên để lấy tên
+            HocVien hv = database.hocVienDao().getByMaTKSync(currentMaHV);
+            String tenHV = (hv != null) ? hv.getTenHV() : "Học viên";
+
+            // Gửi thông báo cho giáo viên
+            com.example.studentportalapp.data.Entity.BaiTap bt = database.baiTapDao().getByIdSync(maBT);
+            if (bt != null) {
+                com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
+                if (lh != null) {
+                    ThongBao tb = new ThongBao();
+                    tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
+                    tb.NgayTao = timeStamp;
+                    tb.NguoiNhan = lh.MaGV; 
+                    database.thongBaoDao().insert(tb);
+                }
+            }
+
             runOnUiThread(() -> {
                 Toast.makeText(this, "Nộp bài thành công!", Toast.LENGTH_SHORT).show();
                 finish();

@@ -34,9 +34,8 @@ public interface LopHocDao {
     List<String> getClassNamesByTeacher(String maGV);
 
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
-    LopHoc getById(String maLH);
+    LopHoc getByIdSync(String maLH); // Đổi tên thành getByIdSync để khớp với SubmitAssignmentActivity
 
-    // --- QUAN TRỌNG: Phải có dòng @Query này ---
     @Query("SELECT * FROM LOPHOC WHERE MaGV = :maGV")
     List<LopHoc> getClassesByTeacher(String maGV);
 }

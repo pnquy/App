@@ -19,7 +19,7 @@ public class UserLopHocRepository {
     }
 
     public LopHoc getLopHocById(String id) {
-        return lopHocDao.getById(id);
+        return lopHocDao.getByIdSync(id);
     }
 
     public LiveData<List<LopHoc>> getAllLopHoc() {

@@ -50,7 +50,7 @@ public class PeopleActivity extends BaseActivity {
             List<Person> listGV = new ArrayList<>();
             List<Person> listHV = new ArrayList<>();
 
-            LopHoc lop = db.lopHocDao().getById(currentMaLH);
+            LopHoc lop = db.lopHocDao().getByIdSync(currentMaLH);
             if (lop != null) {
                 List<GiaoVien> allGV = db.giaoVienDao().getAllSync();
                 for (GiaoVien gv : allGV) {

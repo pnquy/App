@@ -59,6 +59,7 @@
                 android:id="@+id/btnNoti"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
+                android:src="@android:drawable/ic_popup_reminder"
                 android:background="@drawable/bg_circle"
                 android:backgroundTint="#FFFFFF"
                 android:padding="8dp"
