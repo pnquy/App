@@ -27,6 +27,9 @@ public interface BaiTapDao {
     @Query("SELECT * FROM BAITAP WHERE MaLH = :maLH")
     LiveData<List<BaiTap>> getByLop(String maLH);
 
+    @Query("SELECT * FROM BAITAP WHERE MaLH = :maLH")
+    List<BaiTap> getByLopSync(String maLH);
+
     @Query("SELECT * FROM BAITAP")
     LiveData<List<BaiTap>> getAll();
 

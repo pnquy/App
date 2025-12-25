@@ -175,11 +175,6 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     private List<Task> getMockTasks() {
         List<Task> tasks = new ArrayList<>();
-        tasks.add(new Task("Task 5 - Group Work", "Programming Language", "Due Tomorrow | Aug 6"));
-        tasks.add(new Task("Assignment No. 3", "Operating System", "Due Saturday | Aug 7"));
-        tasks.add(new Task("Task 6 - Group Work", "Programming Language", "Due Sunday | Aug 8"));
-        tasks.add(new Task("Task 1 - Create a Flowchart", "HCI", "Due Monday | Aug 9"));
-        tasks.add(new Task("Assignment No. 5", "Logic Design", "Due Friday | Aug 13"));
         return tasks;
     }
 }

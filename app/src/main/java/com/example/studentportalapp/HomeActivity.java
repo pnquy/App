@@ -51,6 +51,7 @@ public class HomeActivity extends BaseActivity {
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
         View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
+        View btnTKB = findViewById(R.id.quickActionTKB);
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -70,6 +71,13 @@ public class HomeActivity extends BaseActivity {
         if (btnGrades != null) {
             btnGrades.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, GradeActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (btnTKB != null) {
+            btnTKB.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ToDoActivity.class);
                 startActivity(intent);
             });
         }
