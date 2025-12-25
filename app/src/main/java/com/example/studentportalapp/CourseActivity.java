@@ -22,8 +22,7 @@ public class CourseActivity extends BaseActivity {
 
     private RecyclerView recyclerView;
     private TextView tvTitle, tvSubtitle;
-    private View layoutEmptyState; // View thông báo rỗng
-    private View btnBack; // Nút Back
+    private View layoutEmptyState;
     private AppDatabase db;
     private String currentMaLH;
     private ArrayList<BaiGiang> originalList;
@@ -43,24 +42,27 @@ public class CourseActivity extends BaseActivity {
         String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
         String role = prefs.getString("KEY_ROLE", "");
 
-        // Ánh xạ View
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
         recyclerView = findViewById(R.id.rvActivityCourse);
         layoutEmptyState = findViewById(R.id.layoutEmptyState);
-        btnBack = findViewById(R.id.btnBack);
         FloatingActionButton fab = findViewById(R.id.fab_add);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
 
-        // Setup UI
-        tvTitle.setText(tenLH);
-        tvSubtitle.setText("Mã lớp: " + currentMaLH);
+        if (tvTitle != null) tvTitle.setText(tenLH);
+        if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-        // Xử lý nút Back
-        btnBack.setOnClickListener(v -> finish());
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Phân quyền Button Thêm
         if ("GIAOVIEN".equals(role)) {
             fab.setVisibility(View.VISIBLE);
             fab.setOnClickListener(v -> startActivity(new Intent(this, AddLectureActivity.class)));
@@ -69,23 +71,29 @@ public class CourseActivity extends BaseActivity {
         }
 
         loadData();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadData(); // Reload khi quay lại từ màn hình thêm/sửa
+        loadData();
     }
 
     private void loadData() {
         db.baiGiangDao().getByLop(currentMaLH).observe(this, listBG -> {
             if (listBG == null || listBG.isEmpty()) {
-                // Nếu không có dữ liệu -> Hiện Empty State, Ẩn List
-                layoutEmptyState.setVisibility(View.VISIBLE);
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
                 recyclerView.setVisibility(View.GONE);
             } else {
-                // Có dữ liệu -> Ẩn Empty State, Hiện List
-                layoutEmptyState.setVisibility(View.GONE);
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
 
                 originalList = new ArrayList<>(listBG);
@@ -108,7 +116,6 @@ public class CourseActivity extends BaseActivity {
         });
     }
 
-    // ... (Giữ nguyên các hàm showLectureDialog, showTeacherOptions, confirmDelete bên dưới) ...
     private void showLectureDialog(BaiGiang bg) {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         String role = prefs.getString("KEY_ROLE", "");

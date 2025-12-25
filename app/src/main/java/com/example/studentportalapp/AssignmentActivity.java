@@ -23,6 +23,7 @@ public class AssignmentActivity extends BaseActivity {
     private AppDatabase db;
     private String currentMaLH;
     private TextView tvTitle, tvSubtitle;
+    private View layoutEmptyState;
 
     @Override
     protected int getLayoutResourceId() {
@@ -41,21 +42,24 @@ public class AssignmentActivity extends BaseActivity {
 
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
+        recyclerView = findViewById(R.id.recyclerViewAssignments);
+        layoutEmptyState = findViewById(R.id.layoutEmptyState);
+        FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
+
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-        // Ánh xạ nút thông báo nếu có trong layout (thường nằm trong include background)
-        View btnNoti = findViewById(R.id.btnNoti);
-        if (btnNoti != null) {
-            btnNoti.setOnClickListener(v -> {
-                Intent intent = new Intent(this, NotificationActivity.class);
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
+                finish();
             });
         }
 
-        recyclerView = findViewById(R.id.recyclerViewAssignments);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
 
         if ("GIAOVIEN".equals(role)) {
             fab.setVisibility(View.VISIBLE);
@@ -65,11 +69,27 @@ public class AssignmentActivity extends BaseActivity {
         }
 
         loadData();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void loadData() {
         db.baiTapDao().getByLop(currentMaLH).observe(this, listBT -> {
-            if (listBT == null) listBT = new ArrayList<>();
+            if (listBT == null || listBT.isEmpty()) {
+                listBT = new ArrayList<>();
+                if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            } else {
+                if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
+            }
+
             AssignmentAdapter adapter = new AssignmentAdapter(this, listBT, this::showAssignmentDialog);
             recyclerView.setAdapter(adapter);
         });

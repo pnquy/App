@@ -1,7 +1,9 @@
 package com.example.studentportalapp;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -38,11 +40,29 @@ public class PeopleActivity extends BaseActivity {
         rvProf = findViewById(R.id.recyclerViewProfessors);
         rvStud = findViewById(R.id.recyclerViewStudents);
         tvCount = findViewById(R.id.txtStudentCount);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
+
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         rvProf.setLayoutManager(new LinearLayoutManager(this));
         rvStud.setLayoutManager(new LinearLayoutManager(this));
 
         loadPeople();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void loadPeople() {
