@@ -130,6 +130,9 @@ public class SubmitAssignmentActivity extends BaseActivity {
                     tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
                     tb.NgayTao = timeStamp;
                     tb.NguoiNhan = lh.MaGV;
+                    // SỬA LỖI: Thêm 2 dòng này để link hoạt động
+                    tb.LoaiTB = "SUBMISSION"; 
+                    tb.TargetId = maBT; 
                     database.thongBaoDao().insert(tb);
                 }
             }
