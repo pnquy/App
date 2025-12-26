@@ -52,6 +52,7 @@ public class HomeActivity extends BaseActivity {
         View btnLogout = findViewById(R.id.quickActionLogout);
         View btnGrades = findViewById(R.id.quickActionGrades);
         View btnTKB = findViewById(R.id.quickActionTKB);
+        View btnProfile = findViewById(R.id.quickActionProfile); // Thêm dòng này
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -67,7 +68,6 @@ public class HomeActivity extends BaseActivity {
             btnLogout.setOnClickListener(v -> showLogoutDialog());
         }
 
-        // Xử lý sự kiện click mở màn hình Xem Điểm
         if (btnGrades != null) {
             btnGrades.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, GradeActivity.class);
@@ -82,7 +82,14 @@ public class HomeActivity extends BaseActivity {
             });
         }
 
-        // SỬA: Chuyển hướng sang màn hình thông báo thay vì hiện Toast
+        // Thêm khối lệnh if này
+        if (btnProfile != null) {
+            btnProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
         if (btnNoti != null) {
             btnNoti.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
