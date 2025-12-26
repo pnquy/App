@@ -7,7 +7,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.example.studentportalapp.model.CourseViewItem;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -53,7 +54,13 @@ public class HomeActivity extends BaseActivity {
         View btnGrades = findViewById(R.id.quickActionGrades);
         View btnTKB = findViewById(R.id.quickActionTKB);
         View btnNoti = findViewById(R.id.btnNoti);
-
+        View btnSeeAll = findViewById(R.id.btnSeeAllCourses);
+        if (btnSeeAll != null) {
+            btnSeeAll.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, AllCoursesActivity.class);
+                startActivity(intent);
+            });
+        }
         if (tvWelcome != null) {
             tvWelcome.setText(currentUserName);
         }
@@ -93,26 +100,72 @@ public class HomeActivity extends BaseActivity {
 
     private void loadUserCourses() {
         executor.execute(() -> {
-            List<LopHoc> listLop = new ArrayList<>();
+            List<LopHoc> rawList = new ArrayList<>();
+            List<CourseViewItem> displayList = new ArrayList<>();
 
+            // 1. Lấy danh sách lớp
             if ("HOCVIEN".equals(currentUserRole)) {
-                listLop = db.thamGiaDao().getClassesByStudent(currentUserId);
+                rawList = db.thamGiaDao().getClassesByStudent(currentUserId);
             } else if ("GIAOVIEN".equals(currentUserRole)) {
-                listLop = db.lopHocDao().getClassesByTeacher(currentUserId);
+                rawList = db.lopHocDao().getClassesByTeacher(currentUserId);
             }
 
-            List<LopHoc> finalList = listLop;
+            // 2. Tính toán thống kê cho từng lớp
+            for (LopHoc lop : rawList) {
+                String progressText = "";
+                int progressValue = 0;
 
+                if ("HOCVIEN".equals(currentUserRole)) {
+                    // --- LOGIC HỌC VIÊN: Số bài đã làm / Tổng số bài ---
+                    int totalAssignments = db.baiTapDao().countAssignmentsInClass(lop.MaLH);
+                    int submittedCount = db.nopBaiDao().countSubmissionsByStudentInClass(currentUserId, lop.MaLH);
+
+                    if (totalAssignments > 0) {
+                        progressValue = (int) (((float) submittedCount / totalAssignments) * 100);
+                        progressText = submittedCount + "/" + totalAssignments + " bài tập";
+                    } else {
+                        progressText = "Chưa có bài tập";
+                        progressValue = 0;
+                    }
+
+                } else {
+                    // --- LOGIC GIÁO VIÊN: % Lớp nộp bài tập mới nhất ---
+                    BaiTap latestBT = db.baiTapDao().getLatestAssignment(lop.MaLH);
+
+                    if (latestBT != null) {
+                        int totalStudents = db.thamGiaDao().countStudentsByClass(lop.MaLH);
+                        int totalSubmissions = db.nopBaiDao().countSubmissionsForAssignment(latestBT.MaBT);
+
+                        if (totalStudents > 0) {
+                            progressValue = (int) (((float) totalSubmissions / totalStudents) * 100);
+                            progressText = progressValue + "% đã nộp (" + latestBT.TenBT + ")";
+                        } else {
+                            progressText = "Chưa có học viên";
+                            progressValue = 0;
+                        }
+                    } else {
+                        progressText = "Chưa giao bài tập";
+                        progressValue = 0;
+                    }
+                }
+
+                displayList.add(new CourseViewItem(lop, progressText, progressValue));
+            }
+
+            // 3. Cập nhật UI
             runOnUiThread(() -> {
                 if (recyclerView == null) return;
 
-                if (finalList == null || finalList.isEmpty()) {
-                    Toast.makeText(HomeActivity.this, "Chưa có lớp học nào.", Toast.LENGTH_SHORT).show();
-                }
-
-                UserCourseAdapter adapter = new UserCourseAdapter(HomeActivity.this, finalList, lopHoc -> {
+                // Lưu ý: UserCourseAdapter giờ nhận List<CourseViewItem>
+                UserCourseAdapter adapter = new UserCourseAdapter(HomeActivity.this, displayList, lopHoc -> {
+                    // Logic click giữ nguyên
                     SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
                     SharedPreferences.Editor editor = prefs.edit();
+
+                    // Lưu lịch sử truy cập (cho AllCoursesActivity dùng)
+                    SharedPreferences historyPrefs = getSharedPreferences("AccessHistory", Context.MODE_PRIVATE);
+                    historyPrefs.edit().putLong("LAST_ACCESS_" + lopHoc.MaLH, System.currentTimeMillis()).apply();
+
                     editor.putString("CURRENT_CLASS_ID", lopHoc.MaLH);
                     editor.putString("CURRENT_CLASS_NAME", lopHoc.TenLH);
                     editor.apply();
@@ -120,10 +173,12 @@ public class HomeActivity extends BaseActivity {
                     Intent intent = new Intent(HomeActivity.this, CourseActivity.class);
                     startActivity(intent);
                 });
+
                 recyclerView.setAdapter(adapter);
             });
         });
     }
+
 
     private void showLogoutDialog() {
         new AlertDialog.Builder(this)

@@ -12,7 +12,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import java.util.Date;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 
@@ -33,6 +33,7 @@ public class SubmitAssignmentActivity extends BaseActivity {
     private TextView tvFileName; // Thêm TextView hiển thị tên file
     private Button btnSubmit;
     private Uri selectedFileUri;
+    private TextView tvDeadlineWarning;
     private String selectedFileName;
     private String maBT;
     private String currentMaHV;
@@ -79,7 +80,7 @@ public class SubmitAssignmentActivity extends BaseActivity {
         tvFileName = findViewById(R.id.tvFileName); // Ánh xạ TextView tên file
         btnSubmit = findViewById(R.id.btn_submit_final);
         View btnBack = findViewById(R.id.btnBack);
-
+        tvDeadlineWarning = findViewById(R.id.tvDeadlineWarning);
         if (etSubmitTitle != null && tenBT != null) {
             etSubmitTitle.setText(tenBT);
         }
@@ -100,8 +101,48 @@ public class SubmitAssignmentActivity extends BaseActivity {
             }
             handlePostSubmission();
         });
+        checkDeadline();
     }
+    private void checkDeadline() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
+            com.example.studentportalapp.data.Entity.BaiTap bt = db.baiTapDao().getByIdSync(maBT);
 
+            if (bt != null && bt.Deadline != null && !bt.Deadline.isEmpty()) {
+                try {
+                    // Giả sử định dạng ngày là dd/MM/yyyy
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+
+                    // Set giờ deadline là cuối ngày (23:59:59) để so sánh chính xác
+                    Date deadlineDate = sdf.parse(bt.Deadline);
+                    deadlineDate.setHours(23);
+                    deadlineDate.setMinutes(59);
+                    deadlineDate.setSeconds(59);
+
+                    Date currentDate = new Date();
+
+                    runOnUiThread(() -> {
+                        if (currentDate.after(deadlineDate)) {
+                            // QUÁ HẠN
+                            btnSubmit.setEnabled(false);
+                            btnSubmit.setBackgroundTintList(getColorStateList(android.R.color.darker_gray));
+                            btnAttach.setEnabled(false); // Không cho chọn file
+                            btnAttach.setAlpha(0.5f);
+                            etNote.setEnabled(false);
+
+                            tvDeadlineWarning.setVisibility(View.VISIBLE);
+                            tvDeadlineWarning.setText("Đã quá hạn nộp bài (" + bt.Deadline + "). Bạn không thể nộp.");
+                        } else {
+                            // CÒN HẠN
+                            tvDeadlineWarning.setVisibility(View.GONE);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
     private void handlePostSubmission() {
         String note = etNote.getText().toString().trim();
         String timeStamp = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());

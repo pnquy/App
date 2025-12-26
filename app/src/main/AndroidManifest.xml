@@ -48,6 +48,7 @@
         <activity android:name=".ClassStatsActivity" />
         <activity android:name=".AssignmentStatsActivity" />
         <activity android:name=".NotificationActivity" />
+        <activity android:name=".AllCoursesActivity" />
     </application>
 
 </manifest>

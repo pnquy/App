@@ -70,7 +70,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -79,7 +81,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.ThongBao;
-import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -89,9 +91,13 @@ import java.util.concurrent.Executors;
 
 public class AddAssignmentActivity extends BaseActivity {
 
-    private MaterialToolbar toolbar;
-    private EditText etTitle, etInstructions, etPoints, etDueDate;
-    private Button btnAttach, btnAssign;
+    private ImageView btnBack;
+    private TextView tvHeaderTitle;
+    private TextInputEditText etTitle, etInstructions, etDueDate;
+    private LinearLayout btnAttach;
+    private TextView tvFileName;
+    private Button btnAssign;
+
     private Calendar myCalendar;
     private Uri selectedFileUri;
     private String selectedFileName;
@@ -113,7 +119,9 @@ public class AddAssignmentActivity extends BaseActivity {
                         e.printStackTrace();
                     }
                     selectedFileName = getFileName(uri);
-                    btnAttach.setText("Đã chọn: " + selectedFileName);
+                    if (tvFileName != null) {
+                        tvFileName.setText(selectedFileName);
+                    }
                 }
             }
     );
@@ -130,17 +138,20 @@ public class AddAssignmentActivity extends BaseActivity {
         SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
         currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
 
-        toolbar = findViewById(R.id.toolbar_assignment);
-        etTitle = findViewById(R.id.et_assignment_title);
-        etInstructions = findViewById(R.id.et_assignment_instructions);
-        etPoints = findViewById(R.id.et_assignment_points);
-        etDueDate = findViewById(R.id.et_assignment_due_date);
-        btnAttach = findViewById(R.id.btn_attach_file_assignment);
-        btnAssign = findViewById(R.id.btn_assign_assignment);
+        btnBack = findViewById(R.id.btnBack);
+        tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
+        etTitle = findViewById(R.id.edtTitle);
+        etInstructions = findViewById(R.id.edtDesc);
+        etDueDate = findViewById(R.id.edtDeadline);
+        btnAttach = findViewById(R.id.btnPickFile);
+        tvFileName = findViewById(R.id.tvFileName);
+        btnAssign = findViewById(R.id.btnSubmit);
 
         myCalendar = Calendar.getInstance();
 
-        toolbar.setNavigationOnClickListener(v -> finish());
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
         DatePickerDialog.OnDateSetListener date = (view, year, month, day) -> {
             myCalendar.set(Calendar.YEAR, year);
@@ -149,14 +160,20 @@ public class AddAssignmentActivity extends BaseActivity {
             updateLabel();
         };
 
-        etDueDate.setOnClickListener(v -> new DatePickerDialog(AddAssignmentActivity.this, date,
-                myCalendar.get(Calendar.YEAR),
-                myCalendar.get(Calendar.MONTH),
-                myCalendar.get(Calendar.DAY_OF_MONTH)).show());
+        if (etDueDate != null) {
+            etDueDate.setOnClickListener(v -> new DatePickerDialog(AddAssignmentActivity.this, date,
+                    myCalendar.get(Calendar.YEAR),
+                    myCalendar.get(Calendar.MONTH),
+                    myCalendar.get(Calendar.DAY_OF_MONTH)).show());
+        }
 
-        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+        if (btnAttach != null) {
+            btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+        }
 
-        btnAssign.setOnClickListener(v -> handleAssign());
+        if (btnAssign != null) {
+            btnAssign.setOnClickListener(v -> handleAssign());
+        }
 
         checkEditMode();
     }
@@ -172,44 +189,44 @@ public class AddAssignmentActivity extends BaseActivity {
             existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
             existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
 
-            etTitle.setText(title);
-            etInstructions.setText(desc);
-            etDueDate.setText(date);
+            if (etTitle != null) etTitle.setText(title);
+            if (etInstructions != null) etInstructions.setText(desc);
+            if (etDueDate != null) etDueDate.setText(date);
 
-            if (existingFileName != null) {
-                btnAttach.setText("File cũ: " + existingFileName);
+            if (existingFileName != null && tvFileName != null) {
+                tvFileName.setText(existingFileName);
             }
 
-            toolbar.setTitle("Cập Nhật Bài Tập");
-            btnAssign.setText("Lưu Thay Đổi");
+            if (tvHeaderTitle != null) tvHeaderTitle.setText("Cập Nhật Bài Tập");
+            if (btnAssign != null) btnAssign.setText("Lưu Thay Đổi");
         }
     }
 
     private void updateLabel() {
+        if (etDueDate == null) return;
         String myFormat = "dd/MM/yyyy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.getDefault());
         etDueDate.setText(sdf.format(myCalendar.getTime()));
     }
 
     private void handleAssign() {
-        String title = etTitle.getText().toString().trim();
-        String instructions = etInstructions.getText().toString().trim();
-        String points = etPoints.getText().toString().trim();
-        String dueDate = etDueDate.getText().toString().trim();
+        String title = (etTitle != null && etTitle.getText() != null) ? etTitle.getText().toString().trim() : "";
+        String instructions = (etInstructions != null && etInstructions.getText() != null) ? etInstructions.getText().toString().trim() : "";
+        String dueDate = (etDueDate != null && etDueDate.getText() != null) ? etDueDate.getText().toString().trim() : "";
 
         if (title.isEmpty()) {
-            etTitle.setError("Vui lòng nhập tiêu đề");
+            if (etTitle != null) etTitle.setError("Vui lòng nhập tiêu đề");
             return;
         }
         if (dueDate.isEmpty()) {
-            etDueDate.setError("Vui lòng chọn hạn nộp");
+            if (etDueDate != null) etDueDate.setError("Vui lòng chọn hạn nộp");
             return;
         }
 
         final BaiTap bt = new BaiTap();
         bt.MaBT = isEditMode ? existingId : "BT" + System.currentTimeMillis();
         bt.TenBT = title;
-        bt.MoTa = instructions + (points.isEmpty() ? "" : " (Điểm: " + points + ")");
+        bt.MoTa = instructions;
         bt.Deadline = dueDate;
         bt.MaLH = currentMaLH;
 
@@ -234,6 +251,8 @@ public class AddAssignmentActivity extends BaseActivity {
                 tb.NoiDung = "Có bài tập mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                 tb.NguoiNhan = "HOCVIEN";
+                tb.LoaiTB = "ASSIGNMENT";
+                tb.TargetId = currentMaLH;
                 db.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Giao bài tập thành công!", Toast.LENGTH_SHORT).show());
@@ -278,19 +297,19 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
-import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.widget.Toolbar;
 
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.ThongBao;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -299,10 +318,12 @@ import java.util.concurrent.Executors;
 
 public class AddLectureActivity extends BaseActivity {
 
-    private EditText etTitle, etDesc;
-    private Button btnAttach;
+    private TextInputEditText etTitle, etDesc;
+    private LinearLayout btnAttach;
     private TextView tvFileName;
-    private View btnPost;
+    private Button btnPost;
+    private ImageView btnBack;
+    private TextView tvHeaderTitle;
 
     private String currentMaLH;
     private String currentMaGV;
@@ -326,7 +347,7 @@ public class AddLectureActivity extends BaseActivity {
                     }
                     selectedFileName = getFileName(uri);
                     if (tvFileName != null) {
-                        tvFileName.setText("Đã chọn: " + selectedFileName);
+                        tvFileName.setText(selectedFileName);
                     }
                 }
             }
@@ -345,18 +366,26 @@ public class AddLectureActivity extends BaseActivity {
         currentMaLH = prefs.getString("CURRENT_CLASS_ID", "");
         currentMaGV = prefs.getString("KEY_USER_ID", "");
 
-        etTitle = findViewById(R.id.et_lecture_title);
-        etDesc = findViewById(R.id.et_lecture_description);
-        btnAttach = findViewById(R.id.btn_attach_file);
-        btnPost = findViewById(R.id.btn_post_lecture);
-        tvFileName = findViewById(R.id.tv_file_name);
+        etTitle = findViewById(R.id.edtTitle);
+        etDesc = findViewById(R.id.edtContent);
+        btnAttach = findViewById(R.id.btnPickFile);
+        btnPost = findViewById(R.id.btnSubmit);
+        tvFileName = findViewById(R.id.tvFileName);
+        
+        btnBack = findViewById(R.id.btnBack);
+        tvHeaderTitle = findViewById(R.id.tvHeaderTitle);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        if (toolbar != null) toolbar.setNavigationOnClickListener(v -> finish());
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
 
-        btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+        if (btnAttach != null) {
+            btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
+        }
 
-        btnPost.setOnClickListener(v -> handlePost());
+        if (btnPost != null) {
+            btnPost.setOnClickListener(v -> handlePost());
+        }
 
         checkEditMode();
     }
@@ -371,23 +400,23 @@ public class AddLectureActivity extends BaseActivity {
             existingFilePath = intent.getStringExtra("EDIT_FILE_PATH");
             existingFileName = intent.getStringExtra("EDIT_FILE_NAME");
 
-            etTitle.setText(title);
-            etDesc.setText(content);
-            if (existingFileName != null) {
-                tvFileName.setText("File cũ: " + existingFileName);
+            if (etTitle != null) etTitle.setText(title);
+            if (etDesc != null) etDesc.setText(content);
+            if (existingFileName != null && tvFileName != null) {
+                tvFileName.setText(existingFileName);
             }
 
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            if (toolbar != null) toolbar.setTitle("Sửa Bài Giảng");
+            if (tvHeaderTitle != null) tvHeaderTitle.setText("Sửa Bài Giảng");
+            if (btnPost != null) btnPost.setText("Lưu Thay Đổi");
         }
     }
 
     private void handlePost() {
-        String title = etTitle.getText().toString().trim();
-        String desc = etDesc.getText().toString().trim();
+        String title = (etTitle != null && etTitle.getText() != null) ? etTitle.getText().toString().trim() : "";
+        String desc = (etDesc != null && etDesc.getText() != null) ? etDesc.getText().toString().trim() : "";
 
         if (title.isEmpty()) {
-            etTitle.setError("Nhập tiêu đề!");
+            if (etTitle != null) etTitle.setError("Nhập tiêu đề!");
             return;
         }
 
@@ -414,11 +443,13 @@ public class AddLectureActivity extends BaseActivity {
             } else {
                 database.baiGiangDao().insert(bg);
                 
-                // Tạo thông báo cho học viên
+                // Gửi thông báo cho HỌC VIÊN
                 ThongBao tb = new ThongBao();
                 tb.NoiDung = "Có bài giảng mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                tb.NguoiNhan = "ALL";
+                tb.NguoiNhan = "HOCVIEN";
+                tb.LoaiTB = "LECTURE"; // QUAN TRỌNG: Để click vào là chuyển trang
+                tb.TargetId = currentMaLH; // QUAN TRỌNG: ID lớp học
                 database.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
@@ -788,6 +819,7 @@ public class AssignmentActivity extends BaseActivity {
     private AppDatabase db;
     private String currentMaLH;
     private TextView tvTitle, tvSubtitle;
+    private View layoutEmptyState;
 
     @Override
     protected int getLayoutResourceId() {
@@ -804,24 +836,41 @@ public class AssignmentActivity extends BaseActivity {
         String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
         String role = prefs.getString("KEY_ROLE", "");
 
+        // Ánh xạ Views
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
+        recyclerView = findViewById(R.id.recyclerViewAssignments);
+        layoutEmptyState = findViewById(R.id.layoutEmptyState);
+        FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        // Setup UI texts
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-        // Ánh xạ nút thông báo nếu có trong layout (thường nằm trong include background)
-        View btnNoti = findViewById(R.id.btnNoti);
-        if (btnNoti != null) {
-            btnNoti.setOnClickListener(v -> {
+        // Setup Button Listeners
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
+
+        // Đảm bảo nút thông báo hoạt động
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
                 Intent intent = new Intent(this, NotificationActivity.class);
                 startActivity(intent);
             });
         }
 
-        recyclerView = findViewById(R.id.recyclerViewAssignments);
+        // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        FloatingActionButton fab = findViewById(R.id.fab_add_assignment);
 
+        // Setup FAB for Teacher
         if ("GIAOVIEN".equals(role)) {
             fab.setVisibility(View.VISIBLE);
             fab.setOnClickListener(v -> startActivity(new Intent(this, AddAssignmentActivity.class)));
@@ -834,7 +883,16 @@ public class AssignmentActivity extends BaseActivity {
 
     private void loadData() {
         db.baiTapDao().getByLop(currentMaLH).observe(this, listBT -> {
-            if (listBT == null) listBT = new ArrayList<>();
+            if (listBT == null || listBT.isEmpty()) {
+                listBT = new ArrayList<>();
+                if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            } else {
+                if (layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
+            }
+
+            // Giữ nguyên logic Adapter: chỉ click vào nút View/Submit mới gọi showAssignmentDialog
             AssignmentAdapter adapter = new AssignmentAdapter(this, listBT, this::showAssignmentDialog);
             recyclerView.setAdapter(adapter);
         });
@@ -1195,11 +1253,6 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     private List<Task> getMockTasks() {
         List<Task> tasks = new ArrayList<>();
-        tasks.add(new Task("Task 5 - Group Work", "Programming Language", "Due Tomorrow | Aug 6"));
-        tasks.add(new Task("Assignment No. 3", "Operating System", "Due Saturday | Aug 7"));
-        tasks.add(new Task("Task 6 - Group Work", "Programming Language", "Due Sunday | Aug 8"));
-        tasks.add(new Task("Task 1 - Create a Flowchart", "HCI", "Due Monday | Aug 9"));
-        tasks.add(new Task("Assignment No. 5", "Logic Design", "Due Friday | Aug 13"));
         return tasks;
     }
 }
@@ -1588,6 +1641,7 @@ public class CourseActivity extends BaseActivity {
 
     private RecyclerView recyclerView;
     private TextView tvTitle, tvSubtitle;
+    private View layoutEmptyState;
     private AppDatabase db;
     private String currentMaLH;
     private ArrayList<BaiGiang> originalList;
@@ -1610,10 +1664,21 @@ public class CourseActivity extends BaseActivity {
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
         recyclerView = findViewById(R.id.rvActivityCourse);
+        layoutEmptyState = findViewById(R.id.layoutEmptyState);
         FloatingActionButton fab = findViewById(R.id.fab_add);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
 
-        tvTitle.setText(tenLH);
-        tvSubtitle.setText("Mã lớp: " + currentMaLH);
+        if (tvTitle != null) tvTitle.setText(tenLH);
+        if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
+
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -1625,26 +1690,48 @@ public class CourseActivity extends BaseActivity {
         }
 
         loadData();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadData();
     }
 
     private void loadData() {
         db.baiGiangDao().getByLop(currentMaLH).observe(this, listBG -> {
-            originalList = new ArrayList<>(listBG);
-            ArrayList<ActivityItem> items = new ArrayList<>();
+            if (listBG == null || listBG.isEmpty()) {
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
+            } else {
+                if(layoutEmptyState != null) layoutEmptyState.setVisibility(View.GONE);
+                recyclerView.setVisibility(View.VISIBLE);
 
-            for (BaiGiang bg : listBG) {
-                String fName = (bg.FileName != null) ? bg.FileName : "";
-                items.add(new ActivityItem(
-                        "GV: " + bg.MaGV,
-                        "Mới đăng",
-                        bg.TenBG,
-                        fName,
-                        "0"
-                ));
+                originalList = new ArrayList<>(listBG);
+                ArrayList<ActivityItem> items = new ArrayList<>();
+
+                for (BaiGiang bg : listBG) {
+                    String fName = (bg.FileName != null) ? bg.FileName : "";
+                    items.add(new ActivityItem(
+                            "GV: " + bg.MaGV,
+                            "Mới đăng",
+                            bg.TenBG,
+                            fName,
+                            "0"
+                    ));
+                }
+
+                CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
+                recyclerView.setAdapter(adapter);
             }
-
-            CourseAdapter adapter = new CourseAdapter(items, position -> showLectureDialog(originalList.get(position)));
-            recyclerView.setAdapter(adapter);
         });
     }
 
@@ -2023,6 +2110,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.adapter.GradeAdapter;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.LopHoc;
@@ -2036,10 +2124,19 @@ public class GradeActivity extends BaseActivity {
 
     private RecyclerView recyclerView;
     private Spinner spinnerClasses;
+    private Spinner spinnerAssignments;
     private AppDatabase db;
     private String currentMaTK;
     private String realMaHV;
     private List<LopHoc> listAllLop;
+    private String userRole;
+
+    private List<Diem> currentClassGrades = new ArrayList<>();
+    private List<BaiTap> currentClassAssignments = new ArrayList<>();
+    private String currentSelectedMaBT = "ALL"; // "ALL" or MaBT
+
+    // Biến để lưu mã lớp được truyền từ thông báo (nếu có)
+    private String targetClassIdFromNoti = null;
 
     @Override
     protected int getLayoutResourceId() {
@@ -2053,15 +2150,32 @@ public class GradeActivity extends BaseActivity {
         db = AppDatabase.getDatabase(getApplicationContext());
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         currentMaTK = prefs.getString("KEY_USER_ID", "");
+        userRole = prefs.getString("KEY_ROLE", "");
+
+        if (getIntent().hasExtra("TARGET_CLASS_ID")) {
+            targetClassIdFromNoti = getIntent().getStringExtra("TARGET_CLASS_ID");
+        }
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar_grade);
         toolbar.setNavigationOnClickListener(v -> finish());
+        if ("GIAOVIEN".equals(userRole)) {
+            toolbar.setTitle("Quản Lý Điểm Số");
+        }
 
         spinnerClasses = findViewById(R.id.spinner_classes);
+        spinnerAssignments = findViewById(R.id.spinner_assignments);
         recyclerView = findViewById(R.id.rv_grades);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        findRealStudentId();
+        initData();
+    }
+
+    private void initData() {
+        if ("GIAOVIEN".equals(userRole)) {
+            loadClassesForTeacher();
+        } else {
+            findRealStudentId();
+        }
     }
 
     private void findRealStudentId() {
@@ -2069,75 +2183,164 @@ public class GradeActivity extends BaseActivity {
             HocVien hv = db.hocVienDao().getByMaTKSync(currentMaTK);
             if (hv != null) {
                 realMaHV = hv.getMaHV();
-                runOnUiThread(this::loadClasses);
+                runOnUiThread(() -> loadClassesForStudent());
             } else {
                 runOnUiThread(() -> Toast.makeText(this, "Không tìm thấy thông tin học viên!", Toast.LENGTH_LONG).show());
             }
         });
     }
 
-    private void loadClasses() {
+    private void loadClassesForStudent() {
         Executors.newSingleThreadExecutor().execute(() -> {
             listAllLop = db.thamGiaDao().getClassesByStudent(currentMaTK);
+            runOnUiThread(() -> setupClassSpinner(listAllLop));
+        });
+    }
+
+    private void loadClassesForTeacher() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            listAllLop = db.lopHocDao().getClassesByTeacher(currentMaTK);
+            runOnUiThread(() -> setupClassSpinner(listAllLop));
+        });
+    }
+
+    private void setupClassSpinner(List<LopHoc> listLop) {
+        if (listLop == null || listLop.isEmpty()) {
+            Toast.makeText(this, "Không có lớp học nào.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<String> tenLopList = new ArrayList<>();
+        int selectedPosition = 0;
+
+        for (int i = 0; i < listLop.size(); i++) {
+            LopHoc lh = listLop.get(i);
+            tenLopList.add(lh.TenLH + " (" + lh.MaLH + ")");
+
+            if (targetClassIdFromNoti != null && lh.MaLH.equals(targetClassIdFromNoti)) {
+                selectedPosition = i;
+            }
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
+                android.R.layout.simple_spinner_item, tenLopList);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerClasses.setAdapter(adapter);
+        spinnerClasses.setSelection(selectedPosition);
+
+        spinnerClasses.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String selectedMaLH = listLop.get(position).MaLH;
+                loadAssignmentsForClass(selectedMaLH);
+                loadGradesForClass(selectedMaLH);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void loadAssignmentsForClass(String maLH) {
+        // Load danh sách bài tập để fill vào spinner Assignments
+        db.baiTapDao().getByLop(maLH).observe(this, listBT -> {
+            currentClassAssignments = listBT != null ? listBT : new ArrayList<>();
             
-            runOnUiThread(() -> {
-                if (listAllLop == null || listAllLop.isEmpty()) {
-                    Toast.makeText(this, "Bạn chưa tham gia lớp học nào.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+            List<String> assignmentNames = new ArrayList<>();
+            assignmentNames.add("Tất cả bài tập"); // Default option
 
-                List<String> tenLopList = new ArrayList<>();
-                for (LopHoc lh : listAllLop) {
-                    tenLopList.add(lh.TenLH + " (" + lh.MaLH + ")");
-                }
+            for (BaiTap bt : currentClassAssignments) {
+                assignmentNames.add(bt.TenBT);
+            }
 
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, 
-                        android.R.layout.simple_spinner_item, tenLopList);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerClasses.setAdapter(adapter);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_item, assignmentNames);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            spinnerAssignments.setAdapter(adapter);
 
-                spinnerClasses.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        String selectedMaLH = listAllLop.get(position).MaLH;
-                        loadGradesByClass(selectedMaLH);
+            spinnerAssignments.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    if (position == 0) {
+                        currentSelectedMaBT = "ALL";
+                    } else {
+                        // position - 1 vì index 0 là "Tất cả"
+                        currentSelectedMaBT = currentClassAssignments.get(position - 1).MaBT;
                     }
+                    filterAndDisplayGrades();
+                }
 
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {}
-                });
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {}
             });
         });
     }
 
-    private void loadGradesByClass(String maLH) {
-        db.diemDao().getByHocVien(realMaHV).observe(this, listDiem -> {
-            if (listDiem == null) {
-                recyclerView.setAdapter(new GradeAdapter(this, new ArrayList<>()));
-                return;
-            }
-
-            Executors.newSingleThreadExecutor().execute(() -> {
-                List<Diem> filteredList = new ArrayList<>();
-                for (Diem d : listDiem) {
-                    if (isAssignmentInClass(d.MaBT, maLH)) {
-                        filteredList.add(d);
-                    }
-                }
-
-                runOnUiThread(() -> {
-                    GradeAdapter adapter = new GradeAdapter(this, filteredList);
-                    recyclerView.setAdapter(adapter);
-                });
+    private void loadGradesForClass(String maLH) {
+        if ("GIAOVIEN".equals(userRole)) {
+            // Giáo viên: Lấy TẤT CẢ điểm
+            db.diemDao().getAll().observe(this, listDiem -> {
+                if (listDiem == null) listDiem = new ArrayList<>();
+                processGradesForClass(listDiem, maLH);
             });
+        } else {
+            // Học viên: Lấy điểm của MÌNH
+            db.diemDao().getByHocVien(realMaHV).observe(this, listDiem -> {
+                if (listDiem == null) listDiem = new ArrayList<>();
+                processGradesForClass(listDiem, maLH);
+            });
+        }
+    }
+
+    private void processGradesForClass(List<Diem> allGrades, String maLH) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            List<Diem> filteredList = new ArrayList<>();
+            for (Diem d : allGrades) {
+                if (isAssignmentInClass(d.MaBT, maLH)) {
+                    filteredList.add(d);
+                }
+            }
+            
+            currentClassGrades = filteredList;
+            runOnUiThread(this::filterAndDisplayGrades);
         });
+    }
+
+    private void filterAndDisplayGrades() {
+        List<Diem> finalDisplayList = new ArrayList<>();
+
+        if ("ALL".equals(currentSelectedMaBT)) {
+            finalDisplayList.addAll(currentClassGrades);
+        } else {
+            for (Diem d : currentClassGrades) {
+                if (d.MaBT.equals(currentSelectedMaBT)) {
+                    finalDisplayList.add(d);
+                }
+            }
+        }
+
+        GradeAdapter adapter = new GradeAdapter(this, finalDisplayList);
+        recyclerView.setAdapter(adapter);
     }
 
     private boolean isAssignmentInClass(String maBT, String maLH) {
-        com.example.studentportalapp.data.Entity.BaiTap bt = db.baiTapDao().getByIdSync(maBT);
+        // Cần kiểm tra xem maBT có thuộc lớp maLH không
+        // Nếu dùng synchronous thì chậm, nhưng ở đây tạm chấp nhận hoặc tối ưu sau
+        // Tốt nhất là check trong list assignment đã load
+        
+        // Check cache assignments first
+        for (BaiTap bt : currentClassAssignments) {
+            if (bt.MaBT.equals(maBT)) {
+                return true; // Nếu bt này thuộc lớp hiện tại
+            }
+        }
+        
+        // Fallback check DB (chậm)
+        BaiTap bt = db.baiTapDao().getByIdSync(maBT);
         return bt != null && maLH.equals(bt.MaLH);
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\HomeActivity.java
@@ -2194,7 +2397,8 @@ public class HomeActivity extends BaseActivity {
         tvWelcome = findViewById(R.id.tvWelcomeUser);
         recyclerView = findViewById(R.id.recyclerUserCourses);
         View btnLogout = findViewById(R.id.quickActionLogout);
-        View btnGrades = findViewById(R.id.quickActionGrades); // Ánh xạ nút Điểm số
+        View btnGrades = findViewById(R.id.quickActionGrades);
+        View btnTKB = findViewById(R.id.quickActionTKB);
         View btnNoti = findViewById(R.id.btnNoti);
 
         if (tvWelcome != null) {
@@ -2218,6 +2422,14 @@ public class HomeActivity extends BaseActivity {
             });
         }
 
+        if (btnTKB != null) {
+            btnTKB.setOnClickListener(v -> {
+                Intent intent = new Intent(HomeActivity.this, ToDoActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // SỬA: Chuyển hướng sang màn hình thông báo thay vì hiện Toast
         if (btnNoti != null) {
             btnNoti.setOnClickListener(v -> {
                 Intent intent = new Intent(HomeActivity.this, NotificationActivity.class);
@@ -2428,6 +2640,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.NotificationAdapter;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 import java.util.concurrent.Executors;
 
@@ -2471,9 +2684,20 @@ public class NotificationActivity extends BaseActivity {
                 NotificationAdapter adapter = new NotificationAdapter(list);
                 recyclerView.setAdapter(adapter);
 
-                Executors.newSingleThreadExecutor().execute(() -> {
-                    db.thongBaoDao().markAllAsRead(currentMaTK, role);
-                });
+                // Kiểm tra xem có tin chưa đọc không mới update DB để tránh vòng lặp vô tận (update -> reload -> update)
+                boolean hasUnread = false;
+                for (ThongBao tb : list) {
+                    if (!tb.IsRead) {
+                        hasUnread = true;
+                        break;
+                    }
+                }
+
+                if (hasUnread) {
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        db.thongBaoDao().markAllAsRead(currentMaTK, role);
+                    });
+                }
             }
         });
     }
@@ -2544,8 +2768,10 @@ FILE: app\src\main\java\com\example\studentportalapp\PeopleActivity.java
 ==================================================
 package com.example.studentportalapp;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -2582,11 +2808,29 @@ public class PeopleActivity extends BaseActivity {
         rvProf = findViewById(R.id.recyclerViewProfessors);
         rvStud = findViewById(R.id.recyclerViewStudents);
         tvCount = findViewById(R.id.txtStudentCount);
+        View btnHomeLogo = findViewById(R.id.btnHomeLogo);
+
+        if (btnHomeLogo != null) {
+            btnHomeLogo.setOnClickListener(v -> {
+                Intent intent = new Intent(this, HomeActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            });
+        }
 
         rvProf.setLayoutManager(new LinearLayoutManager(this));
         rvStud.setLayoutManager(new LinearLayoutManager(this));
 
         loadPeople();
+        View btnNotiHeader = findViewById(R.id.btnNotiHeader);
+
+        if (btnNotiHeader != null) {
+            btnNotiHeader.setOnClickListener(v -> {
+                Intent intent = new Intent(this, NotificationActivity.class);
+                startActivity(intent);
+            });
+        }
     }
 
     private void loadPeople() {
@@ -2622,7 +2866,6 @@ public class PeopleActivity extends BaseActivity {
         });
     }
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\ProfileActivity.java
@@ -2676,10 +2919,10 @@ public class ProfileActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // 2. Lấy thông tin phiên đăng nhập
-        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        currentUserId = prefs.getString("USER_ID", "");
-        String role = prefs.getString("USER_ROLE", "");
+        // 2. Lấy thông tin phiên đăng nhập từ "UserSession"
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentUserId = prefs.getString("KEY_USER_ID", "");
+        String role = prefs.getString("KEY_ROLE", "");
 
         // 3. Logic hiển thị Label theo Role
         if (role.equalsIgnoreCase("GIAOVIEN")) {
@@ -2698,6 +2941,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserProfile(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            Toast.makeText(this, "Lỗi: Không tìm thấy thông tin người dùng.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         executor.execute(() -> {
             TaiKhoan user = db.taiKhoanDao().getById(userId);
 
@@ -2763,6 +3010,7 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 }
+
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\SimpleBarChart.java
@@ -3060,8 +3308,10 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -3071,7 +3321,6 @@ import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThongBao;
-import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -3081,7 +3330,9 @@ import java.util.concurrent.Executors;
 public class SubmitAssignmentActivity extends BaseActivity {
 
     private EditText etSubmitTitle, etNote;
-    private Button btnAttach, btnSubmit;
+    private View btnAttach; // Đổi thành View vì là LinearLayout
+    private TextView tvFileName; // Thêm TextView hiển thị tên file
+    private Button btnSubmit;
     private Uri selectedFileUri;
     private String selectedFileName;
     private String maBT;
@@ -3098,7 +3349,12 @@ public class SubmitAssignmentActivity extends BaseActivity {
                         e.printStackTrace();
                     }
                     selectedFileName = getFileName(uri);
-                    btnAttach.setText("Đã chọn: " + selectedFileName);
+
+                    // Cập nhật giao diện khi chọn file xong
+                    if (tvFileName != null) {
+                        tvFileName.setText("Đã chọn: " + selectedFileName);
+                        tvFileName.setTextColor(getResources().getColor(R.color.purple_500));
+                    }
                 }
             }
     );
@@ -3117,22 +3373,27 @@ public class SubmitAssignmentActivity extends BaseActivity {
         maBT = getIntent().getStringExtra("MA_BT");
         String tenBT = getIntent().getStringExtra("TEN_BT");
 
+        // Ánh xạ theo ID mới
         etSubmitTitle = findViewById(R.id.et_submit_title);
         etNote = findViewById(R.id.et_submit_note);
         btnAttach = findViewById(R.id.btn_attach_file_submit);
+        tvFileName = findViewById(R.id.tvFileName); // Ánh xạ TextView tên file
         btnSubmit = findViewById(R.id.btn_submit_final);
+        View btnBack = findViewById(R.id.btnBack);
 
         if (etSubmitTitle != null && tenBT != null) {
             etSubmitTitle.setText(tenBT);
         }
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar_submit);
-        if (toolbar != null) {
-            toolbar.setNavigationOnClickListener(v -> finish());
+        // Xử lý nút Back
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
         }
 
+        // Xử lý chọn file
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
+        // Xử lý submit
         btnSubmit.setOnClickListener(v -> {
             if (selectedFileUri == null) {
                 Toast.makeText(this, "Vui lòng đính kèm bài làm!", Toast.LENGTH_SHORT).show();
@@ -3159,11 +3420,9 @@ public class SubmitAssignmentActivity extends BaseActivity {
             AppDatabase database = AppDatabase.getDatabase(getApplicationContext());
             database.nopBaiDao().insert(nb);
 
-            // Tìm thông tin học viên để lấy tên
             HocVien hv = database.hocVienDao().getByMaTKSync(currentMaHV);
             String tenHV = (hv != null) ? hv.getTenHV() : "Học viên";
 
-            // Gửi thông báo cho giáo viên
             com.example.studentportalapp.data.Entity.BaiTap bt = database.baiTapDao().getByIdSync(maBT);
             if (bt != null) {
                 com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
@@ -3171,7 +3430,10 @@ public class SubmitAssignmentActivity extends BaseActivity {
                     ThongBao tb = new ThongBao();
                     tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
                     tb.NgayTao = timeStamp;
-                    tb.NguoiNhan = lh.MaGV; 
+                    tb.NguoiNhan = lh.MaGV;
+                    // SỬA LỖI: Thêm 2 dòng này để link hoạt động
+                    tb.LoaiTB = "SUBMISSION"; 
+                    tb.TargetId = maBT; 
                     database.thongBaoDao().insert(tb);
                 }
             }
@@ -3382,37 +3644,96 @@ FILE: app\src\main\java\com\example\studentportalapp\ToDoActivity.java
 ==================================================
 package com.example.studentportalapp;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.ListView;
-import androidx.appcompat.app.AppCompatActivity;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.example.studentportalapp.model.Task;
 import com.example.studentportalapp.adapter.TaskAdapter;
+import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.NopBai;
+import com.example.studentportalapp.model.Task;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ToDoActivity extends BaseActivity {
+
+    private AppDatabase db;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private String currentUserId, currentUserRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ListView listView = findViewById(R.id.list_tasks);
-        List<Task> tasks = new ArrayList<>();
-        tasks.add(new Task("Task 5 - Group Work", "Programming Language", "Due Tomorrow | Aug 6"));
-        tasks.add(new Task("Assignment No. 3", "Operating System", "Due Saturday | Aug 7"));
-        tasks.add(new Task("Task 6 - Group Work", "Programming Language", "Due Sunday | Aug 8"));
-        tasks.add(new Task("Task 1 - Create a Flowchart", "Human Computer Interaction", "Due Monday | Aug 9"));
-        tasks.add(new Task("Assignment No. 5", "Logic Design", "Due Friday | Aug 13"));
-        tasks.add(new Task("Assignment No. 6", "Logic Design", "Due Friday | Aug 13"));
+        db = AppDatabase.getDatabase(getApplicationContext());
+        SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
+        currentUserId = prefs.getString("KEY_USER_ID", "");
+        currentUserRole = prefs.getString("KEY_ROLE", "");
 
-        TaskAdapter adapter = new TaskAdapter(this, tasks);
-        listView.setAdapter(adapter);
+        ListView listView = findViewById(R.id.list_tasks);
+
+        executor.execute(() -> {
+            List<Task> tasks = new ArrayList<>();
+            if ("HOCVIEN".equals(currentUserRole)) {
+                List<LopHoc> enrolledClasses = db.thamGiaDao().getClassesByStudent(currentUserId);
+                for (LopHoc lopHoc : enrolledClasses) {
+                    List<BaiTap> assignments = db.baiTapDao().getByLopSync(lopHoc.MaLH);
+                    for (BaiTap baiTap : assignments) {
+                        if (isDeadlineActive(baiTap.Deadline)) {
+                            NopBai submission = db.nopBaiDao().getSubmission(baiTap.MaBT, currentUserId);
+                            if (submission == null) {
+                                tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole));
+                            }
+                        }
+                    }
+                }
+            } else if ("GIAOVIEN".equals(currentUserRole)) {
+                List<LopHoc> taughtClasses = db.lopHocDao().getClassesByTeacher(currentUserId);
+                for (LopHoc lopHoc : taughtClasses) {
+                    List<BaiTap> assignments = db.baiTapDao().getByLopSync(lopHoc.MaLH);
+                    int totalStudents = db.thamGiaDao().countStudentsByClass(lopHoc.MaLH);
+                    for (BaiTap baiTap : assignments) {
+                        if (isDeadlineActive(baiTap.Deadline)) {
+                            int submissionCount = db.nopBaiDao().countSubmissionsForAssignment(baiTap.MaBT);
+                            if (submissionCount < totalStudents) { // Chỉ hiển thị nếu chưa nộp đủ
+                                tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole, submissionCount, totalStudents));
+                            }
+                        }
+                    }
+                }
+            }
+
+            runOnUiThread(() -> {
+                TaskAdapter adapter = new TaskAdapter(ToDoActivity.this, tasks);
+                listView.setAdapter(adapter);
+            });
+        });
     }
 
     @Override
     protected int getLayoutResourceId() {
         return R.layout.activity_todo;
+    }
+
+    private boolean isDeadlineActive(String deadline) {
+        if (deadline == null || deadline.isEmpty()) {
+            return true; // Mặc định là còn hạn nếu không có deadline
+        }
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
+            Date deadlineDate = sdf.parse(deadline);
+            return new Date().before(deadlineDate); // Trả về true nếu ngày hiện tại trước deadline
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return true; // Mặc định là còn hạn nếu không thể phân tích chuỗi
+        }
     }
 }
 
@@ -3782,6 +4103,7 @@ import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -3813,21 +4135,25 @@ public class GradeAdapter extends RecyclerView.Adapter<GradeAdapter.ViewHolder> 
         holder.tvScore.setText(String.valueOf(diem.SoDiem));
         holder.tvFeedback.setText("Nhận xét: " + (diem.NhanXet != null ? diem.NhanXet : "(Không có nhận xét)"));
 
-        // Lấy tên bài tập từ Database (vì trong bảng DIEM chỉ lưu MaBT)
+        // Lấy tên bài tập VÀ tên học viên (để hỗ trợ Giáo viên xem)
         Executors.newSingleThreadExecutor().execute(() -> {
             BaiTap bt = db.baiTapDao().getByIdSync(diem.MaBT);
-            if (bt != null) {
-                if (context instanceof android.app.Activity) {
-                    ((android.app.Activity) context).runOnUiThread(() -> {
-                        holder.tvTitle.setText(bt.TenBT);
-                    });
-                }
-            } else {
-                if (context instanceof android.app.Activity) {
-                    ((android.app.Activity) context).runOnUiThread(() -> {
-                        holder.tvTitle.setText("Mã BT: " + diem.MaBT);
-                    });
-                }
+            HocVien hv = db.hocVienDao().getByIdSync(diem.MaHV);
+            
+            String assignmentName = (bt != null) ? bt.TenBT : "MaBT: " + diem.MaBT;
+            String studentName = (hv != null) ? hv.getTenHV() : "MaHV: " + diem.MaHV;
+            
+            // Nếu người xem là giáo viên (hoặc để tổng quát), ta có thể hiển thị thêm tên học viên
+            // Tuy nhiên, logic này sẽ hiển thị: "Tên Học Viên - Tên Bài Tập"
+            // Hoặc nếu muốn đơn giản, ta kiểm tra context hoặc chỉ hiển thị tên bài tập nếu là học viên xem.
+            // Nhưng ở đây ta cứ hiển thị cả hai nếu có thông tin để rõ ràng.
+            
+            final String finalTitle = studentName + " - " + assignmentName;
+
+            if (context instanceof android.app.Activity) {
+                ((android.app.Activity) context).runOnUiThread(() -> {
+                    holder.tvTitle.setText(finalTitle);
+                });
             }
         });
     }
@@ -3940,13 +4266,21 @@ FILE: app\src\main\java\com\example\studentportalapp\adapter\NotificationAdapter
 ==================================================
 package com.example.studentportalapp.adapter;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.studentportalapp.AssignmentActivity;
+import com.example.studentportalapp.CourseActivity;
+import com.example.studentportalapp.GradeActivity;
 import com.example.studentportalapp.R;
+import com.example.studentportalapp.ViewSubmissionsActivity;
 import com.example.studentportalapp.data.Entity.ThongBao;
 import java.util.List;
 
@@ -3967,29 +4301,89 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        if (list == null || position >= list.size()) return;
+        
         ThongBao tb = list.get(position);
-        holder.tvContent.setText(tb.NoiDung);
-        holder.tvDate.setText(tb.NgayTao);
+        if (tb == null) return;
+
+        holder.tvContent.setText(tb.NoiDung != null ? tb.NoiDung : "");
+        holder.tvDate.setText(tb.NgayTao != null ? tb.NgayTao : "");
         
         if (tb.IsRead) {
-            holder.itemView.setAlpha(0.6f);
+            holder.layoutClick.setAlpha(0.6f);
         } else {
-            holder.itemView.setAlpha(1.0f);
+            holder.layoutClick.setAlpha(1.0f);
         }
+
+        // Xử lý sự kiện click chuyển trang
+        holder.layoutClick.setOnClickListener(v -> {
+            Context context = v.getContext();
+            try {
+                if (tb.LoaiTB == null || tb.LoaiTB.isEmpty()) {
+                    Toast.makeText(context, "Thông báo không có dữ liệu điều hướng", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                Intent intent = null;
+                switch (tb.LoaiTB) {
+                    case "ASSIGNMENT":
+                        if (tb.TargetId != null) {
+                            SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
+                            editor.putString("CURRENT_CLASS_ID", tb.TargetId);
+                            editor.apply();
+                            intent = new Intent(context, AssignmentActivity.class);
+                        }
+                        break;
+                    case "LECTURE":
+                        if (tb.TargetId != null) {
+                            SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
+                            editor.putString("CURRENT_CLASS_ID", tb.TargetId);
+                            editor.apply();
+                            // SỬA: Link tới màn hình Bài Giảng (CourseActivity)
+                            intent = new Intent(context, CourseActivity.class);
+                        }
+                        break;
+                    case "GRADE":
+                        intent = new Intent(context, GradeActivity.class);
+                        if (tb.TargetId != null) {
+                            intent.putExtra("TARGET_CLASS_ID", tb.TargetId);
+                        }
+                        break;
+                    case "SUBMISSION":
+                        if (tb.TargetId != null) {
+                            intent = new Intent(context, ViewSubmissionsActivity.class);
+                            intent.putExtra("MA_BT", tb.TargetId);
+                            intent.putExtra("TEN_BT", "Chi tiết bài nộp");
+                        }
+                        break;
+                }
+
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                } else {
+                    Toast.makeText(context, "Không tìm thấy trang liên kết", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(context, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        return list.size();
+        return list != null ? list.size() : 0;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvContent, tvDate;
+        View layoutClick;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvContent = itemView.findViewById(R.id.tv_noti_content);
             tvDate = itemView.findViewById(R.id.tv_noti_date);
+            layoutClick = itemView;
         }
     }
 }
@@ -4305,6 +4699,8 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
                         tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
                         tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                         tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
+                        tb.LoaiTB = "GRADE"; // QUAN TRỌNG
+                        tb.TargetId = bt.MaLH; // Mã lớp học để điều hướng
                         db.thongBaoDao().insert(tb);
                     }
 
@@ -4354,15 +4750,19 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 FILE: app\src\main\java\com\example\studentportalapp\adapter\TaskAdapter.java
 ==================================================
 package com.example.studentportalapp.adapter;
-import com.example.studentportalapp.R;
+
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.TextView;
 
-
+import com.example.studentportalapp.R;
+import com.example.studentportalapp.SubmitAssignmentActivity;
+import com.example.studentportalapp.ViewSubmissionsActivity;
 import com.example.studentportalapp.model.Task;
 
 import java.util.List;
@@ -4403,6 +4803,8 @@ public class TaskAdapter extends BaseAdapter {
             holder.tvTaskTitle = convertView.findViewById(R.id.tv_task_title);
             holder.tvTaskSubject = convertView.findViewById(R.id.tv_task_subject);
             holder.tvTaskDue = convertView.findViewById(R.id.tv_task_due);
+            holder.btnSubmit = convertView.findViewById(R.id.btn_submit);
+            holder.tvSubmissionCount = convertView.findViewById(R.id.tv_submission_count);
 
             convertView.setTag(holder);
         } else {
@@ -4415,13 +4817,33 @@ public class TaskAdapter extends BaseAdapter {
         holder.tvTaskSubject.setText(task.getSubject());
         holder.tvTaskDue.setText(task.getDueDate());
 
+        if ("HOCVIEN".equals(task.getUserRole())) {
+            holder.btnSubmit.setVisibility(View.VISIBLE);
+            holder.tvSubmissionCount.setVisibility(View.GONE);
+            holder.btnSubmit.setOnClickListener(v -> {
+                Intent intent = new Intent(context, SubmitAssignmentActivity.class);
+                intent.putExtra("MA_BT", task.getMaBT());
+                context.startActivity(intent);
+            });
+        } else if ("GIAOVIEN".equals(task.getUserRole())) {
+            holder.btnSubmit.setVisibility(View.GONE);
+            holder.tvSubmissionCount.setVisibility(View.VISIBLE);
+            String submissionText = "Đã nộp: " + task.getSubmissionCount() + "/" + task.getTotalStudents();
+            holder.tvSubmissionCount.setText(submissionText);
+            convertView.setOnClickListener(v -> {
+                Intent intent = new Intent(context, ViewSubmissionsActivity.class);
+                intent.putExtra("MA_BT", task.getMaBT());
+                intent.putExtra("TEN_BT", task.getTitle());
+                context.startActivity(intent);
+            });
+        }
+
         return convertView;
     }
 
     static class ViewHolder {
-        TextView tvTaskTitle;
-        TextView tvTaskSubject;
-        TextView tvTaskDue;
+        TextView tvTaskTitle, tvTaskSubject, tvTaskDue, tvSubmissionCount;
+        Button btnSubmit;
     }
 }
 
@@ -4632,7 +5054,7 @@ import java.util.concurrent.Executors;
                 NopBai.class,
                 ThongBao.class
         },
-        version = 9,
+        version = 10,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -4763,6 +5185,9 @@ public interface BaiTapDao {
 
     @Query("SELECT * FROM BAITAP WHERE MaLH = :maLH")
     LiveData<List<BaiTap>> getByLop(String maLH);
+
+    @Query("SELECT * FROM BAITAP WHERE MaLH = :maLH")
+    List<BaiTap> getByLopSync(String maLH);
 
     @Query("SELECT * FROM BAITAP")
     LiveData<List<BaiTap>> getAll();
@@ -4985,6 +5410,9 @@ public interface NopBaiDao {
 
     @Query("SELECT * FROM NOPBAI WHERE MaBT = :maBT AND MaHV = :maHV LIMIT 1")
     NopBai getSubmission(String maBT, String maHV);
+
+    @Query("SELECT COUNT(*) FROM NOPBAI WHERE MaBT = :maBT")
+    int countSubmissionsForAssignment(String maBT);
 }
 
 
@@ -5513,7 +5941,9 @@ public class ThongBao {
     public String MaTB;
     public String NoiDung;
     public String NgayTao;
-    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL"
+    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL", "HOCVIEN", "GIAOVIEN"
+    public String LoaiTB;    // "ASSIGNMENT", "LECTURE", "SUBMISSION", "GRADE"
+    public String TargetId;  // MaBT, MaBG, hoặc MaLH tương ứng
     public boolean IsRead;
 
     public ThongBao() {
@@ -6184,13 +6614,29 @@ public class StudentItem {
 FILE: app\src\main\java\com\example\studentportalapp\model\Task.java
 ==================================================
 package com.example.studentportalapp.model;
-public class Task {
-    String title, subject, dueDate;
 
-    public Task(String title, String subject, String dueDate) {
+public class Task {
+    String title, subject, dueDate, maBT, userRole;
+    int submissionCount, totalStudents;
+
+    // Constructor for students
+    public Task(String title, String subject, String dueDate, String maBT, String userRole) {
         this.title = title;
         this.subject = subject;
         this.dueDate = dueDate;
+        this.maBT = maBT;
+        this.userRole = userRole;
+    }
+
+    // Constructor for teachers
+    public Task(String title, String subject, String dueDate, String maBT, String userRole, int submissionCount, int totalStudents) {
+        this.title = title;
+        this.subject = subject;
+        this.dueDate = dueDate;
+        this.maBT = maBT;
+        this.userRole = userRole;
+        this.submissionCount = submissionCount;
+        this.totalStudents = totalStudents;
     }
 
     public String getTitle() {
@@ -6203,6 +6649,22 @@ public class Task {
 
     public String getDueDate() {
         return dueDate;
+    }
+
+    public String getMaBT() {
+        return maBT;
+    }
+
+    public String getUserRole() {
+        return userRole;
+    }
+
+    public int getSubmissionCount() {
+        return submissionCount;
+    }
+
+    public int getTotalStudents() {
+        return totalStudents;
     }
 }
 
@@ -6223,6 +6685,52 @@ public class TeacherDisplayItem {
         this.classCount = classCount;
     }
 }
+
+==================================================
+FILE: app\src\main\res\animator\scale_item.xml
+==================================================
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <set>
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="100"
+                android:valueTo="0.97"
+                android:valueType="floatType"/>
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="100"
+                android:valueTo="0.97"
+                android:valueType="floatType"/>
+            <objectAnimator
+                android:propertyName="translationZ"
+                android:duration="100"
+                android:valueTo="0dp"
+                android:valueType="floatType"/>
+        </set>
+    </item>
+    <item>
+        <set>
+            <objectAnimator
+                android:propertyName="scaleX"
+                android:duration="150"
+                android:valueTo="1.0"
+                android:valueType="floatType"/>
+            <objectAnimator
+                android:propertyName="scaleY"
+                android:duration="150"
+                android:valueTo="1.0"
+                android:valueType="floatType"/>
+            <objectAnimator
+                android:propertyName="translationZ"
+                android:duration="150"
+                android:valueTo="2dp"
+                android:valueType="floatType"/>
+        </set>
+    </item>
+</selector>
+
 
 ==================================================
 FILE: app\src\main\res\color\nav_item_selector.xml
@@ -7027,196 +7535,351 @@ FILE: app\src\main\res\drawable\user.xml
 FILE: app\src\main\res\layout\activity_add_assignment.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#ffe6ed">
-
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar_assignment"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Giao Bài Tập Mới"
-            app:titleTextColor="#ffffff"
-            app:navigationIcon="@drawable/ic_close"
-            app:navigationIconTint="#ffffff"
-            android:background="#c96e80" />
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_assignment_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Tiêu đề bài tập (ví dụ: Bài tập lớn cuối kỳ)" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_assignment_instructions"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Hướng dẫn (nội dung, yêu cầu...)"
-            android:minLines="4"
-            android:gravity="top" />
-    </com.google.android.material.textfield.TextInputLayout>
+    android:background="#F5F7FA"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="16dp">
+        android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingBottom="32dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_assignment_points"
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thêm Bài Tập"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBack"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="-24dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Điểm tối đa"
-                android:inputType="number" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="24dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Tên bài tập"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/et_assignment_due_date"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Hạn nộp"
-                android:focusable="false" /> </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Mô tả yêu cầu"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtDesc"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:inputType="textMultiLine"
+                        android:minLines="4" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:hint="Hạn nộp (Deadline)"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtDeadline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:cursorVisible="false"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="File đề bài đính kèm"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/btnPickFile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:background="@drawable/bg_file_link"
+                    android:backgroundTint="#F0F2F5"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_file"
+                        app:tint="#c96e80" />
+
+                    <TextView
+                        android:id="@+id/tvFileName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Chọn tệp (PDF, Word...)"
+                        android:textColor="#666666" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        app:tint="#999999" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnSubmit"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="#c96e80"
+                    android:text="Lưu Bài Tập"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </LinearLayout>
-
-    <Button
-        android:id="@+id/btn_attach_file_assignment"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Đính kèm tệp"
-        app:icon="@drawable/ic_attach_file"
-        style="@style/Widget.MaterialComponents.Button.TextButton" />
-
-    <Button
-        android:id="@+id/btn_assign_assignment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Giao bài"
-        style="@style/StudentPortalButton"/>
-
-</LinearLayout>
+</ScrollView>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_add_lecture.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#ffe6ed">
+    android:background="#F5F7FA"
+    android:fillViewport="true">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Thêm Bài Giảng"
-            app:titleTextColor="#ffffff"
-            app:navigationIcon="@drawable/ic_close"
-            app:navigationIconTint="#ffffff"
-            android:background="#c96e80"/>
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_lecture_title"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Tiêu đề (ví dụ: Bài 7: Data Structures)" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingBottom="32dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#FFFFFF" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_lecture_description"
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thêm Bài Giảng"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBack"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Mô tả (không bắt buộc)"
-            android:minLines="3"
-            android:gravity="top" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="-24dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-    <Button
-        android:id="@+id/btn_attach_file"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Đính kèm tệp"
-        app:icon="@drawable/ic_attach_file"
-        style="@style/Widget.MaterialComponents.Button.TextButton" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-    <TextView
-        android:id="@+id/tv_file_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Chưa có tệp nào được chọn"
-        android:textColor="#777"
-        android:textSize="12sp"
-        android:paddingStart="4dp"
-        android:layout_marginBottom="8dp"/>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Tên bài giảng"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_post_lecture"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Đăng bài"
-        android:textColor="#ffffff"
-        app:backgroundTint="#c96e80"/>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-</LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:hint="Nội dung chi tiết"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/edtContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:inputType="textMultiLine"
+                        android:minLines="5" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Tài liệu đính kèm"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/btnPickFile"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:background="@drawable/bg_file_link"
+                    android:backgroundTint="#F0F2F5"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_file"
+                        app:tint="#c96e80" />
+
+                    <TextView
+                        android:id="@+id/tvFileName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Chọn tệp (PDF, Word...)"
+                        android:textColor="#666666" />
+
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnSubmit"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="#c96e80"
+                    android:text="Lưu Bài Giảng"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</ScrollView>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_add_user.xml
@@ -7778,69 +8441,152 @@ FILE: app\src\main\res\layout\activity_admin.xml
 FILE: app\src\main\res\layout\activity_assignment.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".AssignmentActivity">
+    android:background="#F5F7FA">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="#ffe6ed">
+        android:orientation="vertical">
 
-        <include
-            android:id="@+id/include_background"
-            layout="@layout/background" />
-
-        <androidx.core.widget.NestedScrollView
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fillViewport="true">
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:id="@+id/btnHomeLogo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="#FFFFFF"
+                android:clickable="true"
+                android:elevation="4dp"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/logo_new"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/btnNotiHeader"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="#33FFFFFF"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_notification"
+                app:tint="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btnHomeLogo" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
-                android:padding="16dp">
+                app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+                app:layout_constraintEnd_toStartOf="@id/btnNotiHeader"
+                app:layout_constraintStart_toEndOf="@id/btnHomeLogo"
+                app:layout_constraintTop_toTopOf="@id/btnHomeLogo">
 
+                <TextView
+                    android:id="@+id/tv_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Bài Tập"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.9"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Mã lớp: LH001"
+                    android:textColor="#F0F0F0"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/ic_assignment"
+                    app:tint="#999999" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/assignments_activities"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerViewAssignments"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    tools:listitem="@layout/item_assignment" />
-
+                    android:layout_marginTop="16dp"
+                    android:text="Không có bài tập nào"
+                    android:textColor="#999999" />
             </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
 
-        <include layout="@layout/layout_footer" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewAssignments"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="16dp"
+                tools:listitem="@layout/item_assignment" />
+        </FrameLayout>
+
+        <include
+            android:id="@+id/layout_footer"
+            layout="@layout/layout_footer" />
+
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_assignment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:src="@drawable/ic_add"
-        app:tint="@android:color/white"
-        app:backgroundTint="#c96e80"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="110dp"
         android:contentDescription="Thêm bài tập"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="72dp" /> </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#c96e80"
+        app:elevation="6dp"
+        app:tint="@android:color/white" />
+
+</RelativeLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_assignment_stats.xml
@@ -8011,68 +8757,152 @@ FILE: app\src\main\res\layout\activity_class_stats.xml
 FILE: app\src\main\res\layout\activity_course.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CourseActivity">
+    android:background="#F5F7FA">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="#ffe6ed">
+        android:orientation="vertical">
 
-        <include
-            android:id="@+id/include_background"
-            layout="@layout/background" />
-
-        <androidx.core.widget.NestedScrollView
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fillViewport="true">
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:id="@+id/btnHomeLogo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="#FFFFFF"
+                android:clickable="true"
+                android:elevation="4dp"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/logo_new"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageView
+                android:id="@+id/btnNotiHeader"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_circle"
+                android:backgroundTint="#33FFFFFF"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_notification"
+                app:tint="#FFFFFF"
+                app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btnHomeLogo" />
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:gravity="center_vertical"
                 android:orientation="vertical"
-                android:padding="16dp">
+                app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+                app:layout_constraintEnd_toStartOf="@id/btnNotiHeader"
+                app:layout_constraintStart_toEndOf="@id/btnHomeLogo"
+                app:layout_constraintTop_toTopOf="@id/btnHomeLogo">
+
+                <TextView
+                    android:id="@+id/tv_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Tên Môn Học"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.9"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Mã lớp: LH001"
+                    android:textColor="#F0F0F0"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/ic_file"
+                    app:tint="#999999" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/activity"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvActivityCourse"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    tools:listitem="@layout/item_course" />
+                    android:layout_marginTop="16dp"
+                    android:text="Chưa có bài giảng nào"
+                    android:textColor="#999999" />
             </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
 
-        <include layout="@layout/layout_footer" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvActivityCourse"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="16dp"
+                tools:listitem="@layout/item_course" />
+        </FrameLayout>
+
+        <include
+            android:id="@+id/layout_footer"
+            layout="@layout/layout_footer" />
+
     </LinearLayout>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:src="@drawable/ic_add"
-        app:tint="@android:color/white"
-        app:backgroundTint="#c96e80"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="110dp"
         android:contentDescription="Thêm mới"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="72dp" />
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        android:src="@drawable/ic_add"
+        app:backgroundTint="#c96e80"
+        app:elevation="6dp"
+        app:tint="@android:color/white" />
+
+</RelativeLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_forgot_password.xml
@@ -8266,13 +9096,13 @@ FILE: app\src\main\res\layout\activity_grade.xml
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="#cf7486"
-            app:title="Bảng Điểm Cá Nhân"
+            app:title="Bảng Điểm"
             app:titleTextColor="#FFFFFF"
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationIconTint="#FFFFFF" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Phần chọn lớp học -->
+    <!-- Phần chọn lớp học và bài tập -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -8289,13 +9119,28 @@ FILE: app\src\main\res\layout\activity_grade.xml
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chọn lớp học để xem điểm:"
+                android:text="Chọn lớp học:"
                 android:textSize="14sp"
                 android:textColor="#666666"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="4dp"/>
                 
             <Spinner
                 android:id="@+id/spinner_classes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_file_link" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chọn bài tập:"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/spinner_assignments"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_file_link" />
@@ -8310,6 +9155,7 @@ FILE: app\src\main\res\layout\activity_grade.xml
         android:clipToPadding="false" />
 
 </LinearLayout>
+
 
 ==================================================
 FILE: app\src\main\res\layout\activity_home.xml
@@ -8402,6 +9248,7 @@ FILE: app\src\main\res\layout\activity_home.xml
 
                 <!-- Nút TKB -->
                 <LinearLayout
+                    android:id="@+id/quickActionTKB"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -8421,7 +9268,7 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút ĐIỂM SỐ (ĐÃ THÊM ID) -->
+                <!-- Nút ĐIỂM SỐ -->
                 <LinearLayout
                     android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"
@@ -8449,22 +9296,28 @@ FILE: app\src\main\res\layout\activity_home.xml
 
                 <!-- Nút Bài tập -->
                 <LinearLayout
+                    android:id="@+id/quickActionProfile"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:gravity="center">
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
                     <ImageView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:src="@drawable/ic_file"
-                        app:tint="#2196F3"
-                        android:background="#E3F2FD"
+                        android:src="@drawable/ic_person"
+                        app:tint="#9C27B0"
+                        android:background="#F3E5F5"
                         android:padding="8dp"/>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Bài tập"
+                        android:text="Hồ sơ"
                         android:textSize="12sp"
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
@@ -8533,6 +9386,7 @@ FILE: app\src\main\res\layout\activity_home.xml
             android:nestedScrollingEnabled="false"/>
     </LinearLayout>
 </ScrollView>
+
 
 ==================================================
 FILE: app\src\main\res\layout\activity_login.xml
@@ -8863,111 +9717,159 @@ FILE: app\src\main\res\layout\activity_people.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffe6ed"
+    android:background="#F5F7FA"
+    android:orientation="vertical"
     tools:context=".PeopleActivity">
-    <include
-        android:id="@+id/include_background"
-        layout="@layout/background" />
 
-    <ScrollView
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_home_header"
+        android:backgroundTint="#c96e80"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
+
+        <ImageView
+            android:id="@+id/btnHomeLogo"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#FFFFFF"
+            android:clickable="true"
+            android:elevation="4dp"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/logo_new"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/btnNotiHeader"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#33FFFFFF"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="8dp"
+            android:src="@drawable/ic_notification"
+            app:tint="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btnHomeLogo" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:gravity="center_vertical"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="@id/btnHomeLogo"
+            app:layout_constraintEnd_toStartOf="@id/btnNotiHeader"
+            app:layout_constraintStart_toEndOf="@id/btnHomeLogo"
+            app:layout_constraintTop_toTopOf="@id/btnHomeLogo">
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Thành Viên"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtStudentCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alpha="0.9"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Sĩ số: ..."
+                android:textColor="#F0F0F0"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="16dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
+            android:orientation="vertical"
+            android:padding="16dp">
 
             <TextView
-                android:id="@+id/txtPeopleInClass"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="People in this class"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/black"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginBottom="8dp"
+                android:text="Giảng viên"
+                android:textColor="#c96e80"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-
-            <LinearLayout
-                android:id="@+id/containerPeople"
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:background="@drawable/bg_card_people"
-                android:layout_marginBottom="16dp">
-
-
-                <TextView
-                    android:id="@+id/txtProfessors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Professors"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@android:color/black"
-                    android:layout_marginTop="8dp" />
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerViewProfessors"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
+                    tools:itemCount="1"
                     tools:listitem="@layout/item_person" />
+            </androidx.cardview.widget.CardView>
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Danh sách Học viên"
+                android:textColor="#c96e80"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="16dp">
-
-                    <TextView
-                        android:id="@+id/txtStudents"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Students"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@android:color/black" />
-
-                    <TextView
-                        android:id="@+id/txtStudentCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="👥 32"
-                        android:textSize="14sp"
-                        android:textColor="#808080" />
-                </LinearLayout>
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerViewStudents"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_person" />
-
-            </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
-    <include layout="@layout/layout_footer" />
+    <include
+        android:id="@+id/layout_footer"
+        layout="@layout/layout_footer" />
 
 </LinearLayout>
-
 
 ==================================================
 FILE: app\src\main\res\layout\activity_profile.xml
@@ -9266,79 +10168,170 @@ FILE: app\src\main\res\layout\activity_student_manage.xml
 FILE: app\src\main\res\layout\activity_submit_assignment.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:background="#ffe6ed">
+    android:background="#F5F7FA"
+    android:fillViewport="true">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar_submit"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="Nộp Bài Tập"
-            app:titleTextColor="#ffffff"
-            app:navigationIcon="@drawable/ic_close"
-            app:navigationIconTint="#ffffff"
-            android:background="#c96e80" />
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <!-- Ô Tiêu đề (Chế độ chỉ đọc để biết đang nộp cho bài nào) -->
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:orientation="vertical">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_submit_title"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Tiêu đề bài tập"
-            android:enabled="false"
-            android:textColor="@color/black" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingBottom="32dp">
 
-    <!-- Ô Nội dung/Ghi chú -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#FFFFFF" />
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/et_submit_note"
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nộp Bài Tập"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBack"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Ghi chú bài làm (ví dụ: Em gửi bài tập ạ)"
-            android:minLines="4"
-            android:gravity="top" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="-24dp"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-    <Button
-        android:id="@+id/btn_attach_file_submit"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Đính kèm tệp"
-        app:icon="@drawable/ic_attach_file"
-        style="@style/Widget.MaterialComponents.Button.TextButton" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-    <Button
-        android:id="@+id/btn_submit_final"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Nộp bài"
-        style="@style/StudentPortalButton"/>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Đang nộp cho bài tập"
+                    app:boxBackgroundColor="#F5F7FA"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
+                    app:hintTextColor="#666666"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.FilledBox">
 
-</LinearLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_submit_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:enabled="false"
+                        android:textColor="#333333"
+                        android:textStyle="bold" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:hint="Lời nhắn / Ghi chú cho giảng viên"
+                    app:boxStrokeColor="#c96e80"
+                    app:hintTextColor="#c96e80"
+                    app:startIconTint="#c96e80"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_submit_note"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:inputType="textMultiLine"
+                        android:minLines="4" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Bài làm của bạn"
+                    android:textColor="#666666"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:id="@+id/btn_attach_file_submit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:background="@drawable/bg_file_link"
+                    android:backgroundTint="#F0F2F5"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_file"
+                        app:tint="#c96e80" />
+
+                    <TextView
+                        android:id="@+id/tvFileName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="Chọn tệp bài làm..."
+                        android:textColor="#666666" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        app:tint="#999999" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_submit_final"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:backgroundTint="#c96e80"
+                    android:text="Nộp Bài Ngay"
+                    android:textAllCaps="false"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</ScrollView>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_teacher_manage.xml
@@ -9375,30 +10368,123 @@ FILE: app\src\main\res\layout\activity_teacher_manage.xml
 FILE: app\src\main\res\layout\activity_todo.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FFF5F5F5">
+    android:background="#F5F7FA">
 
-    <!-- Header -->
-
-
-    <TextView
-        android:id="@+id/tv_task_count"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="6 Tasks To Do"
-        android:padding="10dp"
-        android:textStyle="bold"
-        android:textColor="#000" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <ListView
-        android:id="@+id/list_tasks"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-</LinearLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingBottom="24dp">
 
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Công Việc (To-Do)"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBack"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+            <TextView
+                android:id="@+id/tv_task_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_file_link"
+                android:backgroundTint="#33FFFFFF"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="0 Tasks To Do"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/todo_icon"
+                    app:tint="#999999" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Hết việc rồi! Nghỉ ngơi thôi."
+                    android:textColor="#999999" />
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="-16dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <ListView
+                    android:id="@+id/list_tasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:divider="@android:color/transparent"
+                    android:dividerHeight="8dp"
+                    android:padding="16dp"
+                    android:scrollbars="vertical" />
+            </androidx.cardview.widget.CardView>
+
+        </FrameLayout>
+    </LinearLayout>
+</RelativeLayout>
 
 ==================================================
 FILE: app\src\main\res\layout\activity_view_submissions.xml
@@ -9772,97 +10858,124 @@ FILE: app\src\main\res\layout\item_assignment.xml
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
-        <!-- Title -->
+        <ImageView
+            android:id="@+id/imgIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#FFF3E0"
+            android:padding="10dp"
+            android:src="@drawable/ic_assignment"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="#FF9800" />
+
         <TextView
             android:id="@+id/tvTitle"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/java_stack_program"
-            android:textSize="15sp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="Bài tập lớn cuối kỳ"
+            android:textColor="#333333"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginTop="8dp" />
+            app:layout_constraintEnd_toStartOf="@+id/btnAction"
+            app:layout_constraintStart_toEndOf="@id/imgIcon"
+            app:layout_constraintTop_toTopOf="@id/imgIcon" />
 
-        <TextView
-            android:id="@+id/tvPoints"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="100 points"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/darker_gray" />
-
-        <!-- File link -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:id="@+id/layoutDeadline"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
             android:layout_marginTop="4dp"
-            android:padding="20dp"
-            android:background="@drawable/bg_file_link">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toStartOf="@+id/btnAction"
+            app:layout_constraintStart_toStartOf="@+id/tvTitle"
+            app:layout_constraintTop_toBottomOf="@+id/tvTitle">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginEnd="4dp"
+                android:src="@android:drawable/ic_menu_my_calendar"
+                app:tint="#F44336" />
+
+            <TextView
+                android:id="@+id/tvPoints"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hạn nộp: 20/12/2025"
+                android:textColor="#F44336"
+                android:textSize="12sp"
+                android:textStyle="italic" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnAction"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_file_link"
+            android:backgroundTint="#c96e80"
+            android:paddingHorizontal="16dp"
+            android:text="Chi tiết"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@id/imgIcon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/imgIcon" />
+
+        <LinearLayout
+            android:id="@+id/layoutFileLink"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_file_link"
+            android:backgroundTint="#F5F7FA"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="10dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutDeadline">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/ic_file"
-                app:tint="@color/purple_500"
-                android:layout_marginEnd="6dp" />
+                app:tint="#2196F3" />
 
             <TextView
                 android:id="@+id/tvFileName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/java_stack_docx_45_5_kb"
-                android:textColor="@color/purple_500"
-                android:textSize="14sp" />
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="file_de_bai.pdf"
+                android:textColor="#2196F3"
+                android:textSize="13sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/tvComments"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="💬 Comments"
-                android:textSize="13sp"
-                android:textColor="@color/darker_gray"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true" />
-
-            <Button
-                android:id="@+id/btnAction"
-                android:layout_width="90dp"
-                android:layout_height="40dp"
-                android:text="View"
-                android:textAllCaps="false"
-                android:backgroundTint="#cf7486"
-                android:textColor="@android:color/white"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true" />
-        </RelativeLayout>
-
-
-    </LinearLayout>
-
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
-
 
 ==================================================
 FILE: app\src\main\res\layout\item_class.xml
@@ -9981,145 +11094,132 @@ FILE: app\src\main\res\layout\item_course.xml
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
-        <!-- Author info -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ImageView
+            android:id="@+id/imgAvatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle"
+            android:backgroundTint="#FDE0E0"
+            android:padding="8dp"
+            android:src="@drawable/logo_new"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvAuthor"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            android:text="Giảng viên A"
+            android:textColor="#333333"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toStartOf="@+id/tvDate"
+            app:layout_constraintStart_toEndOf="@id/imgAvatar"
+            app:layout_constraintTop_toTopOf="@id/imgAvatar" />
 
-            <ImageView
-                android:id="@+id/imgAvatar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/logo_new"
-                android:background="@drawable/bg_circle"
-                android:layout_marginEnd="8dp" />
+        <TextView
+            android:id="@+id/tvDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2 giờ trước"
+            android:textColor="#999999"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/imgAvatar" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Đã đăng một bài giảng mới"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="@id/tvAuthor"
+            app:layout_constraintStart_toStartOf="@id/tvAuthor"
+            app:layout_constraintTop_toBottomOf="@id/tvAuthor" />
 
-                <TextView
-                    android:id="@+id/tvAuthor"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/james_gosling"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:textColor="@color/black" />
-
-                <TextView
-                    android:id="@+id/tvDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/july_13_2021"
-                    android:textSize="13sp"
-                    android:textColor="@color/darker_gray" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Title -->
         <TextView
             android:id="@+id/tvTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/java_stack_program"
-            android:textSize="15sp"
+            android:layout_marginTop="16dp"
+            android:text="Chương 3: Cấu trúc dữ liệu nâng cao"
+            android:textColor="#000000"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginTop="8dp" />
+            app:layout_constraintTop_toBottomOf="@id/imgAvatar" />
 
-        <!-- File link -->
         <LinearLayout
+            android:id="@+id/layoutFile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_file_link"
+            android:backgroundTint="#F5F7FA"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp"
-            android:padding="20dp"
-            android:background="@drawable/bg_file_link">
+            android:orientation="horizontal"
+            android:padding="12dp"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
             <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
                 android:src="@drawable/ic_file"
-                app:tint="@color/purple_500"
-                android:layout_marginEnd="6dp" />
+                app:tint="#c96e80" />
 
             <TextView
                 android:id="@+id/tvFileName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/java_stack_docx_45_5_kb"
-                android:textColor="@color/purple_500"
-                android:textSize="14sp" />
+                android:layout_marginStart="12dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="slide_bai_giang.pdf"
+                android:textColor="#c96e80"
+                android:textStyle="bold" />
         </LinearLayout>
 
-
-
-        <!-- Views and comments -->
-        <RelativeLayout
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:gravity="center_vertical">
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutFile">
 
-            <LinearLayout
-                android:id="@+id/layout_comments"
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@android:drawable/ic_menu_view"
+                app:tint="#999999" />
+
+            <TextView
+                android:id="@+id/tvViews"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_alignParentStart="true">
+                android:layout_marginStart="4dp"
+                android:text="28 xem"
+                android:textColor="#999999"
+                android:textSize="12sp" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tv_comments"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="💬 Comments"
-                    android:textSize="12sp"
-                    android:textColor="#888"
-                    android:layout_marginStart="4dp"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/layout_views"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_alignParentEnd="true">
-
-                <TextView
-                    android:id="@+id/tvViews"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:text="@string/_28"
-                    android:textSize="13sp"
-                    android:textColor="@color/darker_gray" />
-
-            </LinearLayout>
-
-        </RelativeLayout>
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
-
 
 ==================================================
 FILE: app\src\main\res\layout\item_course_user.xml
@@ -10391,14 +11491,16 @@ FILE: app\src\main\res\layout\item_notification.xml
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginVertical="4dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground">
 
     <LinearLayout
+        android:id="@+id/layout_item_noti"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/tv_noti_content"
@@ -10406,16 +11508,18 @@ FILE: app\src\main\res\layout\item_notification.xml
             android:layout_height="wrap_content"
             android:text="Nội dung thông báo"
             android:textColor="#333333"
-            android:textSize="14sp" />
+            android:textSize="15sp"
+            android:lineSpacingExtra="2dp" />
 
         <TextView
             android:id="@+id/tv_noti_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="8dp"
             android:text="Ngày tạo: 01/01/2023"
             android:textColor="#888888"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:textStyle="italic" />
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>
@@ -10732,57 +11836,47 @@ FILE: app\src\main\res\layout\item_submission.xml
 ==================================================
 FILE: app\src\main\res\layout\item_task.xml
 ==================================================
+<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="10dp"
-    android:background="@drawable/task_bg"
-    android:gravity="center_vertical">
+    android:orientation="vertical"
+    android:padding="16dp">
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_weight="1"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content">
-
-        <TextView
-            android:id="@+id/tv_task_title"
-            android:text="Task 5 - Group Work"
-            android:textStyle="bold"
-            android:textColor="#000"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"/>
-
-        <TextView
-            android:id="@+id/tv_task_subject"
-            android:text="Programming Language"
-            android:textColor="#666"
-            android:textSize="12sp"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:orientation="vertical"
-        android:layout_weight="1"
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/tv_task_title"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="end">
+        android:text="Task Title"
+        android:textSize="18sp"
+        android:textStyle="bold" />
 
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_group"/>
+    <TextView
+        android:id="@+id/tv_task_subject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Task Subject"
+        android:textSize="16sp" />
 
-        <TextView
-            android:id="@+id/tv_task_due"
-            android:text="Due Tomorrow | Aug 6"
-            android:textColor="#E91E63"
-            android:textSize="12sp"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"/>
-    </LinearLayout>
+    <TextView
+        android:id="@+id/tv_task_due"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Due Date"
+        android:textSize="14sp" />
+
+    <Button
+        android:id="@+id/btn_submit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nộp bài" />
+
+    <TextView
+        android:id="@+id/tv_submission_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
 </LinearLayout>
 
 ==================================================
