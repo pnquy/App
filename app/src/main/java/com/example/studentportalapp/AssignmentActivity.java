@@ -40,7 +40,6 @@ public class AssignmentActivity extends BaseActivity {
         String tenLH = prefs.getString("CURRENT_CLASS_NAME", "Lớp học");
         String role = prefs.getString("KEY_ROLE", "");
 
-        // Ánh xạ Views
         tvTitle = findViewById(R.id.tv_title);
         tvSubtitle = findViewById(R.id.tv_subtitle);
         recyclerView = findViewById(R.id.recyclerViewAssignments);
@@ -49,11 +48,9 @@ public class AssignmentActivity extends BaseActivity {
         View btnHomeLogo = findViewById(R.id.btnHomeLogo);
         View btnNotiHeader = findViewById(R.id.btnNotiHeader);
 
-        // Setup UI texts
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
-        // Setup Button Listeners
         if (btnHomeLogo != null) {
             btnHomeLogo.setOnClickListener(v -> {
                 Intent intent = new Intent(this, HomeActivity.class);
@@ -63,7 +60,6 @@ public class AssignmentActivity extends BaseActivity {
             });
         }
 
-        // Đảm bảo nút thông báo hoạt động
         if (btnNotiHeader != null) {
             btnNotiHeader.setOnClickListener(v -> {
                 Intent intent = new Intent(this, NotificationActivity.class);
@@ -71,10 +67,8 @@ public class AssignmentActivity extends BaseActivity {
             });
         }
 
-        // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Setup FAB for Teacher
         if ("GIAOVIEN".equals(role)) {
             fab.setVisibility(View.VISIBLE);
             fab.setOnClickListener(v -> startActivity(new Intent(this, AddAssignmentActivity.class)));
@@ -96,7 +90,6 @@ public class AssignmentActivity extends BaseActivity {
                 recyclerView.setVisibility(View.VISIBLE);
             }
 
-            // Giữ nguyên logic Adapter: chỉ click vào nút View/Submit mới gọi showAssignmentDialog
             AssignmentAdapter adapter = new AssignmentAdapter(this, listBT, this::showAssignmentDialog);
             recyclerView.setAdapter(adapter);
         });
@@ -114,6 +107,13 @@ public class AssignmentActivity extends BaseActivity {
             msg += "\n\nFile đề bài: " + bt.FileName;
         }
         builder.setMessage(msg);
+
+        builder.setNegativeButton("Bình luận", (dialog, which) -> {
+            Intent intent = new Intent(this, CommentActivity.class);
+            intent.putExtra("TARGET_ID", bt.MaBT);
+            intent.putExtra("TARGET_TYPE", "ASSIGNMENT");
+            startActivity(intent);
+        });
 
         if (bt.FilePath != null && !bt.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
@@ -142,8 +142,6 @@ public class AssignmentActivity extends BaseActivity {
                 startActivity(intent);
             });
         }
-
-        builder.setNegativeButton("Đóng", null);
         builder.show();
     }
 
@@ -177,7 +175,6 @@ public class AssignmentActivity extends BaseActivity {
                 })
                 .show();
     }
-
     private void confirmDelete(BaiTap bt) {
         new AlertDialog.Builder(this)
                 .setTitle("Xác nhận xóa")

@@ -16,6 +16,7 @@ import com.example.studentportalapp.data.Dao.NopBaiDao;
 import com.example.studentportalapp.data.Dao.TaiKhoanDao;
 import com.example.studentportalapp.data.Dao.ThamGiaDao;
 import com.example.studentportalapp.data.Dao.ThongBaoDao;
+import com.example.studentportalapp.data.Dao.BinhLuanDao;
 import com.example.studentportalapp.data.Entity.BaiGiang;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
@@ -26,6 +27,7 @@ import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThamGia;
 import com.example.studentportalapp.data.Entity.TaiKhoan;
 import com.example.studentportalapp.data.Entity.ThongBao;
+import com.example.studentportalapp.data.Entity.BinhLuan;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,9 +43,10 @@ import java.util.concurrent.Executors;
                 ThamGia.class,
                 Diem.class,
                 NopBai.class,
-                ThongBao.class
+                ThongBao.class,
+                BinhLuan.class
         },
-        version = 10,
+        version = 11,
         exportSchema = false
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -61,6 +64,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract ThamGiaDao thamGiaDao();
     public abstract NopBaiDao nopBaiDao();
     public abstract ThongBaoDao thongBaoDao();
+    public abstract BinhLuanDao binhLuanDao();
 
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {

@@ -9,31 +9,48 @@
     app:cardElevation="3dp"
     android:foreground="?attr/selectableItemBackground">
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/layout_item_noti"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tv_noti_content"
+        <LinearLayout
+            android:id="@+id/content_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Nội dung thông báo"
-            android:textColor="#333333"
-            android:textSize="15sp"
-            android:lineSpacingExtra="2dp" />
+            android:orientation="vertical"
+            android:layout_toStartOf="@+id/unread_dot">
 
-        <TextView
-            android:id="@+id/tv_noti_date"
+            <TextView
+                android:id="@+id/tv_noti_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nội dung thông báo"
+                android:textColor="#333333"
+                android:textSize="15sp"
+                android:lineSpacingExtra="2dp" />
+
+            <TextView
+                android:id="@+id/tv_noti_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Ngày tạo: 01/01/2023"
+                android:textColor="#888888"
+                android:textSize="12sp"
+                android:textStyle="italic" />
+        </LinearLayout>
+        
+        <ImageView
+            android:id="@+id/unread_dot"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Ngày tạo: 01/01/2023"
-            android:textColor="#888888"
-            android:textSize="12sp"
-            android:textStyle="italic" />
-
-    </LinearLayout>
+            android:src="@drawable/ic_unread_dot"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"/> <!-- Mặc định là ẩn -->
+            
+    </RelativeLayout>
 </androidx.cardview.widget.CardView>

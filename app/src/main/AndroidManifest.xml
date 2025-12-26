@@ -49,6 +49,11 @@
         <activity android:name=".AssignmentStatsActivity" />
         <activity android:name=".NotificationActivity" />
         <activity android:name=".AllCoursesActivity" />
+
+        <activity 
+            android:name=".CommentActivity"
+            android:windowSoftInputMode="adjustResize" />
+            
     </application>
 
 </manifest>

@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -15,21 +16,26 @@ import com.example.studentportalapp.CourseActivity;
 import com.example.studentportalapp.GradeActivity;
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.ViewSubmissionsActivity;
+import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.ThongBao;
 import java.util.List;
 
 public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapter.ViewHolder> {
 
+    private final Context context;
     private final List<ThongBao> list;
+    private final AppDatabase db;
 
-    public NotificationAdapter(List<ThongBao> list) {
+    public NotificationAdapter(Context context, List<ThongBao> list) {
+        this.context = context;
         this.list = list;
+        this.db = AppDatabase.getDatabase(context);
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_notification, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_notification, parent, false);
         return new ViewHolder(view);
     }
 
@@ -42,16 +48,21 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
         holder.tvContent.setText(tb.NoiDung != null ? tb.NoiDung : "");
         holder.tvDate.setText(tb.NgayTao != null ? tb.NgayTao : "");
-        
+
         if (tb.IsRead) {
-            holder.layoutClick.setAlpha(0.6f);
+            holder.itemView.setAlpha(0.6f);
+            holder.unreadDot.setVisibility(View.GONE);
         } else {
-            holder.layoutClick.setAlpha(1.0f);
+            holder.itemView.setAlpha(1.0f);
+            holder.unreadDot.setVisibility(View.VISIBLE);
         }
 
-        // Xử lý sự kiện click chuyển trang
-        holder.layoutClick.setOnClickListener(v -> {
-            Context context = v.getContext();
+        holder.itemView.setOnClickListener(v -> {
+            if (!tb.IsRead) {
+                tb.IsRead = true;
+                AppDatabase.databaseWriteExecutor.execute(() -> db.thongBaoDao().update(tb));
+            }
+
             try {
                 if (tb.LoaiTB == null || tb.LoaiTB.isEmpty()) {
                     Toast.makeText(context, "Thông báo không có dữ liệu điều hướng", Toast.LENGTH_SHORT).show();
@@ -73,7 +84,6 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             SharedPreferences.Editor editor = context.getSharedPreferences("UserSession", Context.MODE_PRIVATE).edit();
                             editor.putString("CURRENT_CLASS_ID", tb.TargetId);
                             editor.apply();
-                            // SỬA: Link tới màn hình Bài Giảng (CourseActivity)
                             intent = new Intent(context, CourseActivity.class);
                         }
                         break;
@@ -111,13 +121,13 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvContent, tvDate;
-        View layoutClick;
+        ImageView unreadDot;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvContent = itemView.findViewById(R.id.tv_noti_content);
             tvDate = itemView.findViewById(R.id.tv_noti_date);
-            layoutClick = itemView;
+            unreadDot = itemView.findViewById(R.id.unread_dot);
         }
     }
 }

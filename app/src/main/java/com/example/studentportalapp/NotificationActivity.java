@@ -9,7 +9,8 @@ import com.example.studentportalapp.adapter.NotificationAdapter;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
-import java.util.concurrent.Executors;
+
+import java.util.ArrayList;
 
 public class NotificationActivity extends BaseActivity {
 
@@ -47,25 +48,11 @@ public class NotificationActivity extends BaseActivity {
 
         // Lấy thông báo gửi riêng cho mình HOẶC thông báo chung cho vai trò của mình
         db.thongBaoDao().getByNguoiNhan(currentMaTK, role).observe(this, list -> {
-            if (list != null) {
-                NotificationAdapter adapter = new NotificationAdapter(list);
-                recyclerView.setAdapter(adapter);
-
-                // Kiểm tra xem có tin chưa đọc không mới update DB để tránh vòng lặp vô tận (update -> reload -> update)
-                boolean hasUnread = false;
-                for (ThongBao tb : list) {
-                    if (!tb.IsRead) {
-                        hasUnread = true;
-                        break;
-                    }
-                }
-
-                if (hasUnread) {
-                    Executors.newSingleThreadExecutor().execute(() -> {
-                        db.thongBaoDao().markAllAsRead(currentMaTK, role);
-                    });
-                }
-            }
+            if (list == null) list = new ArrayList<>();
+            
+            // SỬA: Truyền DB vào Adapter để xử lý click
+            NotificationAdapter adapter = new NotificationAdapter(this, list);
+            recyclerView.setAdapter(adapter);
         });
     }
 }

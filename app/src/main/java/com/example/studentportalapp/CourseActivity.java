@@ -129,6 +129,13 @@ public class CourseActivity extends BaseActivity {
         }
         builder.setMessage(msg);
 
+        builder.setNegativeButton("Bình luận", (dialog, which) -> {
+            Intent intent = new Intent(this, CommentActivity.class);
+            intent.putExtra("TARGET_ID", bg.MaBG);
+            intent.putExtra("TARGET_TYPE", "LECTURE");
+            startActivity(intent);
+        });
+
         if (bg.FilePath != null && !bg.FilePath.isEmpty()) {
             builder.setNeutralButton("Mở File", (dialog, which) -> {
                 try {
@@ -153,7 +160,6 @@ public class CourseActivity extends BaseActivity {
             builder.setPositiveButton("Quản lý", (dialog, which) -> showTeacherOptions(bg));
         }
 
-        builder.setNegativeButton("Đóng", null);
         builder.show();
     }
 
