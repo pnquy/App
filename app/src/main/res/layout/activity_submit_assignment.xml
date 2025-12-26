@@ -147,7 +147,16 @@
                         android:layout_height="20dp"
                         app:tint="#999999" />
                 </LinearLayout>
-
+                <TextView
+                    android:id="@+id/tvDeadlineWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Đã quá hạn nộp bài"
+                    android:textColor="#F44336"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp"
+                    android:visibility="gone"/>
                 <Button
                     android:id="@+id/btn_submit_final"
                     android:layout_width="match_parent"

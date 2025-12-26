@@ -35,7 +35,8 @@ public interface DiemDao {
 
     @Query("SELECT * FROM DIEM")
     LiveData<List<Diem>> getAll();
-
+    @Query("SELECT * FROM DIEM WHERE MaHV = :maHV")
+    List<Diem> getByHocVienSync(String maHV);
     @Query("SELECT * FROM DIEM WHERE MaHV = :maHV AND MaBT = :maBT LIMIT 1")
     LiveData<Diem> getByHocVienBaiTap(String maHV, String maBT);
 }

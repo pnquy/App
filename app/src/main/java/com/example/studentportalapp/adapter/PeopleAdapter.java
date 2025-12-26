@@ -4,19 +4,29 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.model.Person;
-
 import java.util.List;
 
 public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder> {
 
     private final List<Person> peopleList;
+    private OnPersonClickListener listener; // Listener
 
+    // Interface cho sự kiện click
+    public interface OnPersonClickListener {
+        void onPersonClick(Person person);
+    }
+
+    // Constructor cập nhật
+    public PeopleAdapter(List<Person> peopleList, OnPersonClickListener listener) {
+        this.peopleList = peopleList;
+        this.listener = listener;
+    }
+
+    // Constructor cũ (để tương thích nếu cần, hoặc xóa đi)
     public PeopleAdapter(List<Person> peopleList) {
         this.peopleList = peopleList;
     }
@@ -24,8 +34,7 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_person, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_person, parent, false);
         return new ViewHolder(view);
     }
 
@@ -34,16 +43,20 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
         Person person = peopleList.get(position);
         holder.txtName.setText(person.getName());
         holder.txtRole.setText(person.getRole());
+
+        // Bắt sự kiện click
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onPersonClick(person);
+            }
+        });
     }
 
     @Override
-    public int getItemCount() {
-        return peopleList.size();
-    }
+    public int getItemCount() { return peopleList.size(); }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView txtName, txtRole;
-
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             txtName = itemView.findViewById(R.id.txtName);
@@ -51,4 +64,3 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
         }
     }
 }
-

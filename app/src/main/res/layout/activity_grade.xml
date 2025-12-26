@@ -14,13 +14,13 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="#cf7486"
-            app:title="Bảng Điểm Cá Nhân"
+            app:title="Bảng Điểm"
             app:titleTextColor="#FFFFFF"
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationIconTint="#FFFFFF" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Phần chọn lớp học -->
+    <!-- Phần chọn lớp học và bài tập -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -37,13 +37,28 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chọn lớp học để xem điểm:"
+                android:text="Chọn lớp học:"
                 android:textSize="14sp"
                 android:textColor="#666666"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="4dp"/>
                 
             <Spinner
                 android:id="@+id/spinner_classes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_file_link" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chọn bài tập:"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"/>
+
+            <Spinner
+                android:id="@+id/spinner_assignments"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="@drawable/bg_file_link" />

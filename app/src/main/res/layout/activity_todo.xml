@@ -1,24 +1,118 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#FFF5F5F5">
+    android:background="#F5F7FA">
 
-    <!-- Header -->
-
-
-    <TextView
-        android:id="@+id/tv_task_count"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="6 Tasks To Do"
-        android:padding="10dp"
-        android:textStyle="bold"
-        android:textColor="#000" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <ListView
-        android:id="@+id/list_tasks"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-</LinearLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_home_header"
+            android:backgroundTint="#c96e80"
+            android:paddingBottom="24dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvHeaderTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Công Việc (To-Do)"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintBottom_toBottomOf="@id/btnBack"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="@id/btnBack" />
+
+            <TextView
+                android:id="@+id/tv_task_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_file_link"
+                android:backgroundTint="#33FFFFFF"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="0 Tasks To Do"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvHeaderTitle" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <LinearLayout
+                android:id="@+id/layoutEmptyState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/todo_icon"
+                    app:tint="#999999" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Hết việc rồi! Nghỉ ngơi thôi."
+                    android:textColor="#999999" />
+            </LinearLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="-16dp"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#FFFFFF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
+
+                <ListView
+                    android:id="@+id/list_tasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:divider="@android:color/transparent"
+                    android:dividerHeight="8dp"
+                    android:padding="16dp"
+                    android:scrollbars="vertical" />
+            </androidx.cardview.widget.CardView>
+
+        </FrameLayout>
+    </LinearLayout>
+</RelativeLayout>

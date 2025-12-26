@@ -13,6 +13,7 @@ import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.Diem;
+import com.example.studentportalapp.data.Entity.HocVien;
 
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -44,21 +45,25 @@ public class GradeAdapter extends RecyclerView.Adapter<GradeAdapter.ViewHolder> 
         holder.tvScore.setText(String.valueOf(diem.SoDiem));
         holder.tvFeedback.setText("Nhận xét: " + (diem.NhanXet != null ? diem.NhanXet : "(Không có nhận xét)"));
 
-        // Lấy tên bài tập từ Database (vì trong bảng DIEM chỉ lưu MaBT)
+        // Lấy tên bài tập VÀ tên học viên (để hỗ trợ Giáo viên xem)
         Executors.newSingleThreadExecutor().execute(() -> {
             BaiTap bt = db.baiTapDao().getByIdSync(diem.MaBT);
-            if (bt != null) {
-                if (context instanceof android.app.Activity) {
-                    ((android.app.Activity) context).runOnUiThread(() -> {
-                        holder.tvTitle.setText(bt.TenBT);
-                    });
-                }
-            } else {
-                if (context instanceof android.app.Activity) {
-                    ((android.app.Activity) context).runOnUiThread(() -> {
-                        holder.tvTitle.setText("Mã BT: " + diem.MaBT);
-                    });
-                }
+            HocVien hv = db.hocVienDao().getByIdSync(diem.MaHV);
+            
+            String assignmentName = (bt != null) ? bt.TenBT : "MaBT: " + diem.MaBT;
+            String studentName = (hv != null) ? hv.getTenHV() : "MaHV: " + diem.MaHV;
+            
+            // Nếu người xem là giáo viên (hoặc để tổng quát), ta có thể hiển thị thêm tên học viên
+            // Tuy nhiên, logic này sẽ hiển thị: "Tên Học Viên - Tên Bài Tập"
+            // Hoặc nếu muốn đơn giản, ta kiểm tra context hoặc chỉ hiển thị tên bài tập nếu là học viên xem.
+            // Nhưng ở đây ta cứ hiển thị cả hai nếu có thông tin để rõ ràng.
+            
+            final String finalTitle = studentName + " - " + assignmentName;
+
+            if (context instanceof android.app.Activity) {
+                ((android.app.Activity) context).runOnUiThread(() -> {
+                    holder.tvTitle.setText(finalTitle);
+                });
             }
         });
     }

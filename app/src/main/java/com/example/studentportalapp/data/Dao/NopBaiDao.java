@@ -20,6 +20,8 @@ public interface NopBaiDao {
 
     @Query("SELECT * FROM NOPBAI WHERE MaBT = :maBT AND MaHV = :maHV LIMIT 1")
     NopBai getSubmission(String maBT, String maHV);
+    @Query("SELECT COUNT(n.MaNB) FROM NOPBAI n INNER JOIN BAITAP b ON n.MaBT = b.MaBT WHERE n.MaHV = :maHV AND b.MaLH = :maLH")
+    int countSubmissionsByStudentInClass(String maHV, String maLH);
 
     @Query("SELECT COUNT(*) FROM NOPBAI WHERE MaBT = :maBT")
     int countSubmissionsForAssignment(String maBT);
