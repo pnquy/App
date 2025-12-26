@@ -32,5 +32,7 @@ public interface BaiGiangDao {
 
     @Query("SELECT * FROM BAIGIANG WHERE MaBG = :maBG")
     LiveData<BaiGiang> getById(String maBG);
-}
 
+    @Query("SELECT * FROM BAIGIANG WHERE MaBG = :maBG LIMIT 1")
+    BaiGiang getByIdSync(String maBG);
+}

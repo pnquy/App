@@ -13,12 +13,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.studentportalapp.adapter.CommentAdapter;
 import com.example.studentportalapp.data.AppDatabase;
+import com.example.studentportalapp.data.Entity.BaiGiang;
+import com.example.studentportalapp.data.Entity.BaiTap;
 import com.example.studentportalapp.data.Entity.BinhLuan;
+import com.example.studentportalapp.data.Entity.LopHoc;
+import com.example.studentportalapp.data.Entity.ThongBao;
 import com.google.android.material.appbar.MaterialToolbar;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
@@ -85,6 +90,64 @@ public class CommentActivity extends BaseActivity {
 
             Executors.newSingleThreadExecutor().execute(() -> {
                 db.binhLuanDao().insert(bl);
+
+                // --- Xử lý gửi thông báo ---
+                String notiContent = "";
+                String notiType = "";
+                String maLH = "";
+                String teacherId = "";
+
+                if ("ASSIGNMENT".equals(targetType)) {
+                    BaiTap bt = db.baiTapDao().getByIdSync(targetId);
+                    if (bt != null) {
+                        maLH = bt.MaLH;
+                        notiContent = currentUserName + " đã bình luận về bài tập: " + bt.TenBT;
+                        notiType = "COMMENT_ASSIGNMENT";
+                    }
+                } else if ("LECTURE".equals(targetType)) {
+                    BaiGiang bg = db.baiGiangDao().getByIdSync(targetId);
+                    if (bg != null) {
+                        maLH = bg.MaLH;
+                        notiContent = currentUserName + " đã bình luận về bài giảng: " + bg.TenBG;
+                        notiType = "COMMENT_LECTURE";
+                    }
+                }
+
+                // Nếu lấy được mã lớp, tìm thông tin GV
+                if (!maLH.isEmpty()) {
+                    LopHoc lh = db.lopHocDao().getByIdSync(maLH);
+                    if (lh != null) {
+                        teacherId = lh.MaGV;
+                    }
+                }
+                
+                if (!teacherId.isEmpty() && currentUserId.equals(teacherId)) {
+                    List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(maLH);
+                    if (studentIds != null) {
+                        for (String studentId : studentIds) {
+                            if (!studentId.equals(currentUserId)) { // Thực tế GV ko bao giờ trùng HV, nhưng check cho chắc
+                                ThongBao tb = new ThongBao();
+                                tb.NgayTao = bl.NgayTao;
+                                tb.TargetId = targetId;
+                                tb.NoiDung = notiContent;
+                                tb.LoaiTB = notiType;
+                                tb.NguoiNhan = studentId;
+                                db.thongBaoDao().insert(tb);
+                            }
+                        }
+                    }
+                } else if (!teacherId.isEmpty()) {
+                     if (!teacherId.equals(currentUserId)) {
+                        ThongBao tb = new ThongBao();
+                        tb.NgayTao = bl.NgayTao;
+                        tb.TargetId = targetId;
+                        tb.NoiDung = notiContent;
+                        tb.LoaiTB = notiType;
+                        tb.NguoiNhan = teacherId;
+                        db.thongBaoDao().insert(tb);
+                     }
+                }
+
                 runOnUiThread(() -> etComment.setText(""));
             });
         });

@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.AssignmentActivity;
+import com.example.studentportalapp.CommentActivity;
 import com.example.studentportalapp.CourseActivity;
 import com.example.studentportalapp.GradeActivity;
 import com.example.studentportalapp.R;
@@ -98,6 +99,20 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
                             intent = new Intent(context, ViewSubmissionsActivity.class);
                             intent.putExtra("MA_BT", tb.TargetId);
                             intent.putExtra("TEN_BT", "Chi tiết bài nộp");
+                        }
+                        break;
+                    case "COMMENT_ASSIGNMENT":
+                        if (tb.TargetId != null) {
+                            intent = new Intent(context, CommentActivity.class);
+                            intent.putExtra("TARGET_ID", tb.TargetId);
+                            intent.putExtra("TARGET_TYPE", "ASSIGNMENT");
+                        }
+                        break;
+                    case "COMMENT_LECTURE":
+                        if (tb.TargetId != null) {
+                            intent = new Intent(context, CommentActivity.class);
+                            intent.putExtra("TARGET_ID", tb.TargetId);
+                            intent.putExtra("TARGET_TYPE", "LECTURE");
                         }
                         break;
                 }
