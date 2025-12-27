@@ -15,15 +15,13 @@ import java.util.Locale;
 public class DatabaseExporter {
 
     public static String exportToSQL(Context context, AppDatabase db) throws Exception {
-        // 1. Lấy database thô để đọc dữ liệu
         SupportSQLiteDatabase sqlDb = db.getOpenHelper().getReadableDatabase();
 
         StringBuilder sb = new StringBuilder();
         sb.append("-- BACKUP DATABASE: StudentPortalApp\n");
         sb.append("-- DATE: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date())).append("\n");
-        sb.append("PRAGMA foreign_keys = OFF;\n\n"); // Tắt kiểm tra khóa ngoại để tránh lỗi khi import
+        sb.append("PRAGMA foreign_keys = OFF;\n\n");
 
-        // 2. Lấy danh sách tất cả các bảng (trừ bảng hệ thống android_metadata và room_master_table)
         Cursor c = sqlDb.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('android_metadata', 'room_master_table')");
         List<String> tables = new ArrayList<>();
         while (c.moveToNext()) {
@@ -31,31 +29,25 @@ public class DatabaseExporter {
         }
         c.close();
 
-        // 3. Duyệt từng bảng để tạo lệnh INSERT
         for (String tableName : tables) {
             sb.append("-- DATA FOR TABLE: ").append(tableName).append("\n");
 
-            // Query lấy toàn bộ dữ liệu bảng đó
             Cursor cursor = sqlDb.query("SELECT * FROM " + tableName);
 
             while (cursor.moveToNext()) {
                 sb.append("INSERT INTO ").append(tableName).append(" VALUES (");
 
-                // Duyệt từng cột
                 for (int i = 0; i < cursor.getColumnCount(); i++) {
                     if (i > 0) sb.append(", ");
 
-                    // Kiểm tra kiểu dữ liệu để format đúng (Chuỗi thì thêm dấu nháy đơn, số thì không)
                     int type = cursor.getType(i);
                     if (type == Cursor.FIELD_TYPE_NULL) {
                         sb.append("NULL");
                     } else if (type == Cursor.FIELD_TYPE_STRING) {
-                        // Escape dấu nháy đơn: O'Neil -> O''Neil
                         String val = cursor.getString(i);
                         val = val.replace("'", "''");
                         sb.append("'").append(val).append("'");
                     } else {
-                        // Số hoặc Blob
                         sb.append(cursor.getString(i));
                     }
                 }
@@ -67,8 +59,7 @@ public class DatabaseExporter {
 
         sb.append("PRAGMA foreign_keys = ON;\n");
 
-        // 4. Lưu ra file
-        File folder = context.getExternalFilesDir(null); // Lưu vào thư mục riêng của app
+        File folder = context.getExternalFilesDir(null);
         String fileName = "Backup_" + System.currentTimeMillis() + ".sql";
         File file = new File(folder, fileName);
 

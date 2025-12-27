@@ -43,10 +43,8 @@ public class OptionsActivity extends BaseActivity {
                 true
         );
 
-        // Hiển thị popup ngay bên dưới icon
         popupWindow.showAsDropDown(anchorView, -150, 0, Gravity.END);
 
-        // Cho phép bấm ra ngoài để đóng popup
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(true);
     }

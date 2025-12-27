@@ -158,8 +158,8 @@ public class AddLectureActivity extends BaseActivity {
                 tb.NoiDung = "Có bài giảng mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                 tb.NguoiNhan = "HOCVIEN";
-                tb.LoaiTB = "LECTURE"; // QUAN TRỌNG: Để click vào là chuyển trang
-                tb.TargetId = currentMaLH; // QUAN TRỌNG: ID lớp học
+                tb.LoaiTB = "LECTURE";
+                tb.TargetId = currentMaLH;
                 database.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());

@@ -35,7 +35,6 @@ public class SubmitAssignmentActivity extends BaseActivity {
     private String maBT;
     private String currentMaHV;
     private String existingMaNB = null;
-
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
             uri -> {

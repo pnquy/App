@@ -33,7 +33,6 @@ public class CommentActivity extends BaseActivity {
     private EditText etComment;
     private ImageView btnSend;
     private AppDatabase db;
-    
     private String targetId;
     private String targetType;
     private String currentUserId;
@@ -54,7 +53,7 @@ public class CommentActivity extends BaseActivity {
         currentUserName = prefs.getString("KEY_NAME", "User");
 
         targetId = getIntent().getStringExtra("TARGET_ID");
-        targetType = getIntent().getStringExtra("TARGET_TYPE"); // "ASSIGNMENT" or "LECTURE"
+        targetType = getIntent().getStringExtra("TARGET_TYPE");
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar_comment);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -91,7 +90,6 @@ public class CommentActivity extends BaseActivity {
             Executors.newSingleThreadExecutor().execute(() -> {
                 db.binhLuanDao().insert(bl);
 
-                // --- Xử lý gửi thông báo ---
                 String notiContent = "";
                 String notiType = "";
                 String maLH = "";
@@ -113,7 +111,6 @@ public class CommentActivity extends BaseActivity {
                     }
                 }
 
-                // Nếu lấy được mã lớp, tìm thông tin GV
                 if (!maLH.isEmpty()) {
                     LopHoc lh = db.lopHocDao().getByIdSync(maLH);
                     if (lh != null) {
@@ -125,7 +122,7 @@ public class CommentActivity extends BaseActivity {
                     List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(maLH);
                     if (studentIds != null) {
                         for (String studentId : studentIds) {
-                            if (!studentId.equals(currentUserId)) { // Thực tế GV ko bao giờ trùng HV, nhưng check cho chắc
+                            if (!studentId.equals(currentUserId)) {
                                 ThongBao tb = new ThongBao();
                                 tb.NgayTao = bl.NgayTao;
                                 tb.TargetId = targetId;

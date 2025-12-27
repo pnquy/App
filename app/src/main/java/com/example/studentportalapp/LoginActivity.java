@@ -30,13 +30,11 @@ public class LoginActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Xử lý nút Quên Mật Khẩu
         binding.tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
 
-        // Xử lý nút Đăng nhập
         binding.btnLogin.setOnClickListener(v -> {
             String email = binding.etEmail.getText().toString().trim();
             String password = binding.etPassword.getText().toString().trim();
@@ -46,9 +44,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 1. Kiểm tra Admin
             if (email.equals(ADMIN_EMAIL) && password.equals(ADMIN_PASS)) {
-                // Admin thì tự đặt tên hiển thị là "Administrator"
                 saveUserSession("ADMIN", "ADMIN", "Administrator");
 
                 Toast.makeText(LoginActivity.this, "Đăng nhập ADMIN thành công!", Toast.LENGTH_SHORT).show();
@@ -58,7 +54,6 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 2. Kiểm tra User thường (Database)
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
@@ -68,7 +63,6 @@ public class LoginActivity extends AppCompatActivity {
                     } else if (!user.MatKhau.equals(password)) {
                         Toast.makeText(LoginActivity.this, "Mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
                     } else {
-                        // Lưu đủ 3 thông tin: ID, Vai Trò, Họ Tên
                         saveUserSession(user.MaTK, user.VaiTro, user.HoTen);
 
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
@@ -81,15 +75,13 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // --- HÀM LƯU SESSION ĐÃ SỬA ---
-    // Nhận vào 3 tham số để lưu đủ dữ liệu cho HomeActivity dùng
     private void saveUserSession(String userId, String role, String fullName) {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
         editor.putString("KEY_USER_ID", userId);
         editor.putString("KEY_ROLE", role);
-        editor.putString("KEY_NAME", fullName);  // Lưu thêm Họ tên ở đây
+        editor.putString("KEY_NAME", fullName);
 
         editor.apply();
     }

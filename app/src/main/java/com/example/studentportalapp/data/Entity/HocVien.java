@@ -18,7 +18,6 @@ import androidx.room.PrimaryKey;
         }
 )
 public class HocVien {
-
     @PrimaryKey
     @NonNull
     private String MaHV;
@@ -26,10 +25,8 @@ public class HocVien {
     private String TenHV;
     private String Email;
 
-
     @NonNull
     private String MaTK;
-
 
     @NonNull
     public String getMaHV() { return MaHV; }
@@ -38,17 +35,11 @@ public class HocVien {
 
     public String getEmail() { return Email; }
 
-
-
     @NonNull
     public String getMaTK() { return MaTK; }
 
     public void setMaHV(@NonNull String maHV) { this.MaHV = maHV; }
-
     public void setTenHV(String tenHV) { this.TenHV = tenHV; }
-
     public void setEmail(String email) { this.Email = email; }
-
-
     public void setMaTK(@NonNull String maTK) { this.MaTK = maTK; }
 }

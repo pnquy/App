@@ -46,11 +46,9 @@ public class NotificationActivity extends BaseActivity {
         SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
         String role = prefs.getString("KEY_ROLE", "");
 
-        // Lấy thông báo gửi riêng cho mình HOẶC thông báo chung cho vai trò của mình
         db.thongBaoDao().getByNguoiNhan(currentMaTK, role).observe(this, list -> {
             if (list == null) list = new ArrayList<>();
-            
-            // SỬA: Truyền DB vào Adapter để xử lý click
+
             NotificationAdapter adapter = new NotificationAdapter(this, list);
             recyclerView.setAdapter(adapter);
         });

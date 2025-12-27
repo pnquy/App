@@ -50,7 +50,7 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginStart="8dp"
-            android:visibility="gone"/> <!-- Mặc định là ẩn -->
+            android:visibility="gone"/>
             
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

@@ -20,14 +20,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 public class AllCoursesActivity extends AppCompatActivity {
-
     private RecyclerView recyclerView;
     private UserCourseAdapter adapter;
     private AppDatabase db;
-
-    // SỬA: Đổi kiểu dữ liệu list gốc từ LopHoc sang CourseViewItem
     private List<CourseViewItem> fullList = new ArrayList<>();
-
     private String currentUserId, userRole;
 
     @Override
@@ -66,16 +62,14 @@ public class AllCoursesActivity extends AppCompatActivity {
 
     private void loadData() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<LopHoc> rawList; // Danh sách lớp thô từ DB
+            List<LopHoc> rawList;
 
-            // 1. Lấy danh sách lớp thô
             if ("HOCVIEN".equals(userRole)) {
                 rawList = db.thamGiaDao().getClassesByStudent(currentUserId);
             } else {
                 rawList = db.lopHocDao().getClassesByTeacher(currentUserId);
             }
 
-            // 2. Chuyển đổi sang CourseViewItem (Tính toán thống kê)
             List<CourseViewItem> calculatedList = new ArrayList<>();
 
             for (LopHoc lop : rawList) {
@@ -83,7 +77,6 @@ public class AllCoursesActivity extends AppCompatActivity {
                 int progressValue = 0;
 
                 if ("HOCVIEN".equals(userRole)) {
-                    // Logic Học viên: Đã làm / Tổng số
                     int totalAssignments = db.baiTapDao().countAssignmentsInClass(lop.MaLH);
                     int submittedCount = db.nopBaiDao().countSubmissionsByStudentInClass(currentUserId, lop.MaLH);
 
@@ -95,7 +88,6 @@ public class AllCoursesActivity extends AppCompatActivity {
                         progressValue = 0;
                     }
                 } else {
-                    // Logic Giáo viên: % nộp bài mới nhất
                     BaiTap latestBT = db.baiTapDao().getLatestAssignment(lop.MaLH);
                     if (latestBT != null) {
                         int totalStudents = db.thamGiaDao().countStudentsByClass(lop.MaLH);
@@ -113,23 +105,19 @@ public class AllCoursesActivity extends AppCompatActivity {
                         progressValue = 0;
                     }
                 }
-                // Thêm vào list đã tính toán
                 calculatedList.add(new CourseViewItem(lop, progressText, progressValue));
             }
 
-            // 3. Sắp xếp theo truy cập gần đây
             SharedPreferences accessPrefs = getSharedPreferences("AccessHistory", MODE_PRIVATE);
             Collections.sort(calculatedList, (o1, o2) -> {
-                // Lưu ý: Phải gọi o1.lopHoc.MaLH vì o1 là CourseViewItem
                 long t1 = accessPrefs.getLong("LAST_ACCESS_" + o1.lopHoc.MaLH, 0);
                 long t2 = accessPrefs.getLong("LAST_ACCESS_" + o2.lopHoc.MaLH, 0);
                 return Long.compare(t2, t1);
             });
 
-            fullList = calculatedList; // Lưu vào biến toàn cục để dùng cho Search
+            fullList = calculatedList;
 
             runOnUiThread(() -> {
-                // Adapter giờ đã nhận đúng List<CourseViewItem>
                 adapter = new UserCourseAdapter(this, fullList, this::onCourseClick);
                 recyclerView.setAdapter(adapter);
             });
@@ -137,12 +125,10 @@ public class AllCoursesActivity extends AppCompatActivity {
     }
 
     private void filter(String text) {
-        // SỬA: List filter cũng phải là CourseViewItem
         List<CourseViewItem> filteredList = new ArrayList<>();
         String query = text.toLowerCase();
 
         for (CourseViewItem item : fullList) {
-            // Truy cập thuộc tính bên trong lopHoc
             if (item.lopHoc.TenLH.toLowerCase().contains(query) ||
                     item.lopHoc.MaLH.toLowerCase().contains(query)) {
                 filteredList.add(item);
@@ -153,7 +139,6 @@ public class AllCoursesActivity extends AppCompatActivity {
         }
     }
 
-    // Hàm click giữ nguyên (vẫn nhận LopHoc từ Adapter trả về)
     private void onCourseClick(LopHoc lopHoc) {
         SharedPreferences prefs = getSharedPreferences("AccessHistory", MODE_PRIVATE);
         prefs.edit().putLong("LAST_ACCESS_" + lopHoc.MaLH, System.currentTimeMillis()).apply();

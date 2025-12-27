@@ -40,5 +40,5 @@ public class Diem {
 
     public double SoDiem;
 
-    public String NhanXet; // Thêm thuộc tính này
+    public String NhanXet;
 }

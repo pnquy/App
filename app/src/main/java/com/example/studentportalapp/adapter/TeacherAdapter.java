@@ -20,7 +20,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.ViewHold
     public interface OnItemClickListener {
         void onEdit(TeacherDisplayItem item);
         void onDelete(TeacherDisplayItem item);
-        void onViewClasses(TeacherDisplayItem item); // Nút mới
+        void onViewClasses(TeacherDisplayItem item);
     }
 
     public TeacherAdapter(Context context, List<TeacherDisplayItem> list, OnItemClickListener listener) {

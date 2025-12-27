@@ -19,8 +19,6 @@ public class DatabaseImporter {
         String line;
         sqlDb.beginTransaction();
         try {
-            // 1. Xóa dữ liệu cũ (Tùy chọn: Nếu bạn muốn import đè hoàn toàn)
-            // Bạn có thể comment đoạn này nếu chỉ muốn thêm dữ liệu mới
             sqlDb.execSQL("DELETE FROM TAIKHOAN");
             sqlDb.execSQL("DELETE FROM HOCVIEN");
             sqlDb.execSQL("DELETE FROM GIAOVIEN");
@@ -30,18 +28,13 @@ public class DatabaseImporter {
             sqlDb.execSQL("DELETE FROM DIEM");
             sqlDb.execSQL("DELETE FROM THAMGIA");
 
-            // 2. Đọc và chạy từng dòng lệnh
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                // Bỏ qua dòng trống hoặc comment
                 if (line.isEmpty() || line.startsWith("--") || line.startsWith("//")) {
                     continue;
                 }
 
-                // Chạy lệnh SQL
-                // (File export của chúng ta mỗi lệnh nằm trên 1 dòng và kết thúc bằng ;)
                 if (line.endsWith(";")) {
-                    // Xóa dấu ; ở cuối vì execSQL đôi khi không cần
                     line = line.substring(0, line.length() - 1);
                 }
                 sqlDb.execSQL(line);

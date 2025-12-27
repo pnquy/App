@@ -11,17 +11,14 @@ import com.example.studentportalapp.data.Entity.BaiTap;
 import java.util.List;
 
 public class UserBaiTapRepository {
-
     private final BaiTapDao baiTapDao;
 
     public UserBaiTapRepository(Application app) {
         baiTapDao = AppDatabase.getDatabase(app).baiTapDao();
     }
-
     public LiveData<BaiTap> getBaiTapById(String MaBT) {
         return baiTapDao.getById(MaBT);
     }
-
     public LiveData<List<BaiTap>> getAllBaiTap() {
         return baiTapDao.getAll();
     }

@@ -19,10 +19,8 @@ public class LopHoc {
     @PrimaryKey
     @NonNull
     public String MaLH;
-
     public String TenLH;
     public String MoTa;
-
     @NonNull
     public String MaGV;
 }

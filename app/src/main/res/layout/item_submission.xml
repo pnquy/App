@@ -68,7 +68,6 @@
             android:layout_marginTop="8dp"
             android:textColor="@color/black" />
 
-        <!-- Submission File Link -->
         <LinearLayout
             android:id="@+id/layout_submission_file"
             android:layout_width="match_parent"

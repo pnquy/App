@@ -40,7 +40,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         holder.tvContent.setText(bl.NoiDung);
         holder.tvDate.setText(bl.NgayTao);
 
-        // SỬA: Đổi màu nền nếu là bình luận của giáo viên
         AppDatabase.databaseWriteExecutor.execute(() -> {
             String role = db.taiKhoanDao().getRoleById(bl.MaNguoiGui);
             ((android.app.Activity) holder.itemView.getContext()).runOnUiThread(() -> {

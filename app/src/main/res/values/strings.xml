@@ -1,24 +1,19 @@
 <resources>
     <string name="app_name">home</string>
 
-    <!-- Header -->
     <string name="avatar">Avatar</string>
     <string name="notification">Notification</string>
     <string name="chat">Chat</string>
     <string name="tick">Tick</string>
 
-    <!-- User info -->
     <string name="user_name">Jayvie</string>
     <string name="user_id">19–02031–T</string>
 
-    <!-- Section title -->
     <string name="my_courses">My Courses</string>
 
-    <!-- Banners -->
     <string name="banner_tcu">Taguig City University Banner</string>
     <string name="banner_cs">Bachelor of Science in Computer Science Banner</string>
 
-    <!-- Course images -->
     <string name="course_programming">Programming Language Course Image</string>
     <string name="course_sport">PE / Sports Course Image</string>
     <string name="course_os">Operating System Course Image</string>

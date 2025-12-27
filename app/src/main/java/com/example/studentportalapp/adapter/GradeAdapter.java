@@ -53,11 +53,6 @@ public class GradeAdapter extends RecyclerView.Adapter<GradeAdapter.ViewHolder> 
             String assignmentName = (bt != null) ? bt.TenBT : "MaBT: " + diem.MaBT;
             String studentName = (hv != null) ? hv.getTenHV() : "MaHV: " + diem.MaHV;
             
-            // Nếu người xem là giáo viên (hoặc để tổng quát), ta có thể hiển thị thêm tên học viên
-            // Tuy nhiên, logic này sẽ hiển thị: "Tên Học Viên - Tên Bài Tập"
-            // Hoặc nếu muốn đơn giản, ta kiểm tra context hoặc chỉ hiển thị tên bài tập nếu là học viên xem.
-            // Nhưng ở đây ta cứ hiển thị cả hai nếu có thông tin để rõ ràng.
-            
             final String finalTitle = studentName + " - " + assignmentName;
 
             if (context instanceof android.app.Activity) {

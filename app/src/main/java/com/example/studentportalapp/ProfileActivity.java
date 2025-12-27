@@ -47,24 +47,19 @@ public class ProfileActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // 2. Lấy thông tin phiên đăng nhập từ "UserSession"
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         currentUserId = prefs.getString("KEY_USER_ID", "");
         String role = prefs.getString("KEY_ROLE", "");
 
-        // 3. Logic hiển thị Label theo Role
         if (role.equalsIgnoreCase("GIAOVIEN")) {
             tvLabelID.setText("Mã Giảng Viên:");
         } else if (role.equalsIgnoreCase("HOCVIEN")) {
             tvLabelID.setText("Mã Học Viên:");
         } else {
-            tvLabelID.setText("Mã Tài Khoản:"); // Trường hợp Admin
+            tvLabelID.setText("Mã Tài Khoản:");
         }
 
-        // 4. Load dữ liệu
         loadUserProfile(currentUserId);
-
-        // 5. Nút đổi mật khẩu
         btnChangePass.setOnClickListener(v -> showChangePasswordDialog());
     }
 
@@ -100,7 +95,7 @@ public class ProfileActivity extends AppCompatActivity {
         EditText etConfirmPass = view.findViewById(R.id.etConfirmPass);
 
         builder.setView(view);
-        builder.setPositiveButton("Lưu", null); // Xử lý sau để tránh đóng dialog
+        builder.setPositiveButton("Lưu", null);
         builder.setNegativeButton("Hủy", null);
 
         AlertDialog dialog = builder.create();
@@ -123,7 +118,6 @@ public class ProfileActivity extends AppCompatActivity {
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getById(currentUserId);
                 if (user != null && user.MatKhau.equals(oldPass)) {
-                    // Update Database
                     user.MatKhau = newPass;
                     db.taiKhoanDao().update(user);
 

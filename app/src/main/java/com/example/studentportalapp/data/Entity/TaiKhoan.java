@@ -20,7 +20,6 @@ public class TaiKhoan {
     public String getEmail() { return Email; }
     public String getMatKhau() { return MatKhau; }
     public String getVaiTro() { return VaiTro; }
-
     public void setMaTK(String maTK) { MaTK = maTK; }
     public void setHoTen(String hoTen) { HoTen = hoTen; }
     public void setEmail(String email) { Email = email; }

@@ -33,12 +33,9 @@ public class GradeActivity extends BaseActivity {
     private String realMaHV;
     private List<LopHoc> listAllLop;
     private String userRole;
-
     private List<Diem> currentClassGrades = new ArrayList<>();
     private List<BaiTap> currentClassAssignments = new ArrayList<>();
-    private String currentSelectedMaBT = "ALL"; // "ALL" or MaBT
-
-    // Biến để lưu mã lớp được truyền từ thông báo (nếu có)
+    private String currentSelectedMaBT = "ALL";
     private String targetClassIdFromNoti = null;
 
     @Override
@@ -145,12 +142,11 @@ public class GradeActivity extends BaseActivity {
     }
 
     private void loadAssignmentsForClass(String maLH) {
-        // Load danh sách bài tập để fill vào spinner Assignments
         db.baiTapDao().getByLop(maLH).observe(this, listBT -> {
             currentClassAssignments = listBT != null ? listBT : new ArrayList<>();
             
             List<String> assignmentNames = new ArrayList<>();
-            assignmentNames.add("Tất cả bài tập"); // Default option
+            assignmentNames.add("Tất cả bài tập");
 
             for (BaiTap bt : currentClassAssignments) {
                 assignmentNames.add(bt.TenBT);
@@ -167,7 +163,6 @@ public class GradeActivity extends BaseActivity {
                     if (position == 0) {
                         currentSelectedMaBT = "ALL";
                     } else {
-                        // position - 1 vì index 0 là "Tất cả"
                         currentSelectedMaBT = currentClassAssignments.get(position - 1).MaBT;
                     }
                     filterAndDisplayGrades();
@@ -181,13 +176,11 @@ public class GradeActivity extends BaseActivity {
 
     private void loadGradesForClass(String maLH) {
         if ("GIAOVIEN".equals(userRole)) {
-            // Giáo viên: Lấy TẤT CẢ điểm
             db.diemDao().getAll().observe(this, listDiem -> {
                 if (listDiem == null) listDiem = new ArrayList<>();
                 processGradesForClass(listDiem, maLH);
             });
         } else {
-            // Học viên: Lấy điểm của MÌNH
             db.diemDao().getByHocVien(realMaHV).observe(this, listDiem -> {
                 if (listDiem == null) listDiem = new ArrayList<>();
                 processGradesForClass(listDiem, maLH);
@@ -227,18 +220,12 @@ public class GradeActivity extends BaseActivity {
     }
 
     private boolean isAssignmentInClass(String maBT, String maLH) {
-        // Cần kiểm tra xem maBT có thuộc lớp maLH không
-        // Nếu dùng synchronous thì chậm, nhưng ở đây tạm chấp nhận hoặc tối ưu sau
-        // Tốt nhất là check trong list assignment đã load
-        
-        // Check cache assignments first
         for (BaiTap bt : currentClassAssignments) {
             if (bt.MaBT.equals(maBT)) {
-                return true; // Nếu bt này thuộc lớp hiện tại
+                return true;
             }
         }
-        
-        // Fallback check DB (chậm)
+
         BaiTap bt = db.baiTapDao().getByIdSync(maBT);
         return bt != null && maLH.equals(bt.MaLH);
     }

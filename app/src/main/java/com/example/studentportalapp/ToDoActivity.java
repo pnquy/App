@@ -61,7 +61,7 @@ public class ToDoActivity extends BaseActivity {
                     for (BaiTap baiTap : assignments) {
                         if (isDeadlineActive(baiTap.Deadline)) {
                             int submissionCount = db.nopBaiDao().countSubmissionsForAssignment(baiTap.MaBT);
-                            if (submissionCount < totalStudents) { // Chỉ hiển thị nếu chưa nộp đủ
+                            if (submissionCount < totalStudents) {
                                 tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole, submissionCount, totalStudents));
                             }
                         }
@@ -83,15 +83,15 @@ public class ToDoActivity extends BaseActivity {
 
     private boolean isDeadlineActive(String deadline) {
         if (deadline == null || deadline.isEmpty()) {
-            return true; // Mặc định là còn hạn nếu không có deadline
+            return true;
         }
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
             Date deadlineDate = sdf.parse(deadline);
-            return new Date().before(deadlineDate); // Trả về true nếu ngày hiện tại trước deadline
+            return new Date().before(deadlineDate);
         } catch (ParseException e) {
             e.printStackTrace();
-            return true; // Mặc định là còn hạn nếu không thể phân tích chuỗi
+            return true;
         }
     }
 }

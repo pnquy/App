@@ -19,17 +19,12 @@ import java.util.concurrent.Executors;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
-    // Khai báo View
     private TextInputEditText etEmail, etOTP, etNewPass;
     private Button btnGetCode, btnConfirm;
-    private ImageView btnBack; // <--- SỬA LỖI Ở ĐÂY: Dùng ImageView thay vì Button
+    private ImageView btnBack;
     private LinearLayout layoutResetPass;
-
-    // Database
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    // Biến lưu OTP và Email hiện tại
     private String generatedOTP = "";
     private String currentEmail = "";
 
@@ -40,7 +35,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // 1. Ánh xạ View (Khớp ID trong XML)
         etEmail = findViewById(R.id.etResetEmail);
         etOTP = findViewById(R.id.etOTP);
         etNewPass = findViewById(R.id.etNewPass);
@@ -48,16 +42,11 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         btnGetCode = findViewById(R.id.btnGetCode);
         btnConfirm = findViewById(R.id.btnConfirmReset);
 
-        btnBack = findViewById(R.id.btnBackToLogin); // XML là ImageView -> Java là ImageView
+        btnBack = findViewById(R.id.btnBackToLogin);
         layoutResetPass = findViewById(R.id.layoutResetPass);
 
-        // 2. Xử lý sự kiện nút Back
         btnBack.setOnClickListener(v -> finish());
-
-        // 3. Xử lý nút Lấy Mã
         btnGetCode.setOnClickListener(v -> handleSendCode());
-
-        // 4. Xử lý nút Đổi Mật Khẩu
         btnConfirm.setOnClickListener(v -> handleConfirmReset());
     }
 
@@ -70,26 +59,22 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
 
         executor.execute(() -> {
-            // Kiểm tra Email có tồn tại trong DB không
             TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
             runOnUiThread(() -> {
                 if (user == null) {
                     Toast.makeText(this, "Email không tồn tại trong hệ thống!", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Email đúng -> Tạo mã OTP 4 số ngẫu nhiên
                     Random random = new Random();
-                    int otp = random.nextInt(9000) + 1000; // 1000 -> 9999
+                    int otp = random.nextInt(9000) + 1000;
                     generatedOTP = String.valueOf(otp);
                     currentEmail = email;
 
-                    // HIỆN OTP LÊN MÀN HÌNH (Simulation)
                     Toast.makeText(this, "Mã xác nhận của bạn là: " + generatedOTP, Toast.LENGTH_LONG).show();
 
-                    // Cập nhật giao diện
-                    etEmail.setEnabled(false); // Khóa ô email
-                    btnGetCode.setVisibility(View.GONE); // Ẩn nút lấy mã
-                    layoutResetPass.setVisibility(View.VISIBLE); // Hiện form nhập OTP
+                    etEmail.setEnabled(false);
+                    btnGetCode.setVisibility(View.GONE);
+                    layoutResetPass.setVisibility(View.VISIBLE);
                 }
             });
         });
@@ -104,22 +89,20 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Kiểm tra OTP
         if (!inputOTP.equals(generatedOTP)) {
             etOTP.setError("Mã xác nhận không đúng");
             return;
         }
 
-        // OTP đúng -> Cập nhật mật khẩu vào DB
         executor.execute(() -> {
             TaiKhoan user = db.taiKhoanDao().getByEmail(currentEmail);
             if (user != null) {
-                user.MatKhau = newPass; // Cập nhật pass mới
+                user.MatKhau = newPass;
                 db.taiKhoanDao().update(user);
 
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Đổi mật khẩu thành công! Hãy đăng nhập lại.", Toast.LENGTH_LONG).show();
-                    finish(); // Đóng màn hình này
+                    finish();
                 });
             }
         });

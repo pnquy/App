@@ -13,20 +13,16 @@ import java.util.List;
 public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder> {
 
     private final List<Person> peopleList;
-    private OnPersonClickListener listener; // Listener
-
-    // Interface cho sự kiện click
+    private OnPersonClickListener listener;
     public interface OnPersonClickListener {
         void onPersonClick(Person person);
     }
 
-    // Constructor cập nhật
     public PeopleAdapter(List<Person> peopleList, OnPersonClickListener listener) {
         this.peopleList = peopleList;
         this.listener = listener;
     }
 
-    // Constructor cũ (để tương thích nếu cần, hoặc xóa đi)
     public PeopleAdapter(List<Person> peopleList) {
         this.peopleList = peopleList;
     }
@@ -44,7 +40,6 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
         holder.txtName.setText(person.getName());
         holder.txtRole.setText(person.getRole());
 
-        // Bắt sự kiện click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onPersonClick(person);

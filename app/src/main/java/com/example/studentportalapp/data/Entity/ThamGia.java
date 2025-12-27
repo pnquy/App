@@ -6,7 +6,7 @@ import androidx.room.ForeignKey;
 
 @Entity(
         tableName = "THAMGIA",
-        primaryKeys = {"MaHV", "MaLH"}, // Khóa chính là cặp đôi này (tránh trùng lặp)
+        primaryKeys = {"MaHV", "MaLH"},
         foreignKeys = {
                 @ForeignKey(entity = HocVien.class, parentColumns = "MaHV", childColumns = "MaHV", onDelete = ForeignKey.CASCADE),
                 @ForeignKey(entity = LopHoc.class, parentColumns = "MaLH", childColumns = "MaLH", onDelete = ForeignKey.CASCADE)

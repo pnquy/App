@@ -18,7 +18,7 @@ import java.util.List;
 public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHolder> {
 
     private Context context;
-    private List<StudentItem> list; // Đổi từ HocVien sang StudentItem
+    private List<StudentItem> list;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
@@ -43,11 +43,9 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StudentItem item = list.get(position);
 
-        // Hiển thị thông tin
         holder.tvTen.setText(item.hocVien.getTenHV());
         holder.tvEmail.setText(item.hocVien.getEmail());
 
-        // Hiển thị danh sách lớp (Lấy từ biến classNames đã chuẩn bị sẵn)
         if (item.classNames == null || item.classNames.isEmpty()) {
             holder.tvLop.setText("Lớp: Chưa xếp lớp");
         } else {
@@ -70,7 +68,6 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Ánh xạ đúng ID trong item_hocvien.xml mới
             tvTen = itemView.findViewById(R.id.tvHoTenHV);
             tvEmail = itemView.findViewById(R.id.tvEmailHV);
             tvLop = itemView.findViewById(R.id.tvMaLopHV);

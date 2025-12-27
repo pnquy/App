@@ -84,7 +84,6 @@
                 android:padding="16dp"
                 android:weightSum="4">
 
-                <!-- Nút TKB -->
                 <LinearLayout
                     android:id="@+id/quickActionTKB"
                     android:layout_width="0dp"
@@ -106,7 +105,6 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút ĐIỂM SỐ -->
                 <LinearLayout
                     android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"
@@ -160,7 +158,6 @@
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút Thoát -->
                 <LinearLayout
                     android:id="@+id/quickActionLogout"
                     android:layout_width="0dp"

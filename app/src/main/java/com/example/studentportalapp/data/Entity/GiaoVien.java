@@ -30,8 +30,6 @@ public class GiaoVien {
     @NonNull
     private String MaTK;
 
-    // ================= GETTER / SETTER =================
-
     @NonNull
     public String getMaGV() {
         return MaGV;
@@ -56,9 +54,6 @@ public class GiaoVien {
     public void setEmail(String email) {
         this.Email = email;
     }
-
-
-
 
     @NonNull
     public String getMaTK() {
