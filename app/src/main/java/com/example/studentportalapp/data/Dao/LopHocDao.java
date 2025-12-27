@@ -29,7 +29,8 @@ public interface LopHocDao {
 
     @Query("SELECT COUNT(*) FROM LOPHOC WHERE MaGV = :maGV")
     int countClassesByTeacher(String maGV);
-
+    @Query("SELECT COUNT(*) FROM LOPHOC")
+    int countAllClasses();
     @Query("SELECT TenLH FROM LOPHOC WHERE MaGV = :maGV")
     List<String> getClassNamesByTeacher(String maGV);
 

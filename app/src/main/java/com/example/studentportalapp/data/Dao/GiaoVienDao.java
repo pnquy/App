@@ -10,6 +10,7 @@ import androidx.room.Update;
 
 import com.example.studentportalapp.data.Entity.GiaoVien;
 import com.example.studentportalapp.data.TeacherItem;
+import com.example.studentportalapp.model.TeacherRankItem;
 
 import java.util.List;
 
@@ -38,7 +39,11 @@ public interface GiaoVienDao {
     List<GiaoVien> getAllSync();
     @Query("SELECT MaGV, TenGV AS HoTen, Email FROM GIAOVIEN")
     List<TeacherItem> getAllTeacherItems();
-
+    @Query("SELECT gv.TenGV, COUNT(lh.MaLH) as Count " +
+            "FROM GIAOVIEN gv LEFT JOIN LOPHOC lh ON gv.MaGV = lh.MaGV " +
+            "GROUP BY gv.MaGV " +
+            "ORDER BY Count DESC LIMIT 5")
+    List<TeacherRankItem> getTopTeachersByClassCount();
     @Query("DELETE FROM GIAOVIEN WHERE MaGV = :maGV")
     void deleteByMaGV(String maGV);
 

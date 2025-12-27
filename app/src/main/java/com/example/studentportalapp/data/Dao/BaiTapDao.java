@@ -16,7 +16,8 @@ import java.util.List;
 public interface BaiTapDao {
     @Query("SELECT COUNT(*) FROM BAITAP WHERE MaLH = :maLH")
     int countAssignmentsInClass(String maLH);
-
+    @Query("SELECT COUNT(*) FROM BAITAP")
+    int countAllAssignments();
     @Query("SELECT * FROM BAITAP WHERE MaLH = :maLH ORDER BY MaBT DESC LIMIT 1")
     BaiTap getLatestAssignment(String maLH);
     @Insert(onConflict = OnConflictStrategy.REPLACE)

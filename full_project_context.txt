@@ -455,8 +455,8 @@ public class AddLectureActivity extends BaseActivity {
                 tb.NoiDung = "Có bài giảng mới: " + title;
                 tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
                 tb.NguoiNhan = "HOCVIEN";
-                tb.LoaiTB = "LECTURE"; // QUAN TRỌNG: Để click vào là chuyển trang
-                tb.TargetId = currentMaLH; // QUAN TRỌNG: ID lớp học
+                tb.LoaiTB = "LECTURE";
+                tb.TargetId = currentMaLH;
                 database.thongBaoDao().insert(tb);
 
                 runOnUiThread(() -> Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show());
@@ -527,7 +527,6 @@ public class AddUserActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Ánh xạ View
         etMaTK = findViewById(R.id.etMaTK);
         etHoTen = findViewById(R.id.etHoTen);
         etEmail = findViewById(R.id.etEmail);
@@ -536,10 +535,8 @@ public class AddUserActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
         tvBack = findViewById(R.id.tvBack);
 
-        // Mặc định sinh mã cho Học Viên khi vừa mở lên
         generateAutoId("HOCVIEN");
 
-        // Lắng nghe sự kiện đổi vai trò để sinh lại mã
         rgRole.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.rbTeacher) {
                 generateAutoId("GIAOVIEN");
@@ -548,52 +545,39 @@ public class AddUserActivity extends AppCompatActivity {
             }
         });
 
-        // Xử lý nút Back
         tvBack.setOnClickListener(v -> finish());
-
-        // Xử lý nút Lưu
         btnSave.setOnClickListener(v -> handleSaveUser());
     }
 
-    // Hàm sinh mã tự động: GV + số lượng hoặc HV + số lượng
     private void generateAutoId(String role) {
         executor.execute(() -> {
-            // Đếm số lượng user hiện có của vai trò này
             int count = db.taiKhoanDao().countUsersByRole(role);
             int nextId = count + 1;
 
-            // Tạo tiền tố (Prefix)
             String prefix = role.equals("GIAOVIEN") ? "GV" : "HV";
-
-            // Format thành 3 chữ số (Ví dụ: GV001, HV015...)
             String newId = String.format("%s%03d", prefix, nextId);
 
-            // Kiểm tra xem mã này đã tồn tại chưa (đề phòng trường hợp xóa rồi tạo lại bị trùng)
             while (db.taiKhoanDao().getById(newId) != null) {
                 nextId++;
                 newId = String.format("%s%03d", prefix, nextId);
             }
 
-            // Cập nhật lên giao diện
             String finalNewId = newId;
             runOnUiThread(() -> etMaTK.setText(finalNewId));
         });
     }
 
     private void handleSaveUser() {
-        // Lấy dữ liệu (Mã TK lấy trực tiếp từ ô đã tự động điền)
         String maTK = etMaTK.getText().toString().trim();
         String hoTen = etHoTen.getText() != null ? etHoTen.getText().toString().trim() : "";
         String email = etEmail.getText() != null ? etEmail.getText().toString().trim() : "";
         String matKhau = etMatKhau.getText() != null ? etMatKhau.getText().toString().trim() : "";
 
-        // Kiểm tra dữ liệu trống
         if (maTK.isEmpty() || hoTen.isEmpty() || email.isEmpty() || matKhau.isEmpty()) {
             Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Xác định vai trò
         String role;
         int selectedId = rgRole.getCheckedRadioButtonId();
         if (selectedId == R.id.rbTeacher) role = "GIAOVIEN";
@@ -601,7 +585,6 @@ public class AddUserActivity extends AppCompatActivity {
 
         executor.execute(() -> {
             try {
-                // 1. Tạo Tài Khoản
                 TaiKhoan tk = new TaiKhoan();
                 tk.MaTK = maTK;
                 tk.HoTen = hoTen;
@@ -611,14 +594,12 @@ public class AddUserActivity extends AppCompatActivity {
 
                 db.taiKhoanDao().insert(tk);
 
-                // 2. Tạo Entity tương ứng
                 if (role.equals("HOCVIEN")) {
                     HocVien hv = new HocVien();
                     hv.setMaHV(maTK);
                     hv.setTenHV(hoTen);
                     hv.setEmail(email);
                     hv.setMaTK(maTK);
-                    // hv.setMaLH(null); // Đã bỏ trường này
                     db.hocVienDao().insert(hv);
                 } else {
                     GiaoVien gv = new GiaoVien();
@@ -700,24 +681,16 @@ public class AdminActivity extends AppCompatActivity {
                 .show();
     }
 
-    // Hàm thực hiện đăng xuất
     private void performLogout() {
-        // BƯỚC 1: Xóa trạng thái đăng nhập (Nếu bạn có dùng SharedPreferences để lưu "Ghi nhớ đăng nhập")
-        // Nếu không dùng chức năng "Ghi nhớ", bạn có thể bỏ qua 3 dòng này
         SharedPreferences preferences = getSharedPreferences("UserSession", MODE_PRIVATE);
         SharedPreferences.Editor editor = preferences.edit();
-        editor.clear(); // Xóa sạch dữ liệu đã lưu
+        editor.clear();
         editor.apply();
 
-        // BƯỚC 2: Chuyển về màn hình Login
-        Intent intent = new Intent(AdminActivity.this, LoginActivity.class); // Thay LoginActivity bằng tên file đăng nhập của bạn
-
-        // BƯỚC 3: Xóa lịch sử (QUAN TRỌNG)
-        // Lệnh này đảm bảo người dùng không thể ấn nút Back trên điện thoại để quay lại trang Admin
+        Intent intent = new Intent(AdminActivity.this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-
         startActivity(intent);
-        finish(); // Đóng Activity hiện tại
+        finish();
     }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -739,12 +712,10 @@ public class AdminActivity extends AppCompatActivity {
                 }
         );
         btnImportSQL.setOnClickListener(v -> {
-            // Xác nhận trước khi Import vì sẽ xóa dữ liệu cũ
             new AlertDialog.Builder(this)
                     .setTitle("Cảnh báo")
                     .setMessage("Import dữ liệu sẽ xóa toàn bộ dữ liệu hiện tại và thay thế bằng file mới. Bạn có chắc chắn không?")
                     .setPositiveButton("Chọn File", (dialog, which) -> {
-                        // Mở trình chọn file (Lọc file text hoặc sql)
                         filePickerLauncher.launch("*/*");
                     })
                     .setNegativeButton("Hủy", null)
@@ -755,13 +726,11 @@ public class AdminActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        // click quản lý giáo viên
         binding.btnManageTeacher.setOnClickListener(v -> {
             Intent intent = new Intent(AdminActivity.this, TeacherManageActivity.class);
             startActivity(intent);
         });
 
-        // click quản lý học viên
         binding.btnManageStudent.setOnClickListener(v -> {
             Intent intent = new Intent(AdminActivity.this, StudentManageActivity.class);
             startActivity(intent);
@@ -775,11 +744,9 @@ public class AdminActivity extends AppCompatActivity {
 
             executor.execute(() -> {
                 try {
-                    // Gọi hàm export chúng ta vừa viết
                     String path = DatabaseExporter.exportToSQL(AdminActivity.this, db);
 
                     runOnUiThread(() -> {
-                        // Tạo Dialog thông báo đường dẫn file
                         new AlertDialog.Builder(AdminActivity.this)
                                 .setTitle("Xuất File Thành Công!")
                                 .setMessage("File SQL đã được lưu tại:\n\n" + path + "\n\nBạn có thể kết nối máy tính để lấy file này.")
@@ -823,14 +790,10 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 public class AllCoursesActivity extends AppCompatActivity {
-
     private RecyclerView recyclerView;
     private UserCourseAdapter adapter;
     private AppDatabase db;
-
-    // SỬA: Đổi kiểu dữ liệu list gốc từ LopHoc sang CourseViewItem
     private List<CourseViewItem> fullList = new ArrayList<>();
-
     private String currentUserId, userRole;
 
     @Override
@@ -869,16 +832,14 @@ public class AllCoursesActivity extends AppCompatActivity {
 
     private void loadData() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            List<LopHoc> rawList; // Danh sách lớp thô từ DB
+            List<LopHoc> rawList;
 
-            // 1. Lấy danh sách lớp thô
             if ("HOCVIEN".equals(userRole)) {
                 rawList = db.thamGiaDao().getClassesByStudent(currentUserId);
             } else {
                 rawList = db.lopHocDao().getClassesByTeacher(currentUserId);
             }
 
-            // 2. Chuyển đổi sang CourseViewItem (Tính toán thống kê)
             List<CourseViewItem> calculatedList = new ArrayList<>();
 
             for (LopHoc lop : rawList) {
@@ -886,7 +847,6 @@ public class AllCoursesActivity extends AppCompatActivity {
                 int progressValue = 0;
 
                 if ("HOCVIEN".equals(userRole)) {
-                    // Logic Học viên: Đã làm / Tổng số
                     int totalAssignments = db.baiTapDao().countAssignmentsInClass(lop.MaLH);
                     int submittedCount = db.nopBaiDao().countSubmissionsByStudentInClass(currentUserId, lop.MaLH);
 
@@ -898,7 +858,6 @@ public class AllCoursesActivity extends AppCompatActivity {
                         progressValue = 0;
                     }
                 } else {
-                    // Logic Giáo viên: % nộp bài mới nhất
                     BaiTap latestBT = db.baiTapDao().getLatestAssignment(lop.MaLH);
                     if (latestBT != null) {
                         int totalStudents = db.thamGiaDao().countStudentsByClass(lop.MaLH);
@@ -916,23 +875,19 @@ public class AllCoursesActivity extends AppCompatActivity {
                         progressValue = 0;
                     }
                 }
-                // Thêm vào list đã tính toán
                 calculatedList.add(new CourseViewItem(lop, progressText, progressValue));
             }
 
-            // 3. Sắp xếp theo truy cập gần đây
             SharedPreferences accessPrefs = getSharedPreferences("AccessHistory", MODE_PRIVATE);
             Collections.sort(calculatedList, (o1, o2) -> {
-                // Lưu ý: Phải gọi o1.lopHoc.MaLH vì o1 là CourseViewItem
                 long t1 = accessPrefs.getLong("LAST_ACCESS_" + o1.lopHoc.MaLH, 0);
                 long t2 = accessPrefs.getLong("LAST_ACCESS_" + o2.lopHoc.MaLH, 0);
                 return Long.compare(t2, t1);
             });
 
-            fullList = calculatedList; // Lưu vào biến toàn cục để dùng cho Search
+            fullList = calculatedList;
 
             runOnUiThread(() -> {
-                // Adapter giờ đã nhận đúng List<CourseViewItem>
                 adapter = new UserCourseAdapter(this, fullList, this::onCourseClick);
                 recyclerView.setAdapter(adapter);
             });
@@ -940,12 +895,10 @@ public class AllCoursesActivity extends AppCompatActivity {
     }
 
     private void filter(String text) {
-        // SỬA: List filter cũng phải là CourseViewItem
         List<CourseViewItem> filteredList = new ArrayList<>();
         String query = text.toLowerCase();
 
         for (CourseViewItem item : fullList) {
-            // Truy cập thuộc tính bên trong lopHoc
             if (item.lopHoc.TenLH.toLowerCase().contains(query) ||
                     item.lopHoc.MaLH.toLowerCase().contains(query)) {
                 filteredList.add(item);
@@ -956,7 +909,6 @@ public class AllCoursesActivity extends AppCompatActivity {
         }
     }
 
-    // Hàm click giữ nguyên (vẫn nhận LopHoc từ Adapter trả về)
     private void onCourseClick(LopHoc lopHoc) {
         SharedPreferences prefs = getSharedPreferences("AccessHistory", MODE_PRIVATE);
         prefs.edit().putLong("LAST_ACCESS_" + lopHoc.MaLH, System.currentTimeMillis()).apply();
@@ -996,6 +948,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.AssignmentAdapter;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.NopBai;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -1081,6 +1034,7 @@ public class AssignmentActivity extends BaseActivity {
     private void showAssignmentDialog(BaiTap bt) {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         String role = prefs.getString("KEY_ROLE", "");
+        String currentUserId = prefs.getString("KEY_USER_ID", "");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bt.TenBT);
@@ -1117,14 +1071,52 @@ public class AssignmentActivity extends BaseActivity {
 
         if ("GIAOVIEN".equals(role)) {
             builder.setPositiveButton("Quản Lý", (dialog, which) -> showTeacherOptions(bt));
+            builder.show();
         } else if ("HOCVIEN".equals(role)) {
-            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
-                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
+            Executors.newSingleThreadExecutor().execute(() -> {
+                NopBai baiDaNop = db.nopBaiDao().getSubmission(bt.MaBT, currentUserId);
+                runOnUiThread(() -> {
+                    if (baiDaNop != null) {
+                        builder.setPositiveButton("Sửa bài nộp", (dialog, which) -> {
+                            Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            intent.putExtra("IS_EDIT", true);
+                            startActivity(intent);
+                        });
+                        builder.setNegativeButton("Xem bài nộp", (dialog, which) -> showSubmittedDetails(baiDaNop));
+                    } else {
+                        builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                            Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            startActivity(intent);
+                        });
+                    }
+                    builder.show();
+                });
             });
         }
+    }
+
+    private void showSubmittedDetails(NopBai nb) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chi tiết bài làm");
+        String detail = "Ngày nộp: " + nb.NgayNop + "\nGhi chú: " + nb.GhiChu + "\nFile: " + nb.FileName;
+        builder.setMessage(detail);
+        if (nb.FilePath != null) {
+            builder.setPositiveButton("Mở file", (d, w) -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.parse(nb.FilePath), "*/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, "Mở file"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Lỗi mở file", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        builder.setNegativeButton("Đóng", null);
         builder.show();
     }
 
@@ -1158,6 +1150,7 @@ public class AssignmentActivity extends BaseActivity {
                 })
                 .show();
     }
+
     private void confirmDelete(BaiTap bt) {
         new AlertDialog.Builder(this)
                 .setTitle("Xác nhận xóa")
@@ -1172,7 +1165,6 @@ public class AssignmentActivity extends BaseActivity {
                 .show();
     }
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\AssignmentStatsActivity.java
@@ -1836,7 +1828,6 @@ public class CommentActivity extends BaseActivity {
     private EditText etComment;
     private ImageView btnSend;
     private AppDatabase db;
-    
     private String targetId;
     private String targetType;
     private String currentUserId;
@@ -1857,7 +1848,7 @@ public class CommentActivity extends BaseActivity {
         currentUserName = prefs.getString("KEY_NAME", "User");
 
         targetId = getIntent().getStringExtra("TARGET_ID");
-        targetType = getIntent().getStringExtra("TARGET_TYPE"); // "ASSIGNMENT" or "LECTURE"
+        targetType = getIntent().getStringExtra("TARGET_TYPE");
 
         MaterialToolbar toolbar = findViewById(R.id.toolbar_comment);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -1894,7 +1885,6 @@ public class CommentActivity extends BaseActivity {
             Executors.newSingleThreadExecutor().execute(() -> {
                 db.binhLuanDao().insert(bl);
 
-                // --- Xử lý gửi thông báo ---
                 String notiContent = "";
                 String notiType = "";
                 String maLH = "";
@@ -1916,7 +1906,6 @@ public class CommentActivity extends BaseActivity {
                     }
                 }
 
-                // Nếu lấy được mã lớp, tìm thông tin GV
                 if (!maLH.isEmpty()) {
                     LopHoc lh = db.lopHocDao().getByIdSync(maLH);
                     if (lh != null) {
@@ -1928,7 +1917,7 @@ public class CommentActivity extends BaseActivity {
                     List<String> studentIds = db.thamGiaDao().getStudentIdsByClass(maLH);
                     if (studentIds != null) {
                         for (String studentId : studentIds) {
-                            if (!studentId.equals(currentUserId)) { // Thực tế GV ko bao giờ trùng HV, nhưng check cho chắc
+                            if (!studentId.equals(currentUserId)) {
                                 ThongBao tb = new ThongBao();
                                 tb.NgayTao = bl.NgayTao;
                                 tb.TargetId = targetId;
@@ -2186,15 +2175,13 @@ import java.util.Locale;
 public class DatabaseExporter {
 
     public static String exportToSQL(Context context, AppDatabase db) throws Exception {
-        // 1. Lấy database thô để đọc dữ liệu
         SupportSQLiteDatabase sqlDb = db.getOpenHelper().getReadableDatabase();
 
         StringBuilder sb = new StringBuilder();
         sb.append("-- BACKUP DATABASE: StudentPortalApp\n");
         sb.append("-- DATE: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date())).append("\n");
-        sb.append("PRAGMA foreign_keys = OFF;\n\n"); // Tắt kiểm tra khóa ngoại để tránh lỗi khi import
+        sb.append("PRAGMA foreign_keys = OFF;\n\n");
 
-        // 2. Lấy danh sách tất cả các bảng (trừ bảng hệ thống android_metadata và room_master_table)
         Cursor c = sqlDb.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN ('android_metadata', 'room_master_table')");
         List<String> tables = new ArrayList<>();
         while (c.moveToNext()) {
@@ -2202,31 +2189,25 @@ public class DatabaseExporter {
         }
         c.close();
 
-        // 3. Duyệt từng bảng để tạo lệnh INSERT
         for (String tableName : tables) {
             sb.append("-- DATA FOR TABLE: ").append(tableName).append("\n");
 
-            // Query lấy toàn bộ dữ liệu bảng đó
             Cursor cursor = sqlDb.query("SELECT * FROM " + tableName);
 
             while (cursor.moveToNext()) {
                 sb.append("INSERT INTO ").append(tableName).append(" VALUES (");
 
-                // Duyệt từng cột
                 for (int i = 0; i < cursor.getColumnCount(); i++) {
                     if (i > 0) sb.append(", ");
 
-                    // Kiểm tra kiểu dữ liệu để format đúng (Chuỗi thì thêm dấu nháy đơn, số thì không)
                     int type = cursor.getType(i);
                     if (type == Cursor.FIELD_TYPE_NULL) {
                         sb.append("NULL");
                     } else if (type == Cursor.FIELD_TYPE_STRING) {
-                        // Escape dấu nháy đơn: O'Neil -> O''Neil
                         String val = cursor.getString(i);
                         val = val.replace("'", "''");
                         sb.append("'").append(val).append("'");
                     } else {
-                        // Số hoặc Blob
                         sb.append(cursor.getString(i));
                     }
                 }
@@ -2238,8 +2219,7 @@ public class DatabaseExporter {
 
         sb.append("PRAGMA foreign_keys = ON;\n");
 
-        // 4. Lưu ra file
-        File folder = context.getExternalFilesDir(null); // Lưu vào thư mục riêng của app
+        File folder = context.getExternalFilesDir(null);
         String fileName = "Backup_" + System.currentTimeMillis() + ".sql";
         File file = new File(folder, fileName);
 
@@ -2276,8 +2256,6 @@ public class DatabaseImporter {
         String line;
         sqlDb.beginTransaction();
         try {
-            // 1. Xóa dữ liệu cũ (Tùy chọn: Nếu bạn muốn import đè hoàn toàn)
-            // Bạn có thể comment đoạn này nếu chỉ muốn thêm dữ liệu mới
             sqlDb.execSQL("DELETE FROM TAIKHOAN");
             sqlDb.execSQL("DELETE FROM HOCVIEN");
             sqlDb.execSQL("DELETE FROM GIAOVIEN");
@@ -2287,18 +2265,13 @@ public class DatabaseImporter {
             sqlDb.execSQL("DELETE FROM DIEM");
             sqlDb.execSQL("DELETE FROM THAMGIA");
 
-            // 2. Đọc và chạy từng dòng lệnh
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                // Bỏ qua dòng trống hoặc comment
                 if (line.isEmpty() || line.startsWith("--") || line.startsWith("//")) {
                     continue;
                 }
 
-                // Chạy lệnh SQL
-                // (File export của chúng ta mỗi lệnh nằm trên 1 dòng và kết thúc bằng ;)
                 if (line.endsWith(";")) {
-                    // Xóa dấu ; ở cuối vì execSQL đôi khi không cần
                     line = line.substring(0, line.length() - 1);
                 }
                 sqlDb.execSQL(line);
@@ -2336,17 +2309,12 @@ import java.util.concurrent.Executors;
 
 public class ForgotPasswordActivity extends AppCompatActivity {
 
-    // Khai báo View
     private TextInputEditText etEmail, etOTP, etNewPass;
     private Button btnGetCode, btnConfirm;
-    private ImageView btnBack; // <--- SỬA LỖI Ở ĐÂY: Dùng ImageView thay vì Button
+    private ImageView btnBack;
     private LinearLayout layoutResetPass;
-
-    // Database
     private AppDatabase db;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    // Biến lưu OTP và Email hiện tại
     private String generatedOTP = "";
     private String currentEmail = "";
 
@@ -2357,7 +2325,6 @@ public class ForgotPasswordActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // 1. Ánh xạ View (Khớp ID trong XML)
         etEmail = findViewById(R.id.etResetEmail);
         etOTP = findViewById(R.id.etOTP);
         etNewPass = findViewById(R.id.etNewPass);
@@ -2365,16 +2332,11 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         btnGetCode = findViewById(R.id.btnGetCode);
         btnConfirm = findViewById(R.id.btnConfirmReset);
 
-        btnBack = findViewById(R.id.btnBackToLogin); // XML là ImageView -> Java là ImageView
+        btnBack = findViewById(R.id.btnBackToLogin);
         layoutResetPass = findViewById(R.id.layoutResetPass);
 
-        // 2. Xử lý sự kiện nút Back
         btnBack.setOnClickListener(v -> finish());
-
-        // 3. Xử lý nút Lấy Mã
         btnGetCode.setOnClickListener(v -> handleSendCode());
-
-        // 4. Xử lý nút Đổi Mật Khẩu
         btnConfirm.setOnClickListener(v -> handleConfirmReset());
     }
 
@@ -2387,26 +2349,22 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         }
 
         executor.execute(() -> {
-            // Kiểm tra Email có tồn tại trong DB không
             TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
             runOnUiThread(() -> {
                 if (user == null) {
                     Toast.makeText(this, "Email không tồn tại trong hệ thống!", Toast.LENGTH_SHORT).show();
                 } else {
-                    // Email đúng -> Tạo mã OTP 4 số ngẫu nhiên
                     Random random = new Random();
-                    int otp = random.nextInt(9000) + 1000; // 1000 -> 9999
+                    int otp = random.nextInt(9000) + 1000;
                     generatedOTP = String.valueOf(otp);
                     currentEmail = email;
 
-                    // HIỆN OTP LÊN MÀN HÌNH (Simulation)
                     Toast.makeText(this, "Mã xác nhận của bạn là: " + generatedOTP, Toast.LENGTH_LONG).show();
 
-                    // Cập nhật giao diện
-                    etEmail.setEnabled(false); // Khóa ô email
-                    btnGetCode.setVisibility(View.GONE); // Ẩn nút lấy mã
-                    layoutResetPass.setVisibility(View.VISIBLE); // Hiện form nhập OTP
+                    etEmail.setEnabled(false);
+                    btnGetCode.setVisibility(View.GONE);
+                    layoutResetPass.setVisibility(View.VISIBLE);
                 }
             });
         });
@@ -2421,22 +2379,20 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // Kiểm tra OTP
         if (!inputOTP.equals(generatedOTP)) {
             etOTP.setError("Mã xác nhận không đúng");
             return;
         }
 
-        // OTP đúng -> Cập nhật mật khẩu vào DB
         executor.execute(() -> {
             TaiKhoan user = db.taiKhoanDao().getByEmail(currentEmail);
             if (user != null) {
-                user.MatKhau = newPass; // Cập nhật pass mới
+                user.MatKhau = newPass;
                 db.taiKhoanDao().update(user);
 
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Đổi mật khẩu thành công! Hãy đăng nhập lại.", Toast.LENGTH_LONG).show();
-                    finish(); // Đóng màn hình này
+                    finish();
                 });
             }
         });
@@ -2481,12 +2437,9 @@ public class GradeActivity extends BaseActivity {
     private String realMaHV;
     private List<LopHoc> listAllLop;
     private String userRole;
-
     private List<Diem> currentClassGrades = new ArrayList<>();
     private List<BaiTap> currentClassAssignments = new ArrayList<>();
-    private String currentSelectedMaBT = "ALL"; // "ALL" or MaBT
-
-    // Biến để lưu mã lớp được truyền từ thông báo (nếu có)
+    private String currentSelectedMaBT = "ALL";
     private String targetClassIdFromNoti = null;
 
     @Override
@@ -2593,12 +2546,11 @@ public class GradeActivity extends BaseActivity {
     }
 
     private void loadAssignmentsForClass(String maLH) {
-        // Load danh sách bài tập để fill vào spinner Assignments
         db.baiTapDao().getByLop(maLH).observe(this, listBT -> {
             currentClassAssignments = listBT != null ? listBT : new ArrayList<>();
             
             List<String> assignmentNames = new ArrayList<>();
-            assignmentNames.add("Tất cả bài tập"); // Default option
+            assignmentNames.add("Tất cả bài tập");
 
             for (BaiTap bt : currentClassAssignments) {
                 assignmentNames.add(bt.TenBT);
@@ -2615,7 +2567,6 @@ public class GradeActivity extends BaseActivity {
                     if (position == 0) {
                         currentSelectedMaBT = "ALL";
                     } else {
-                        // position - 1 vì index 0 là "Tất cả"
                         currentSelectedMaBT = currentClassAssignments.get(position - 1).MaBT;
                     }
                     filterAndDisplayGrades();
@@ -2629,13 +2580,11 @@ public class GradeActivity extends BaseActivity {
 
     private void loadGradesForClass(String maLH) {
         if ("GIAOVIEN".equals(userRole)) {
-            // Giáo viên: Lấy TẤT CẢ điểm
             db.diemDao().getAll().observe(this, listDiem -> {
                 if (listDiem == null) listDiem = new ArrayList<>();
                 processGradesForClass(listDiem, maLH);
             });
         } else {
-            // Học viên: Lấy điểm của MÌNH
             db.diemDao().getByHocVien(realMaHV).observe(this, listDiem -> {
                 if (listDiem == null) listDiem = new ArrayList<>();
                 processGradesForClass(listDiem, maLH);
@@ -2675,18 +2624,12 @@ public class GradeActivity extends BaseActivity {
     }
 
     private boolean isAssignmentInClass(String maBT, String maLH) {
-        // Cần kiểm tra xem maBT có thuộc lớp maLH không
-        // Nếu dùng synchronous thì chậm, nhưng ở đây tạm chấp nhận hoặc tối ưu sau
-        // Tốt nhất là check trong list assignment đã load
-        
-        // Check cache assignments first
         for (BaiTap bt : currentClassAssignments) {
             if (bt.MaBT.equals(maBT)) {
-                return true; // Nếu bt này thuộc lớp hiện tại
+                return true;
             }
         }
-        
-        // Fallback check DB (chậm)
+
         BaiTap bt = db.baiTapDao().getByIdSync(maBT);
         return bt != null && maLH.equals(bt.MaLH);
     }
@@ -2905,13 +2848,11 @@ public class LoginActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Xử lý nút Quên Mật Khẩu
         binding.tvForgotPassword.setOnClickListener(v -> {
             Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
         });
 
-        // Xử lý nút Đăng nhập
         binding.btnLogin.setOnClickListener(v -> {
             String email = binding.etEmail.getText().toString().trim();
             String password = binding.etPassword.getText().toString().trim();
@@ -2921,9 +2862,7 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 1. Kiểm tra Admin
             if (email.equals(ADMIN_EMAIL) && password.equals(ADMIN_PASS)) {
-                // Admin thì tự đặt tên hiển thị là "Administrator"
                 saveUserSession("ADMIN", "ADMIN", "Administrator");
 
                 Toast.makeText(LoginActivity.this, "Đăng nhập ADMIN thành công!", Toast.LENGTH_SHORT).show();
@@ -2933,7 +2872,6 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            // 2. Kiểm tra User thường (Database)
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getByEmail(email);
 
@@ -2943,7 +2881,6 @@ public class LoginActivity extends AppCompatActivity {
                     } else if (!user.MatKhau.equals(password)) {
                         Toast.makeText(LoginActivity.this, "Mật khẩu không đúng.", Toast.LENGTH_SHORT).show();
                     } else {
-                        // Lưu đủ 3 thông tin: ID, Vai Trò, Họ Tên
                         saveUserSession(user.MaTK, user.VaiTro, user.HoTen);
 
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
@@ -2956,15 +2893,13 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    // --- HÀM LƯU SESSION ĐÃ SỬA ---
-    // Nhận vào 3 tham số để lưu đủ dữ liệu cho HomeActivity dùng
     private void saveUserSession(String userId, String role, String fullName) {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
 
         editor.putString("KEY_USER_ID", userId);
         editor.putString("KEY_ROLE", role);
-        editor.putString("KEY_NAME", fullName);  // Lưu thêm Họ tên ở đây
+        editor.putString("KEY_NAME", fullName);
 
         editor.apply();
     }
@@ -3050,11 +2985,9 @@ public class NotificationActivity extends BaseActivity {
         SharedPreferences prefs = getSharedPreferences("UserSession", Context.MODE_PRIVATE);
         String role = prefs.getString("KEY_ROLE", "");
 
-        // Lấy thông báo gửi riêng cho mình HOẶC thông báo chung cho vai trò của mình
         db.thongBaoDao().getByNguoiNhan(currentMaTK, role).observe(this, list -> {
             if (list == null) list = new ArrayList<>();
-            
-            // SỬA: Truyền DB vào Adapter để xử lý click
+
             NotificationAdapter adapter = new NotificationAdapter(this, list);
             recyclerView.setAdapter(adapter);
         });
@@ -3110,10 +3043,8 @@ public class OptionsActivity extends BaseActivity {
                 true
         );
 
-        // Hiển thị popup ngay bên dưới icon
         popupWindow.showAsDropDown(anchorView, -150, 0, Gravity.END);
 
-        // Cho phép bấm ra ngoài để đóng popup
         popupWindow.setOutsideTouchable(true);
         popupWindow.setFocusable(true);
     }
@@ -3334,24 +3265,19 @@ public class ProfileActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // 2. Lấy thông tin phiên đăng nhập từ "UserSession"
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         currentUserId = prefs.getString("KEY_USER_ID", "");
         String role = prefs.getString("KEY_ROLE", "");
 
-        // 3. Logic hiển thị Label theo Role
         if (role.equalsIgnoreCase("GIAOVIEN")) {
             tvLabelID.setText("Mã Giảng Viên:");
         } else if (role.equalsIgnoreCase("HOCVIEN")) {
             tvLabelID.setText("Mã Học Viên:");
         } else {
-            tvLabelID.setText("Mã Tài Khoản:"); // Trường hợp Admin
+            tvLabelID.setText("Mã Tài Khoản:");
         }
 
-        // 4. Load dữ liệu
         loadUserProfile(currentUserId);
-
-        // 5. Nút đổi mật khẩu
         btnChangePass.setOnClickListener(v -> showChangePasswordDialog());
     }
 
@@ -3387,7 +3313,7 @@ public class ProfileActivity extends AppCompatActivity {
         EditText etConfirmPass = view.findViewById(R.id.etConfirmPass);
 
         builder.setView(view);
-        builder.setPositiveButton("Lưu", null); // Xử lý sau để tránh đóng dialog
+        builder.setPositiveButton("Lưu", null);
         builder.setNegativeButton("Hủy", null);
 
         AlertDialog dialog = builder.create();
@@ -3410,7 +3336,6 @@ public class ProfileActivity extends AppCompatActivity {
             executor.execute(() -> {
                 TaiKhoan user = db.taiKhoanDao().getById(currentUserId);
                 if (user != null && user.MatKhau.equals(oldPass)) {
-                    // Update Database
                     user.MatKhau = newPass;
                     db.taiKhoanDao().update(user);
 
@@ -3563,29 +3488,22 @@ public class StudentManageActivity extends AppCompatActivity {
 
         db = AppDatabase.getDatabase(getApplicationContext());
 
-        // Nút quay lại
         Button btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
 
-        // Tải dữ liệu
         loadHocVien();
     }
 
-    // Thay thế toàn bộ hàm loadHocVien() cũ bằng đoạn này:
     private void loadHocVien() {
-        // Quan sát danh sách học viên
         db.hocVienDao().getAll().observe(this, listHV -> {
 
-            // Chạy background để lấy thông tin lớp cho từng học viên
             executor.execute(() -> {
                 List<com.example.studentportalapp.model.StudentItem> displayList = new ArrayList<>();
 
                 if (listHV != null) {
                     for (HocVien hv : listHV) {
-                        // 1. Tìm các lớp học viên này tham gia
                         List<String> classIds = db.thamGiaDao().getClassIdsByStudent(hv.getMaHV());
 
-                        // 2. Nối thành chuỗi (VD: "CNTT1, CNTT2")
                         String classNames = "";
                         if (classIds != null && !classIds.isEmpty()) {
                             StringBuilder sb = new StringBuilder();
@@ -3596,12 +3514,10 @@ public class StudentManageActivity extends AppCompatActivity {
                             classNames = sb.toString();
                         }
 
-                        // 3. Tạo item hiển thị
                         displayList.add(new com.example.studentportalapp.model.StudentItem(hv, classNames));
                     }
                 }
 
-                // 4. Cập nhật UI
                 runOnUiThread(() -> {
                     adapter = new HocVienAdapter(this, displayList, new HocVienAdapter.OnItemClickListener() {
                         @Override
@@ -3620,8 +3536,6 @@ public class StudentManageActivity extends AppCompatActivity {
         });
     }
 
-    // ================== CÁC HÀM DIALOG ĐÃ SỬA ==================
-
     private void showEditDialog(HocVien hv) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_edit_student, null);
@@ -3630,26 +3544,20 @@ public class StudentManageActivity extends AppCompatActivity {
         TextInputEditText etEmail = view.findViewById(R.id.etEditEmailHV);
         TextInputEditText etLop = view.findViewById(R.id.etEditLopHV);
 
-        // Đổ dữ liệu Tên & Email (Có sẵn trong object)
         if (hv.getTenHV() != null) etTen.setText(hv.getTenHV());
         if (hv.getEmail() != null) etEmail.setText(hv.getEmail());
 
-        // --- PHẦN SỬA ĐỔI QUAN TRỌNG ---
-        // Vì MaLH không còn trong HocVien, ta phải query từ bảng THAMGIA
         etLop.setText("Đang tải danh sách lớp...");
-        etLop.setEnabled(false); // Khóa không cho sửa
+        etLop.setEnabled(false);
         etLop.setFocusable(false);
 
         executor.execute(() -> {
-            // Lấy danh sách các mã lớp mà học viên này tham gia
             List<String> classes = db.thamGiaDao().getClassIdsByStudent(hv.getMaHV());
 
-            // Chuyển danh sách thành chuỗi (Ví dụ: "LH01, LH02")
             String displayStr;
             if (classes == null || classes.isEmpty()) {
                 displayStr = "Chưa tham gia lớp nào";
             } else {
-                // Nối các mã lớp lại với nhau bằng dấu phẩy
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < classes.size(); i++) {
                     sb.append(classes.get(i));
@@ -3658,10 +3566,8 @@ public class StudentManageActivity extends AppCompatActivity {
                 displayStr = sb.toString();
             }
 
-            // Cập nhật lên giao diện (phải dùng runOnUiThread)
             runOnUiThread(() -> etLop.setText(displayStr));
         });
-        // --------------------------------
 
         builder.setView(view);
 
@@ -3690,12 +3596,8 @@ public class StudentManageActivity extends AppCompatActivity {
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_confirm_delete, null);
 
         TextView tvMessage = view.findViewById(R.id.tvConfirmMessage);
-
-        // Sửa câu thông báo: Bỏ phần "khỏi lớp..." vì học viên không còn gắn cứng với 1 lớp
         tvMessage.setText("Bạn có chắc muốn xóa học viên " + hv.getTenHV() + " khỏi hệ thống? (Học viên sẽ bị xóa khỏi tất cả các lớp)");
-
         builder.setView(view);
-
         builder.setPositiveButton("Xóa ngay", (dialog, which) -> {
             executor.execute(() -> {
                 db.hocVienDao().delete(hv);
@@ -3728,15 +3630,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-import java.util.Date;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThongBao;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -3745,15 +3644,15 @@ import java.util.concurrent.Executors;
 public class SubmitAssignmentActivity extends BaseActivity {
 
     private EditText etSubmitTitle, etNote;
-    private View btnAttach; // Đổi thành View vì là LinearLayout
-    private TextView tvFileName; // Thêm TextView hiển thị tên file
+    private View btnAttach;
+    private TextView tvFileName;
     private Button btnSubmit;
     private Uri selectedFileUri;
     private TextView tvDeadlineWarning;
     private String selectedFileName;
     private String maBT;
     private String currentMaHV;
-
+    private String existingMaNB = null;
     private final ActivityResultLauncher<String[]> filePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocument(),
             uri -> {
@@ -3765,8 +3664,6 @@ public class SubmitAssignmentActivity extends BaseActivity {
                         e.printStackTrace();
                     }
                     selectedFileName = getFileName(uri);
-
-                    // Cập nhật giao diện khi chọn file xong
                     if (tvFileName != null) {
                         tvFileName.setText("Đã chọn: " + selectedFileName);
                         tvFileName.setTextColor(getResources().getColor(R.color.purple_500));
@@ -3789,36 +3686,54 @@ public class SubmitAssignmentActivity extends BaseActivity {
         maBT = getIntent().getStringExtra("MA_BT");
         String tenBT = getIntent().getStringExtra("TEN_BT");
 
-        // Ánh xạ theo ID mới
         etSubmitTitle = findViewById(R.id.et_submit_title);
         etNote = findViewById(R.id.et_submit_note);
         btnAttach = findViewById(R.id.btn_attach_file_submit);
-        tvFileName = findViewById(R.id.tvFileName); // Ánh xạ TextView tên file
+        tvFileName = findViewById(R.id.tvFileName);
         btnSubmit = findViewById(R.id.btn_submit_final);
         View btnBack = findViewById(R.id.btnBack);
         tvDeadlineWarning = findViewById(R.id.tvDeadlineWarning);
+
         if (etSubmitTitle != null && tenBT != null) {
             etSubmitTitle.setText(tenBT);
         }
 
-        // Xử lý nút Back
         if (btnBack != null) {
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // Xử lý chọn file
         btnAttach.setOnClickListener(v -> filePickerLauncher.launch(new String[]{"*/*"}));
 
-        // Xử lý submit
-        btnSubmit.setOnClickListener(v -> {
-            if (selectedFileUri == null) {
-                Toast.makeText(this, "Vui lòng đính kèm bài làm!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            handlePostSubmission();
-        });
+        btnSubmit.setOnClickListener(v -> handlePostSubmission());
+
         checkDeadline();
+        checkForExistingSubmission();
     }
+
+    private void checkForExistingSubmission() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
+            NopBai oldSubmission = db.nopBaiDao().getSubmission(maBT, currentMaHV);
+
+            if (oldSubmission != null) {
+                existingMaNB = oldSubmission.MaNB;
+                if (oldSubmission.FilePath != null) {
+                    selectedFileUri = Uri.parse(oldSubmission.FilePath);
+                }
+                selectedFileName = oldSubmission.FileName;
+
+                runOnUiThread(() -> {
+                    if (etNote != null) etNote.setText(oldSubmission.GhiChu);
+                    if (tvFileName != null) {
+                        tvFileName.setText("File hiện tại: " + oldSubmission.FileName);
+                        tvFileName.setTextColor(getResources().getColor(R.color.purple_500));
+                    }
+                    if (btnSubmit != null) btnSubmit.setText("Cập nhật bài nộp");
+                });
+            }
+        });
+    }
+
     private void checkDeadline() {
         Executors.newSingleThreadExecutor().execute(() -> {
             AppDatabase db = AppDatabase.getDatabase(getApplicationContext());
@@ -3826,10 +3741,7 @@ public class SubmitAssignmentActivity extends BaseActivity {
 
             if (bt != null && bt.Deadline != null && !bt.Deadline.isEmpty()) {
                 try {
-                    // Giả sử định dạng ngày là dd/MM/yyyy
                     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-
-                    // Set giờ deadline là cuối ngày (23:59:59) để so sánh chính xác
                     Date deadlineDate = sdf.parse(bt.Deadline);
                     deadlineDate.setHours(23);
                     deadlineDate.setMinutes(59);
@@ -3839,17 +3751,14 @@ public class SubmitAssignmentActivity extends BaseActivity {
 
                     runOnUiThread(() -> {
                         if (currentDate.after(deadlineDate)) {
-                            // QUÁ HẠN
                             btnSubmit.setEnabled(false);
                             btnSubmit.setBackgroundTintList(getColorStateList(android.R.color.darker_gray));
-                            btnAttach.setEnabled(false); // Không cho chọn file
+                            btnAttach.setEnabled(false);
                             btnAttach.setAlpha(0.5f);
                             etNote.setEnabled(false);
-
                             tvDeadlineWarning.setVisibility(View.VISIBLE);
                             tvDeadlineWarning.setText("Đã quá hạn nộp bài (" + bt.Deadline + "). Bạn không thể nộp.");
                         } else {
-                            // CÒN HẠN
                             tvDeadlineWarning.setVisibility(View.GONE);
                         }
                     });
@@ -3859,12 +3768,18 @@ public class SubmitAssignmentActivity extends BaseActivity {
             }
         });
     }
+
     private void handlePostSubmission() {
+        if (selectedFileUri == null) {
+            Toast.makeText(this, "Vui lòng đính kèm bài làm!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         String note = etNote.getText().toString().trim();
         String timeStamp = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
 
         NopBai nb = new NopBai();
-        nb.MaNB = "NB" + System.currentTimeMillis();
+        nb.MaNB = (existingMaNB != null) ? existingMaNB : "NB" + System.currentTimeMillis();
         nb.MaBT = maBT;
         nb.MaHV = currentMaHV;
         nb.FileName = selectedFileName;
@@ -3884,12 +3799,11 @@ public class SubmitAssignmentActivity extends BaseActivity {
                 com.example.studentportalapp.data.Entity.LopHoc lh = database.lopHocDao().getByIdSync(bt.MaLH);
                 if (lh != null) {
                     ThongBao tb = new ThongBao();
-                    tb.NoiDung = tenHV + " đã nộp bài: " + bt.TenBT;
+                    tb.NoiDung = tenHV + (existingMaNB != null ? " đã cập nhật bài nộp: " : " đã nộp bài: ") + bt.TenBT;
                     tb.NgayTao = timeStamp;
                     tb.NguoiNhan = lh.MaGV;
-                    // SỬA LỖI: Thêm 2 dòng này để link hoạt động
-                    tb.LoaiTB = "SUBMISSION"; 
-                    tb.TargetId = maBT; 
+                    tb.LoaiTB = "SUBMISSION";
+                    tb.TargetId = maBT;
                     database.thongBaoDao().insert(tb);
                 }
             }
@@ -3923,7 +3837,6 @@ public class SubmitAssignmentActivity extends BaseActivity {
         return result;
     }
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\TeacherManageActivity.java
@@ -3962,27 +3875,22 @@ public class TeacherManageActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_teacher_manage); // Đảm bảo file XML này có RecyclerView ID recyclerTeacher
+        setContentView(R.layout.activity_teacher_manage);
 
         db = AppDatabase.getDatabase(getApplicationContext());
-        recyclerView = findViewById(R.id.recyclerTeacher); // Sửa ID trong XML nếu khác
+        recyclerView = findViewById(R.id.recyclerTeacher);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-
-        // Tùy chọn: Nút thêm GV (nếu bạn muốn thêm ở đây)
-        // findViewById(R.id.btnAddTeacher).setOnClickListener(...)
 
         loadTeachers();
     }
 
     private void loadTeachers() {
-        // Observer GV thay đổi
         db.giaoVienDao().getAll().observe(this, listGV -> {
             executor.execute(() -> {
                 List<TeacherDisplayItem> displayList = new ArrayList<>();
 
-                // Duyệt qua từng giáo viên để đếm số lớp họ dạy
                 for (GiaoVien gv : listGV) {
                     int count = db.lopHocDao().countClassesByTeacher(gv.getMaGV());
                     displayList.add(new TeacherDisplayItem(gv, count));
@@ -4011,12 +3919,10 @@ public class TeacherManageActivity extends AppCompatActivity {
         });
     }
 
-    // --- DIALOG XEM LỚP ĐANG DẠY ---
     private void showClassesDialog(GiaoVien gv) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Lớp dạy: " + gv.getTenGV());
 
-        // Sử dụng ListView đơn giản để hiện danh sách
         ListView listView = new ListView(this);
         builder.setView(listView);
 
@@ -4026,7 +3932,6 @@ public class TeacherManageActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 if (classNames.isEmpty()) {
                     Toast.makeText(this, "Giáo viên này chưa nhận lớp nào.", Toast.LENGTH_SHORT).show();
-                    // Vẫn hiện dialog nhưng list rỗng hoặc thêm 1 item thông báo
                     ArrayList<String> emptyList = new ArrayList<>();
                     emptyList.add("(Chưa có lớp)");
                     listView.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, emptyList));
@@ -4040,21 +3945,19 @@ public class TeacherManageActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // --- DIALOG SỬA THÔNG TIN ---
     private void showEditDialog(GiaoVien gv) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_edit_student, null); // Tái sử dụng layout sửa
-        // Hoặc bạn tạo layout riêng nếu muốn, nhưng cấu trúc giống nhau (Tên, Email)
 
-        TextInputEditText etTen = view.findViewById(R.id.etEditTenHV); // ID trong layout cũ
+        TextInputEditText etTen = view.findViewById(R.id.etEditTenHV);
         TextInputEditText etEmail = view.findViewById(R.id.etEditEmailHV);
-        TextInputEditText etMa = view.findViewById(R.id.etEditLopHV); // Tạm dùng ô này hiển thị Mã GV
+        TextInputEditText etMa = view.findViewById(R.id.etEditLopHV);
 
         etTen.setText(gv.getTenGV());
         etEmail.setText(gv.getEmail());
 
         etMa.setText("MSGV: " + gv.getMaGV());
-        etMa.setEnabled(false); // Không cho sửa mã
+        etMa.setEnabled(false);
 
         builder.setView(view);
         builder.setTitle("Sửa Giáo Viên");
@@ -4076,7 +3979,6 @@ public class TeacherManageActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // --- DIALOG XÓA ---
     private void showDeleteConfirm(GiaoVien gv) {
         new AlertDialog.Builder(this)
                 .setTitle("Xóa Giáo Viên")
@@ -4084,8 +3986,6 @@ public class TeacherManageActivity extends AppCompatActivity {
                 .setPositiveButton("Xóa", (dialog, which) -> {
                     executor.execute(() -> {
                         db.giaoVienDao().delete(gv);
-                        // Xóa tài khoản tương ứng luôn nếu cần
-                        // db.taiKhoanDao().deleteById(gv.getMaTK());
 
                         runOnUiThread(() -> Toast.makeText(this, "Đã xóa giáo viên!", Toast.LENGTH_SHORT).show());
                     });
@@ -4134,7 +4034,10 @@ public class ToDoActivity extends BaseActivity {
         currentUserRole = prefs.getString("KEY_ROLE", "");
 
         ListView listView = findViewById(R.id.list_tasks);
-
+        android.view.View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
         executor.execute(() -> {
             List<Task> tasks = new ArrayList<>();
             if ("HOCVIEN".equals(currentUserRole)) {
@@ -4158,7 +4061,7 @@ public class ToDoActivity extends BaseActivity {
                     for (BaiTap baiTap : assignments) {
                         if (isDeadlineActive(baiTap.Deadline)) {
                             int submissionCount = db.nopBaiDao().countSubmissionsForAssignment(baiTap.MaBT);
-                            if (submissionCount < totalStudents) { // Chỉ hiển thị nếu chưa nộp đủ
+                            if (submissionCount < totalStudents) {
                                 tasks.add(new Task(baiTap.TenBT, lopHoc.TenLH, baiTap.Deadline, baiTap.MaBT, currentUserRole, submissionCount, totalStudents));
                             }
                         }
@@ -4180,15 +4083,15 @@ public class ToDoActivity extends BaseActivity {
 
     private boolean isDeadlineActive(String deadline) {
         if (deadline == null || deadline.isEmpty()) {
-            return true; // Mặc định là còn hạn nếu không có deadline
+            return true;
         }
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault());
             Date deadlineDate = sdf.parse(deadline);
-            return new Date().before(deadlineDate); // Trả về true nếu ngày hiện tại trước deadline
+            return new Date().before(deadlineDate);
         } catch (ParseException e) {
             e.printStackTrace();
-            return true; // Mặc định là còn hạn nếu không thể phân tích chuỗi
+            return true;
         }
     }
 }
@@ -4498,7 +4401,6 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.ViewHold
         holder.tvContent.setText(bl.NoiDung);
         holder.tvDate.setText(bl.NgayTao);
 
-        // SỬA: Đổi màu nền nếu là bình luận của giáo viên
         AppDatabase.databaseWriteExecutor.execute(() -> {
             String role = db.taiKhoanDao().getRoleById(bl.MaNguoiGui);
             ((android.app.Activity) holder.itemView.getContext()).runOnUiThread(() -> {
@@ -4675,11 +4577,6 @@ public class GradeAdapter extends RecyclerView.Adapter<GradeAdapter.ViewHolder> 
             String assignmentName = (bt != null) ? bt.TenBT : "MaBT: " + diem.MaBT;
             String studentName = (hv != null) ? hv.getTenHV() : "MaHV: " + diem.MaHV;
             
-            // Nếu người xem là giáo viên (hoặc để tổng quát), ta có thể hiển thị thêm tên học viên
-            // Tuy nhiên, logic này sẽ hiển thị: "Tên Học Viên - Tên Bài Tập"
-            // Hoặc nếu muốn đơn giản, ta kiểm tra context hoặc chỉ hiển thị tên bài tập nếu là học viên xem.
-            // Nhưng ở đây ta cứ hiển thị cả hai nếu có thông tin để rõ ràng.
-            
             final String finalTitle = studentName + " - " + assignmentName;
 
             if (context instanceof android.app.Activity) {
@@ -4731,7 +4628,7 @@ import java.util.List;
 public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHolder> {
 
     private Context context;
-    private List<StudentItem> list; // Đổi từ HocVien sang StudentItem
+    private List<StudentItem> list;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
@@ -4756,11 +4653,9 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         StudentItem item = list.get(position);
 
-        // Hiển thị thông tin
         holder.tvTen.setText(item.hocVien.getTenHV());
         holder.tvEmail.setText(item.hocVien.getEmail());
 
-        // Hiển thị danh sách lớp (Lấy từ biến classNames đã chuẩn bị sẵn)
         if (item.classNames == null || item.classNames.isEmpty()) {
             holder.tvLop.setText("Lớp: Chưa xếp lớp");
         } else {
@@ -4783,7 +4678,6 @@ public class HocVienAdapter extends RecyclerView.Adapter<HocVienAdapter.ViewHold
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Ánh xạ đúng ID trong item_hocvien.xml mới
             tvTen = itemView.findViewById(R.id.tvHoTenHV);
             tvEmail = itemView.findViewById(R.id.tvEmailHV);
             tvLop = itemView.findViewById(R.id.tvMaLopHV);
@@ -4964,20 +4858,16 @@ import java.util.List;
 public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder> {
 
     private final List<Person> peopleList;
-    private OnPersonClickListener listener; // Listener
-
-    // Interface cho sự kiện click
+    private OnPersonClickListener listener;
     public interface OnPersonClickListener {
         void onPersonClick(Person person);
     }
 
-    // Constructor cập nhật
     public PeopleAdapter(List<Person> peopleList, OnPersonClickListener listener) {
         this.peopleList = peopleList;
         this.listener = listener;
     }
 
-    // Constructor cũ (để tương thích nếu cần, hoặc xóa đi)
     public PeopleAdapter(List<Person> peopleList) {
         this.peopleList = peopleList;
     }
@@ -4995,7 +4885,6 @@ public class PeopleAdapter extends RecyclerView.Adapter<PeopleAdapter.ViewHolder
         holder.txtName.setText(person.getName());
         holder.txtRole.setText(person.getRole());
 
-        // Bắt sự kiện click
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onPersonClick(person);
@@ -5154,10 +5043,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
@@ -5165,7 +5052,6 @@ import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThongBao;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -5215,14 +5101,13 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             holder.layoutFile.setVisibility(View.GONE);
         }
 
-        // 1. Load tên học viên và ĐIỂM CŨ (nếu có)
         Executors.newSingleThreadExecutor().execute(() -> {
             HocVien hv = db.hocVienDao().getByIdSync(nb.MaHV);
-            
+
             if (context instanceof androidx.lifecycle.LifecycleOwner) {
                 ((android.app.Activity) context).runOnUiThread(() -> {
                     if (hv != null) holder.tvName.setText(hv.getTenHV());
-                    
+
                     db.diemDao().getByHocVienBaiTap(nb.MaHV, nb.MaBT).observe((androidx.lifecycle.LifecycleOwner) context, existingDiem -> {
                         if (existingDiem != null) {
                             holder.etGrade.setText(String.valueOf(existingDiem.SoDiem));
@@ -5238,7 +5123,6 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             }
         });
 
-        // 2. Xử lý nút Lưu điểm
         holder.btnSaveGrade.setOnClickListener(v -> {
             String gradeStr = holder.etGrade.getText().toString().trim();
             String feedback = holder.etFeedback.getText().toString().trim();
@@ -5250,6 +5134,12 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
             try {
                 double grade = Double.parseDouble(gradeStr);
+
+                if (grade < 0 || grade > 10) {
+                    Toast.makeText(context, "Điểm phải nằm trong khoảng 0 - 10", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 Diem diemObj = new Diem();
                 diemObj.MaHV = nb.MaHV;
                 diemObj.MaBT = nb.MaBT;
@@ -5259,22 +5149,21 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
                 Executors.newSingleThreadExecutor().execute(() -> {
                     db.diemDao().insert(diemObj);
-                    
-                    // GỬI THÔNG BÁO CHO HỌC VIÊN KHI CÓ ĐIỂM
+
                     BaiTap bt = db.baiTapDao().getByIdSync(nb.MaBT);
                     if (bt != null) {
                         ThongBao tb = new ThongBao();
                         tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
                         tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                        tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
-                        tb.LoaiTB = "GRADE"; // QUAN TRỌNG
-                        tb.TargetId = bt.MaLH; // Mã lớp học để điều hướng
+                        tb.NguoiNhan = nb.MaHV;
+                        tb.LoaiTB = "GRADE";
+                        tb.TargetId = bt.MaLH;
                         db.thongBaoDao().insert(tb);
                     }
 
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> {
-                            Toast.makeText(context, "Đã lưu điểm và thông báo cho học viên!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Đã lưu điểm thành công!", Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
@@ -5305,14 +5194,13 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             tvNote = itemView.findViewById(R.id.tv_submit_note);
             tvFileName = itemView.findViewById(R.id.tv_submission_file_name);
             layoutFile = itemView.findViewById(R.id.layout_submission_file);
-            
+
             etGrade = itemView.findViewById(R.id.et_grade);
             etFeedback = itemView.findViewById(R.id.et_feedback);
             btnSaveGrade = itemView.findViewById(R.id.btn_save_grade);
         }
     }
 }
-
 
 ==================================================
 FILE: app\src\main\java\com\example\studentportalapp\adapter\TaskAdapter.java
@@ -5441,7 +5329,7 @@ public class TeacherAdapter extends RecyclerView.Adapter<TeacherAdapter.ViewHold
     public interface OnItemClickListener {
         void onEdit(TeacherDisplayItem item);
         void onDelete(TeacherDisplayItem item);
-        void onViewClasses(TeacherDisplayItem item); // Nút mới
+        void onViewClasses(TeacherDisplayItem item);
     }
 
     public TeacherAdapter(Context context, List<TeacherDisplayItem> list, OnItemClickListener listener) {
@@ -5514,11 +5402,11 @@ import java.util.List;
 public class UserCourseAdapter extends RecyclerView.Adapter<UserCourseAdapter.ViewHolder> {
 
     private Context context;
-    private List<CourseViewItem> list; // Sửa ở đây
+    private List<CourseViewItem> list;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onItemClick(LopHoc lopHoc); // Vẫn trả về LopHoc khi click
+        void onItemClick(LopHoc lopHoc);
     }
 
     public UserCourseAdapter(Context context, List<CourseViewItem> list, OnItemClickListener listener) {
@@ -5546,14 +5434,11 @@ public class UserCourseAdapter extends RecyclerView.Adapter<UserCourseAdapter.Vi
 
         holder.tvName.setText(lop.TenLH);
 
-        String tenGV = (lop.MaGV == null) ? "Chưa phân công" : lop.MaGV; // Có thể query tên GV nếu muốn, tạm thời để MaGV
+        String tenGV = (lop.MaGV == null) ? "Chưa phân công" : lop.MaGV;
         holder.tvCode.setText(lop.MaLH + " | GV: " + tenGV);
 
-        // --- CẬP NHẬT TIẾN ĐỘ TỪ DỮ LIỆU THỰC ---
         holder.progressBar.setProgress(item.progressValue);
 
-        // Cần thêm TextView hiển thị % hoặc số bài (bạn cần thêm ID tvPercent vào layout item_course_user.xml nếu chưa có)
-        // Giả sử bạn dùng TextView hiển thị % ở layout cũ
         holder.tvPercent.setText(item.progressText);
 
         holder.itemView.setOnClickListener(v -> listener.onItemClick(lop));
@@ -5563,7 +5448,7 @@ public class UserCourseAdapter extends RecyclerView.Adapter<UserCourseAdapter.Vi
     public int getItemCount() { return list == null ? 0 : list.size(); }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCode, tvPercent; // Thêm tvPercent
+        TextView tvName, tvCode, tvPercent;
         ProgressBar progressBar;
 
         public ViewHolder(@NonNull View itemView) {
@@ -5571,11 +5456,7 @@ public class UserCourseAdapter extends RecyclerView.Adapter<UserCourseAdapter.Vi
             tvName = itemView.findViewById(R.id.tvCourseName);
             tvCode = itemView.findViewById(R.id.tvCourseCode);
             progressBar = itemView.findViewById(R.id.progressBar);
-            // Tìm TextView hiển thị text bên cạnh progressBar trong item_course_user.xml
-            // Nếu trong layout của bạn nó là TextView nằm cạnh ProgressBar, hãy đặt ID cho nó là tvPercent
-            // Ví dụ trong code cũ: android:text="65%"
             tvPercent = ((ViewGroup) progressBar.getParent()).findViewWithTag("percentText");
-            // HOẶC TỐT NHẤT: Bạn vào item_course_user.xml đặt id cho TextView đó là @+id/tvPercent rồi find ở đây:
             tvPercent = itemView.findViewById(R.id.tvPercent);
         }
     }
@@ -5780,7 +5661,6 @@ public interface BaiTapDao {
     @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT")
     LiveData<BaiTap> getById(String maBT);
 
-    // Thêm phương thức này để lấy dữ liệu đồng bộ
     @Query("SELECT * FROM BAITAP WHERE MaBT = :maBT LIMIT 1")
     BaiTap getByIdSync(String maBT);
 }
@@ -5992,7 +5872,7 @@ public interface LopHocDao {
     List<String> getClassNamesByTeacher(String maGV);
 
     @Query("SELECT * FROM LOPHOC WHERE MaLH = :maLH LIMIT 1")
-    LopHoc getByIdSync(String maLH); // Đổi tên thành getByIdSync để khớp với SubmitAssignmentActivity
+    LopHoc getByIdSync(String maLH);
 
     @Query("SELECT * FROM LOPHOC WHERE MaGV = :maGV")
     List<LopHoc> getClassesByTeacher(String maGV);
@@ -6099,21 +5979,15 @@ import java.util.List;
 public interface ThamGiaDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     void insert(ThamGia thamGia);
-
     @Delete
     void delete(ThamGia thamGia);
-
-    // Lấy danh sách MaHV thuộc 1 lớp
     @Query("SELECT MaHV FROM THAMGIA WHERE MaLH = :maLH")
     List<String> getStudentIdsByClass(String maLH);
-
-    // Đếm sĩ số (Cập nhật cho logic cũ)
     @Query("SELECT COUNT(*) FROM THAMGIA WHERE MaLH = :maLH")
     int countStudentsByClass(String maLH);
     // Trong ThamGiaDao.java
     @Query("SELECT MaLH FROM THAMGIA WHERE MaHV = :maHV")
     List<String> getClassIdsByStudent(String maHV);
-    // Xóa học viên khỏi lớp cụ thể
     @Query("DELETE FROM THAMGIA WHERE MaHV = :maHV AND MaLH = :maLH")
     void removeStudentFromClass(String maHV, String maLH);
     @Query("SELECT LOPHOC.* FROM LOPHOC INNER JOIN THAMGIA ON LOPHOC.MaLH = THAMGIA.MaLH WHERE THAMGIA.MaHV = :maHV")
@@ -6179,12 +6053,11 @@ import androidx.room.PrimaryKey;
         }
 )
 public class BaiGiang {
-    public String FileName; // Tên file hiển thị (vd: slide_chuong1.pdf)
+    public String FileName;
     public String FilePath;
     @PrimaryKey
     @NonNull
     public String MaBG;
-
     public String TenBG;
 
     @NonNull
@@ -6303,7 +6176,7 @@ public class Diem {
 
     public double SoDiem;
 
-    public String NhanXet; // Thêm thuộc tính này
+    public String NhanXet;
 }
 
 
@@ -6342,8 +6215,6 @@ public class GiaoVien {
     @NonNull
     private String MaTK;
 
-    // ================= GETTER / SETTER =================
-
     @NonNull
     public String getMaGV() {
         return MaGV;
@@ -6368,9 +6239,6 @@ public class GiaoVien {
     public void setEmail(String email) {
         this.Email = email;
     }
-
-
-
 
     @NonNull
     public String getMaTK() {
@@ -6406,7 +6274,6 @@ import androidx.room.PrimaryKey;
         }
 )
 public class HocVien {
-
     @PrimaryKey
     @NonNull
     private String MaHV;
@@ -6414,10 +6281,8 @@ public class HocVien {
     private String TenHV;
     private String Email;
 
-
     @NonNull
     private String MaTK;
-
 
     @NonNull
     public String getMaHV() { return MaHV; }
@@ -6426,18 +6291,12 @@ public class HocVien {
 
     public String getEmail() { return Email; }
 
-
-
     @NonNull
     public String getMaTK() { return MaTK; }
 
     public void setMaHV(@NonNull String maHV) { this.MaHV = maHV; }
-
     public void setTenHV(String tenHV) { this.TenHV = tenHV; }
-
     public void setEmail(String email) { this.Email = email; }
-
-
     public void setMaTK(@NonNull String maTK) { this.MaTK = maTK; }
 }
 
@@ -6466,10 +6325,8 @@ public class LopHoc {
     @PrimaryKey
     @NonNull
     public String MaLH;
-
     public String TenLH;
     public String MoTa;
-
     @NonNull
     public String MaGV;
 }
@@ -6530,7 +6387,6 @@ public class TaiKhoan {
     public String getEmail() { return Email; }
     public String getMatKhau() { return MatKhau; }
     public String getVaiTro() { return VaiTro; }
-
     public void setMaTK(String maTK) { MaTK = maTK; }
     public void setHoTen(String hoTen) { HoTen = hoTen; }
     public void setEmail(String email) { Email = email; }
@@ -6550,7 +6406,7 @@ import androidx.room.ForeignKey;
 
 @Entity(
         tableName = "THAMGIA",
-        primaryKeys = {"MaHV", "MaLH"}, // Khóa chính là cặp đôi này (tránh trùng lặp)
+        primaryKeys = {"MaHV", "MaLH"},
         foreignKeys = {
                 @ForeignKey(entity = HocVien.class, parentColumns = "MaHV", childColumns = "MaHV", onDelete = ForeignKey.CASCADE),
                 @ForeignKey(entity = LopHoc.class, parentColumns = "MaLH", childColumns = "MaLH", onDelete = ForeignKey.CASCADE)
@@ -6585,9 +6441,9 @@ public class ThongBao {
     public String MaTB;
     public String NoiDung;
     public String NgayTao;
-    public String NguoiNhan; // MaTK của người nhận, hoặc "ALL", "HOCVIEN", "GIAOVIEN"
-    public String LoaiTB;    // "ASSIGNMENT", "LECTURE", "SUBMISSION", "GRADE"
-    public String TargetId;  // MaBT, MaBG, hoặc MaLH tương ứng
+    public String NguoiNhan;
+    public String LoaiTB;
+    public String TargetId;
     public boolean IsRead;
 
     public ThongBao() {
@@ -6865,17 +6721,13 @@ import com.example.studentportalapp.data.Entity.BaiGiang;
 import java.util.List;
 
 public class UserBaiGiangRepository {
-
     private final BaiGiangDao baiGiangDao;
-
     public UserBaiGiangRepository(Application app) {
         baiGiangDao = AppDatabase.getDatabase(app).baiGiangDao();
     }
-
     public LiveData<BaiGiang> getBaiGiangById(String maBG) {
         return baiGiangDao.getById(maBG);
     }
-
     public LiveData<List<BaiGiang>> getAllBaiGiang() {
         return baiGiangDao.getAll();
     }
@@ -6899,17 +6751,14 @@ import com.example.studentportalapp.data.Entity.BaiTap;
 import java.util.List;
 
 public class UserBaiTapRepository {
-
     private final BaiTapDao baiTapDao;
 
     public UserBaiTapRepository(Application app) {
         baiTapDao = AppDatabase.getDatabase(app).baiTapDao();
     }
-
     public LiveData<BaiTap> getBaiTapById(String MaBT) {
         return baiTapDao.getById(MaBT);
     }
-
     public LiveData<List<BaiTap>> getAllBaiTap() {
         return baiTapDao.getAll();
     }
@@ -6938,23 +6787,15 @@ public class UserDiemRepository {
     public UserDiemRepository(Application app) {
         diemDao = AppDatabase.getDatabase(app).diemDao();
     }
-
-    // Lấy tất cả điểm của 1 học viên
     public LiveData<List<Diem>> getDiemByHocVien(String maHV) {
         return diemDao.getByHocVien(maHV);
     }
-
-    // Lấy tất cả điểm của 1 bài tập
     public LiveData<List<Diem>> getDiemByBaiTap(String maBT) {
         return diemDao.getByBaiTap(maBT);
     }
-
-    // Lấy tất cả điểm
     public LiveData<List<Diem>> getAllDiem() {
         return diemDao.getAll();
     }
-
-    // Lấy điểm duy nhất của 1 học viên cho 1 bài tập
     public LiveData<Diem> getDiemHocVienBaiTap(String maHV, String maBT) {
         return diemDao.getByHocVienBaiTap(maHV, maBT);
     }
@@ -6977,17 +6818,13 @@ import com.example.studentportalapp.data.Entity.GiaoVien;
 import java.util.List;
 
 public class UserGiaoVienRepository {
-
     private final GiaoVienDao giaoVienDao;
-
     public UserGiaoVienRepository(Application app) {
         giaoVienDao = AppDatabase.getDatabase(app).giaoVienDao();
     }
-
     public LiveData<GiaoVien> getGiaoVienById(String id) {
         return giaoVienDao.getById(id);
     }
-
     public LiveData<List<GiaoVien>> getAllGiaoVien() {
         return giaoVienDao.getAll();
     }
@@ -7010,17 +6847,13 @@ import com.example.studentportalapp.data.Entity.HocVien;
 import java.util.List;
 
 public class UserHocVienRepository {
-
     private final HocVienDao hocVienDao;
-
     public UserHocVienRepository(Application app) {
         hocVienDao = AppDatabase.getDatabase(app).hocVienDao();
     }
-
     public LiveData<HocVien> getHocVienById(String id) {
         return hocVienDao.getById(id);
     }
-
     public LiveData<List<HocVien>> getAllHocVien() {
         return hocVienDao.getAll();
     }
@@ -7043,17 +6876,13 @@ import com.example.studentportalapp.data.Entity.LopHoc;
 import java.util.List;
 
 public class UserLopHocRepository {
-
     private final LopHocDao lopHocDao;
-
     public UserLopHocRepository(Application app) {
         lopHocDao = AppDatabase.getDatabase(app).lopHocDao();
     }
-
     public LopHoc getLopHocById(String id) {
         return lopHocDao.getByIdSync(id);
     }
-
     public LiveData<List<LopHoc>> getAllLopHoc() {
         return lopHocDao.getAll();
     }
@@ -7076,25 +6905,19 @@ import com.example.studentportalapp.data.Entity.TaiKhoan;
 import java.util.List;
 
 public class UserTaiKhoanRepository {
-
     private final TaiKhoanDao taiKhoanDao;
-
     public UserTaiKhoanRepository(Application app) {
         taiKhoanDao = AppDatabase.getDatabase(app).taiKhoanDao();
     }
-
     public LiveData<List<TaiKhoan>> getAllTaiKhoan() {
-        return taiKhoanDao.getAll(); // LiveData
+        return taiKhoanDao.getAll();
     }
-
     public TaiKhoan getTaiKhoanById(String id) {
-        return taiKhoanDao.getById(id); // ⚠ trực tiếp
+        return taiKhoanDao.getById(id);
     }
-
     public TaiKhoan getTaiKhoanByEmail(String email) {
         return taiKhoanDao.getByEmail(email);
     }
-
     public int countUsersByRole(String role) {
         return taiKhoanDao.countUsersByRole(role);
     }
@@ -7199,17 +7022,17 @@ FILE: app\src\main\java\com\example\studentportalapp\model\Person.java
 package com.example.studentportalapp.model;
 
 public class Person {
-    private String id; // Thêm ID
+    private String id;
     private String name;
     private String role;
 
-    public Person(String id, String name, String role) { // Cập nhật Constructor
+    public Person(String id, String name, String role) {
         this.id = id;
         this.name = name;
         this.role = role;
     }
 
-    public String getId() { return id; } // Getter mới
+    public String getId() { return id; }
     public String getName() { return name; }
     public String getRole() { return role; }
 }
@@ -7261,7 +7084,7 @@ import com.example.studentportalapp.data.Entity.HocVien;
 
 public class StudentItem {
     public HocVien hocVien;
-    public String classNames; // Chuỗi tên lớp, ví dụ: "LH01, LH02"
+    public String classNames;
 
     public StudentItem(HocVien hocVien, String classNames) {
         this.hocVien = hocVien;
@@ -7278,7 +7101,6 @@ public class Task {
     String title, subject, dueDate, maBT, userRole;
     int submissionCount, totalStudents;
 
-    // Constructor for students
     public Task(String title, String subject, String dueDate, String maBT, String userRole) {
         this.title = title;
         this.subject = subject;
@@ -7287,7 +7109,6 @@ public class Task {
         this.userRole = userRole;
     }
 
-    // Constructor for teachers
     public Task(String title, String subject, String dueDate, String maBT, String userRole, int submissionCount, int totalStudents) {
         this.title = title;
         this.subject = subject;
@@ -7396,9 +7217,7 @@ FILE: app\src\main\res\color\nav_item_selector.xml
 ==================================================
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Mục đang được chọn -->
     <item android:color="@color/blue" android:state_checked="true" />
-    <!-- Mục không được chọn -->
     <item android:color="@color/darker_gray" />
 </selector>
 
@@ -7464,7 +7283,7 @@ FILE: app\src\main\res\drawable\bg_teacher_comment.xml
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-    <solid android:color="#FFF0F5" /> <!-- Màu hồng nhạt (LavenderBlush) -->
+    <solid android:color="#FFF0F5" />
     <corners android:radius="8dp" />
 </shape>
 
@@ -7505,7 +7324,7 @@ FILE: app\src\main\res\drawable\circle_background.xml
         <size
             android:width="64dp"
             android:height="64dp" />
-        <solid android:color="#E0E0E0" />  <!-- màu nền xám nhạt, bạn có thể đổi -->
+        <solid android:color="#E0E0E0" />
     </shape>
 </selector>
 
@@ -7516,8 +7335,8 @@ FILE: app\src\main\res\drawable\circle_bg.xml
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="oval">
     <size android:width="80dp" android:height="80dp"/>
-    <solid android:color="#FFFFFFFF"/> <!-- nền trắng, đổi màu nếu muốn -->
-    <stroke android:width="1dp" android:color="#DDDDDD"/> <!-- viền nhẹ -->
+    <solid android:color="#FFFFFFFF"/>
+    <stroke android:width="1dp" android:color="#DDDDDD"/>
 </shape>
 
 
@@ -8095,25 +7914,17 @@ FILE: app\src\main\res\drawable\popup_bg.xml
 <?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
-
-    <!-- Màu nền trắng -->
     <solid android:color="@android:color/white" />
-
-    <!-- Bo tròn góc -->
     <corners android:radius="12dp" />
-
-    <!-- Viền mảnh xám nhạt -->
     <stroke
         android:width="1dp"
         android:color="#DDDDDD" />
 
-    <!-- Khoảng cách bên trong -->
     <padding
         android:left="8dp"
         android:top="8dp"
         android:right="8dp"
         android:bottom="8dp" />
-
 </shape>
 
 
@@ -8153,13 +7964,8 @@ FILE: app\src\main\res\drawable\task_bg.xml
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
-    <!-- Màu nền -->
     <solid android:color="#FFFFFF"/>
-
-    <!-- Bo góc -->
     <corners android:radius="12dp"/>
-
-    <!-- Đổ bóng nhẹ (hiệu ứng nổi lên) -->
     <padding android:left="8dp"
         android:top="8dp"
         android:right="8dp"
@@ -9905,7 +9711,6 @@ FILE: app\src\main\res\layout\activity_grade.xml
             app:navigationIconTint="#FFFFFF" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Phần chọn lớp học và bài tập -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -10049,7 +9854,6 @@ FILE: app\src\main\res\layout\activity_home.xml
                 android:padding="16dp"
                 android:weightSum="4">
 
-                <!-- Nút TKB -->
                 <LinearLayout
                     android:id="@+id/quickActionTKB"
                     android:layout_width="0dp"
@@ -10071,7 +9875,6 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút ĐIỂM SỐ -->
                 <LinearLayout
                     android:id="@+id/quickActionGrades"
                     android:layout_width="0dp"
@@ -10125,7 +9928,6 @@ FILE: app\src\main\res\layout\activity_home.xml
                         android:layout_marginTop="4dp"/>
                 </LinearLayout>
 
-                <!-- Nút Thoát -->
                 <LinearLayout
                     android:id="@+id/quickActionLogout"
                     android:layout_width="0dp"
@@ -11342,7 +11144,6 @@ FILE: app\src\main\res\layout\background.xml
     android:padding="16dp"
     >
 
-    <!-- Ảnh nền -->
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/img_background"
         android:layout_width="match_parent"
@@ -11354,7 +11155,6 @@ FILE: app\src\main\res\layout\background.xml
         app:strokeColor="@android:color/white"
         app:strokeWidth="0dp" />
 
-    <!-- Chữ đè lên ảnh -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -12398,7 +12198,7 @@ FILE: app\src\main\res\layout\item_notification.xml
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:layout_marginStart="8dp"
-            android:visibility="gone"/> <!-- Mặc định là ẩn -->
+            android:visibility="gone"/>
             
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
@@ -12418,7 +12218,6 @@ FILE: app\src\main\res\layout\item_person.xml
     app:cardCornerRadius="12dp"
     android:gravity="center_vertical">
 
-    <!-- Avatar -->
     <ImageView
         android:id="@+id/imgAvatar"
         android:layout_width="40dp"
@@ -12428,7 +12227,6 @@ FILE: app\src\main\res\layout\item_person.xml
         android:background="@drawable/bg_circle"
         android:scaleType="centerCrop" />
 
-    <!-- Thông tin -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -12628,7 +12426,6 @@ FILE: app\src\main\res\layout\item_submission.xml
             android:layout_marginTop="8dp"
             android:textColor="@color/black" />
 
-        <!-- Submission File Link -->
         <LinearLayout
             android:id="@+id/layout_submission_file"
             android:layout_width="match_parent"
@@ -13001,10 +12798,8 @@ FILE: app\src\main\res\layout\layout_header.xml
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Header dùng chung -->
     <include layout="@layout/header_layout" />
 
-    <!-- Nội dung riêng của từng Activity -->
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
@@ -13232,7 +13027,6 @@ FILE: app\src\main\res\layout\popup_noti.xml
     android:padding="12dp"
     android:elevation="8dp">
 
-    <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -13262,7 +13056,6 @@ FILE: app\src\main\res\layout\popup_noti.xml
         android:layout_height="1dp"
         android:background="#e0e0e0" />
 
-    <!-- Danh sách thông báo -->
     <ListView
         android:id="@+id/list_Notifications"
         android:layout_width="match_parent"
@@ -13287,7 +13080,6 @@ FILE: app\src\main\res\layout\popup_task.xml
     android:padding="12dp"
     android:elevation="8dp">
 
-    <!-- Header -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -13317,7 +13109,6 @@ FILE: app\src\main\res\layout\popup_task.xml
         android:layout_height="1dp"
         android:background="#e0e0e0" />
 
-    <!-- Danh sách các task -->
     <ListView
         android:id="@+id/list_tasks_popup"
         android:layout_width="match_parent"
@@ -13428,24 +13219,19 @@ FILE: app\src\main\res\values\strings.xml
 <resources>
     <string name="app_name">home</string>
 
-    <!-- Header -->
     <string name="avatar">Avatar</string>
     <string name="notification">Notification</string>
     <string name="chat">Chat</string>
     <string name="tick">Tick</string>
 
-    <!-- User info -->
     <string name="user_name">Jayvie</string>
     <string name="user_id">19–02031–T</string>
 
-    <!-- Section title -->
     <string name="my_courses">My Courses</string>
 
-    <!-- Banners -->
     <string name="banner_tcu">Taguig City University Banner</string>
     <string name="banner_cs">Bachelor of Science in Computer Science Banner</string>
 
-    <!-- Course images -->
     <string name="course_programming">Programming Language Course Image</string>
     <string name="course_sport">PE / Sports Course Image</string>
     <string name="course_os">Operating System Course Image</string>
@@ -13595,7 +13381,6 @@ FILE: app\src\main\res\xml\activity_main.xml
     android:padding="24dp"
     android:background="#FDE0E0">
 
-    <!-- Khu vực logo / background giống design -->
     <TextView
         android:id="@+id/tvAppTitle"
         android:layout_width="wrap_content"
@@ -13619,28 +13404,15 @@ FILE: app\src\main\res\xml\activity_main.xml
 ==================================================
 FILE: app\src\main\res\xml\backup_rules.xml
 ==================================================
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+
 </full-backup-content>
 
 ==================================================
 FILE: app\src\main\res\xml\data_extraction_rules.xml
 ==================================================
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
--->
+<?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
         <!-- TODO: Use <include> and <exclude> to control what is backed up.

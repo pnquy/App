@@ -53,6 +53,8 @@
         <activity 
             android:name=".CommentActivity"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".StudentStatsActivity"
+            android:label="Kết quả học tập" />
             
     </application>
 

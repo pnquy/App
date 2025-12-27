@@ -49,6 +49,21 @@ public class CourseActivity extends BaseActivity {
         FloatingActionButton fab = findViewById(R.id.fab_add);
         View btnHomeLogo = findViewById(R.id.btnHomeLogo);
 
+
+        if ("GIAOVIEN".equals(role)) {
+            fab.setImageResource(R.drawable.ic_add); // Icon dấu cộng
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> startActivity(new Intent(this, AddLectureActivity.class)));
+        } else {
+            // Nếu là HOCVIEN, biến nút FAB thành nút xem thống kê
+            fab.setImageResource(R.drawable.ic_assignment); // Icon biểu đồ/bài tập
+            fab.setVisibility(View.VISIBLE);
+            fab.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StudentStatsActivity.class);
+                startActivity(intent);
+            });
+        }
+// ... existing code ...
         if (tvTitle != null) tvTitle.setText(tenLH);
         if (tvSubtitle != null) tvSubtitle.setText("Mã lớp: " + currentMaLH);
 
@@ -63,11 +78,23 @@ public class CourseActivity extends BaseActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        // ... (các code phía trên giữ nguyên)
+
         if ("GIAOVIEN".equals(role)) {
+            // Logic cho Giáo viên: Thêm bài giảng
             fab.setVisibility(View.VISIBLE);
+            fab.setImageResource(R.drawable.ic_add); // Đảm bảo bạn có icon dấu cộng
             fab.setOnClickListener(v -> startActivity(new Intent(this, AddLectureActivity.class)));
         } else {
-            fab.setVisibility(View.GONE);
+            // Logic cho Học viên: Xem thống kê điểm số
+            fab.setVisibility(View.VISIBLE); // Hiện nút thay vì ẩn
+            fab.setImageResource(R.drawable.ic_assignment); // Dùng icon bài tập hoặc icon biểu đồ nếu có
+
+            fab.setOnClickListener(v -> {
+                Intent intent = new Intent(this, StudentStatsActivity.class);
+                // Không cần putExtra vì StudentStatsActivity sẽ tự đọc CURRENT_CLASS_ID từ SharedPreferences
+                startActivity(intent);
+            });
         }
 
         loadData();
