@@ -119,7 +119,39 @@ public class HomeActivity extends BaseActivity {
             List<CourseViewItem> courseViewItems = new ArrayList<>();
             if (listLop != null) {
                 for (LopHoc lop : listLop) {
-                    courseViewItems.add(new CourseViewItem(lop, "0%", 0));
+                    String progressText = "";
+                    int progressValue = 0;
+
+                    if ("HOCVIEN".equals(currentUserRole)) {
+                        int totalAssignments = db.baiTapDao().countAssignmentsInClass(lop.MaLH);
+                        int submittedCount = db.nopBaiDao().countSubmissionsByStudentInClass(currentUserId, lop.MaLH);
+
+                        if (totalAssignments > 0) {
+                            progressValue = (int) (((float) submittedCount / totalAssignments) * 100);
+                            progressText = submittedCount + "/" + totalAssignments + " bài tập";
+                        } else {
+                            progressText = "Chưa có bài tập";
+                            progressValue = 0;
+                        }
+                    } else {
+                        com.example.studentportalapp.data.Entity.BaiTap latestBT = db.baiTapDao().getLatestAssignment(lop.MaLH);
+                        if (latestBT != null) {
+                            int totalStudents = db.thamGiaDao().countStudentsByClass(lop.MaLH);
+                            int totalSubmissions = db.nopBaiDao().countSubmissionsForAssignment(latestBT.MaBT);
+
+                            if (totalStudents > 0) {
+                                progressValue = (int) (((float) totalSubmissions / totalStudents) * 100);
+                                progressText = progressValue + "% đã nộp (" + latestBT.TenBT + ")";
+                            } else {
+                                progressText = "Chưa có học viên";
+                                progressValue = 0;
+                            }
+                        } else {
+                            progressText = "Chưa giao bài tập";
+                            progressValue = 0;
+                        }
+                    }
+                    courseViewItems.add(new CourseViewItem(lop, progressText, progressValue));
                 }
             }
 
