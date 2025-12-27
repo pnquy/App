@@ -34,7 +34,10 @@ public class ToDoActivity extends BaseActivity {
         currentUserRole = prefs.getString("KEY_ROLE", "");
 
         ListView listView = findViewById(R.id.list_tasks);
-
+        android.view.View btnBack = findViewById(R.id.btnBack);
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
+        }
         executor.execute(() -> {
             List<Task> tasks = new ArrayList<>();
             if ("HOCVIEN".equals(currentUserRole)) {

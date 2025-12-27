@@ -9,10 +9,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.studentportalapp.R;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
@@ -20,7 +18,6 @@ import com.example.studentportalapp.data.Entity.Diem;
 import com.example.studentportalapp.data.Entity.HocVien;
 import com.example.studentportalapp.data.Entity.NopBai;
 import com.example.studentportalapp.data.Entity.ThongBao;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -70,14 +67,13 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             holder.layoutFile.setVisibility(View.GONE);
         }
 
-        // 1. Load tên học viên và ĐIỂM CŨ (nếu có)
         Executors.newSingleThreadExecutor().execute(() -> {
             HocVien hv = db.hocVienDao().getByIdSync(nb.MaHV);
-            
+
             if (context instanceof androidx.lifecycle.LifecycleOwner) {
                 ((android.app.Activity) context).runOnUiThread(() -> {
                     if (hv != null) holder.tvName.setText(hv.getTenHV());
-                    
+
                     db.diemDao().getByHocVienBaiTap(nb.MaHV, nb.MaBT).observe((androidx.lifecycle.LifecycleOwner) context, existingDiem -> {
                         if (existingDiem != null) {
                             holder.etGrade.setText(String.valueOf(existingDiem.SoDiem));
@@ -93,7 +89,6 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             }
         });
 
-        // 2. Xử lý nút Lưu điểm
         holder.btnSaveGrade.setOnClickListener(v -> {
             String gradeStr = holder.etGrade.getText().toString().trim();
             String feedback = holder.etFeedback.getText().toString().trim();
@@ -105,6 +100,12 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
             try {
                 double grade = Double.parseDouble(gradeStr);
+
+                if (grade < 0 || grade > 10) {
+                    Toast.makeText(context, "Điểm phải nằm trong khoảng 0 - 10", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 Diem diemObj = new Diem();
                 diemObj.MaHV = nb.MaHV;
                 diemObj.MaBT = nb.MaBT;
@@ -114,22 +115,21 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
 
                 Executors.newSingleThreadExecutor().execute(() -> {
                     db.diemDao().insert(diemObj);
-                    
-                    // GỬI THÔNG BÁO CHO HỌC VIÊN KHI CÓ ĐIỂM
+
                     BaiTap bt = db.baiTapDao().getByIdSync(nb.MaBT);
                     if (bt != null) {
                         ThongBao tb = new ThongBao();
                         tb.NoiDung = "Giáo viên đã chấm điểm bài: " + bt.TenBT + " (Điểm: " + grade + ")";
                         tb.NgayTao = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date());
-                        tb.NguoiNhan = nb.MaHV; // Gửi riêng cho học viên này
-                        tb.LoaiTB = "GRADE"; // QUAN TRỌNG
-                        tb.TargetId = bt.MaLH; // Mã lớp học để điều hướng
+                        tb.NguoiNhan = nb.MaHV;
+                        tb.LoaiTB = "GRADE";
+                        tb.TargetId = bt.MaLH;
                         db.thongBaoDao().insert(tb);
                     }
 
                     if (context instanceof android.app.Activity) {
                         ((android.app.Activity) context).runOnUiThread(() -> {
-                            Toast.makeText(context, "Đã lưu điểm và thông báo cho học viên!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, "Đã lưu điểm thành công!", Toast.LENGTH_SHORT).show();
                         });
                     }
                 });
@@ -160,7 +160,7 @@ public class SubmissionsAdapter extends RecyclerView.Adapter<SubmissionsAdapter.
             tvNote = itemView.findViewById(R.id.tv_submit_note);
             tvFileName = itemView.findViewById(R.id.tv_submission_file_name);
             layoutFile = itemView.findViewById(R.id.layout_submission_file);
-            
+
             etGrade = itemView.findViewById(R.id.et_grade);
             etFeedback = itemView.findViewById(R.id.et_feedback);
             btnSaveGrade = itemView.findViewById(R.id.btn_save_grade);

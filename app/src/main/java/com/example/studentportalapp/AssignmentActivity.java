@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.studentportalapp.adapter.AssignmentAdapter;
 import com.example.studentportalapp.data.AppDatabase;
 import com.example.studentportalapp.data.Entity.BaiTap;
+import com.example.studentportalapp.data.Entity.NopBai;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -98,6 +99,7 @@ public class AssignmentActivity extends BaseActivity {
     private void showAssignmentDialog(BaiTap bt) {
         SharedPreferences prefs = getSharedPreferences("UserSession", MODE_PRIVATE);
         String role = prefs.getString("KEY_ROLE", "");
+        String currentUserId = prefs.getString("KEY_USER_ID", "");
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(bt.TenBT);
@@ -134,14 +136,52 @@ public class AssignmentActivity extends BaseActivity {
 
         if ("GIAOVIEN".equals(role)) {
             builder.setPositiveButton("Quản Lý", (dialog, which) -> showTeacherOptions(bt));
+            builder.show();
         } else if ("HOCVIEN".equals(role)) {
-            builder.setPositiveButton("Nộp bài", (dialog, which) -> {
-                Intent intent = new Intent(this, SubmitAssignmentActivity.class);
-                intent.putExtra("MA_BT", bt.MaBT);
-                intent.putExtra("TEN_BT", bt.TenBT);
-                startActivity(intent);
+            Executors.newSingleThreadExecutor().execute(() -> {
+                NopBai baiDaNop = db.nopBaiDao().getSubmission(bt.MaBT, currentUserId);
+                runOnUiThread(() -> {
+                    if (baiDaNop != null) {
+                        builder.setPositiveButton("Sửa bài nộp", (dialog, which) -> {
+                            Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            intent.putExtra("IS_EDIT", true);
+                            startActivity(intent);
+                        });
+                        builder.setNegativeButton("Xem bài nộp", (dialog, which) -> showSubmittedDetails(baiDaNop));
+                    } else {
+                        builder.setPositiveButton("Nộp bài", (dialog, which) -> {
+                            Intent intent = new Intent(this, SubmitAssignmentActivity.class);
+                            intent.putExtra("MA_BT", bt.MaBT);
+                            intent.putExtra("TEN_BT", bt.TenBT);
+                            startActivity(intent);
+                        });
+                    }
+                    builder.show();
+                });
             });
         }
+    }
+
+    private void showSubmittedDetails(NopBai nb) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Chi tiết bài làm");
+        String detail = "Ngày nộp: " + nb.NgayNop + "\nGhi chú: " + nb.GhiChu + "\nFile: " + nb.FileName;
+        builder.setMessage(detail);
+        if (nb.FilePath != null) {
+            builder.setPositiveButton("Mở file", (d, w) -> {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(Uri.parse(nb.FilePath), "*/*");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(Intent.createChooser(intent, "Mở file"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "Lỗi mở file", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        builder.setNegativeButton("Đóng", null);
         builder.show();
     }
 
@@ -175,6 +215,7 @@ public class AssignmentActivity extends BaseActivity {
                 })
                 .show();
     }
+
     private void confirmDelete(BaiTap bt) {
         new AlertDialog.Builder(this)
                 .setTitle("Xác nhận xóa")
